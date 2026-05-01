@@ -33,6 +33,7 @@ import com.patrykandpatrick.vico.compose.cartesian.rememberCartesianChart
 import com.patrykandpatrick.vico.compose.common.component.rememberLineComponent
 import com.patrykandpatrick.vico.core.cartesian.data.CartesianChartModelProducer
 import com.patrykandpatrick.vico.core.cartesian.data.columnSeries
+import kotlinx.coroutines.Dispatchers
 
 @Composable
 fun AnalyticsScreen(viewModel: AnalyticsViewModel = hiltViewModel()) {
@@ -40,7 +41,7 @@ fun AnalyticsScreen(viewModel: AnalyticsViewModel = hiltViewModel()) {
     val insight by viewModel.aiInsight.collectAsStateWithLifecycle()
     val loading by viewModel.isLoadingInsight.collectAsStateWithLifecycle()
 
-    val modelProducer = remember { CartesianChartModelProducer() }
+    val modelProducer = remember { CartesianChartModelProducer(Dispatchers.Main) }
     
     LaunchedEffect(state.monthlyData) {
         if (state.monthlyData.isNotEmpty()) {
