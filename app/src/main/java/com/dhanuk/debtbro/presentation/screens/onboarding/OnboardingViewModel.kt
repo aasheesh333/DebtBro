@@ -14,13 +14,21 @@ import javax.inject.Inject
 class OnboardingViewModel @Inject constructor(private val prefs: AppPreferences) : ViewModel() {
     private val _userName = MutableStateFlow("")
     val userName: StateFlow<String> = _userName.asStateFlow()
-    private val _groqKey = MutableStateFlow("")
-    val groqKey: StateFlow<String> = _groqKey.asStateFlow()
+    
+    private val _selectedLanguage = MutableStateFlow("en")
+    val selectedLanguage: StateFlow<String> = _selectedLanguage.asStateFlow()
+
     fun onNameChange(name: String) { _userName.value = name }
-    fun onGroqKeyChange(key: String) { _groqKey.value = key }
+    
+    fun setLanguage(code: String) {
+        _selectedLanguage.value = code
+        viewModelScope.launch {
+            prefs.setLanguage(code)
+        }
+    }
+
     fun completeOnboarding(onDone: () -> Unit) = viewModelScope.launch {
         prefs.setOnboardingComplete(_userName.value)
-        if (_groqKey.value.isNotBlank()) prefs.saveGroqKey(_groqKey.value)
         onDone()
     }
 }

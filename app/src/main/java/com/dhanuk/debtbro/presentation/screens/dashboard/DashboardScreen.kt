@@ -1,97 +1,340 @@
 package com.dhanuk.debtbro.presentation.screens.dashboard
 
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.Person
-import androidx.compose.material3.Button
-import androidx.compose.material3.Card
-import androidx.compose.material3.FloatingActionButton
-import androidx.compose.material3.Icon
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.ModalBottomSheet
-import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
+import androidx.compose.material.icons.filled.*
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.dhanuk.debtbro.presentation.components.BannerAdView
 import com.dhanuk.debtbro.presentation.components.DebtCard
 import com.dhanuk.debtbro.presentation.theme.DangerRed
 import com.dhanuk.debtbro.presentation.theme.PrimaryGreen
+import com.dhanuk.debtbro.presentation.theme.SubtitleGray
 import com.dhanuk.debtbro.util.formatCurrency
 import kotlinx.coroutines.delay
 
-@Composable
 @OptIn(ExperimentalMaterial3Api::class)
-fun DashboardScreen(onAddDebt: () -> Unit, onDebts: () -> Unit, onSplit: () -> Unit, onSettings: () -> Unit, onDebtClick: (Int) -> Unit, viewModel: DashboardViewModel = hiltViewModel()) {
+@Composable
+fun DashboardScreen(
+    onAddDebtClick: () -> Unit,
+    onSeeAllClick: () -> Unit,
+    onSplitClick: () -> Unit,
+    onSettingsClick: () -> Unit,
+    onDebtClick: (Int) -> Unit,
+    viewModel: DashboardViewModel = hiltViewModel()
+) {
     val state by viewModel.state.collectAsStateWithLifecycle()
     var showPrompt by remember { mutableStateOf(false) }
+    
     LaunchedEffect(state.hasShownSignInPrompt, state.isSignedIn) {
-        if (!state.hasShownSignInPrompt && !state.isSignedIn) { delay(2000); showPrompt = true }
-    }
-    Box {
-        LazyColumn(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
-            item {
-                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-                    Text("Hey ${state.userName}! 👋", style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.ExtraBold)
-                    Icon(Icons.Default.Person, contentDescription = "Settings", modifier = Modifier.clickable(onClick = onSettings))
-                }
-            }
-            item {
-                Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                    SummaryCard("Owed to me", state.totalOwedToMe, Brush.horizontalGradient(listOf(PrimaryGreen, PrimaryGreen.copy(alpha = 0.55f))), Modifier.weight(1f))
-                    SummaryCard("I owe", state.totalIOwe, Brush.horizontalGradient(listOf(DangerRed, DangerRed.copy(alpha = 0.55f))), Modifier.weight(1f))
-                }
-            }
-            item { Text("Net ${formatCurrency(state.netBalance)}", color = if (state.netBalance >= 0) PrimaryGreen else DangerRed, modifier = Modifier.fillMaxWidth().background(MaterialTheme.colorScheme.surface, RoundedCornerShape(8.dp)).padding(16.dp), fontWeight = FontWeight.Bold) }
-            item { Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) { Button(onAddDebt) { Text("+ Add Debt") }; Button(onSplit) { Text("➗ Split") }; Button(onDebts) { Text("📣 Nudge All") } } }
-            if (state.overdueDebts.isNotEmpty()) {
-                item { Text("Overdue", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold) }
-                itemsIndexed(state.overdueDebts) { _, debt -> DebtCard(debt, state.isSignedIn, { onDebtClick(debt.id) }) }
-            }
-            item { Text("Broke Friend Leaderboard", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold) }
-            if (state.leaderboard.isEmpty()) item { Text("No debts yet. Peaceful wallet, suspiciously quiet friends.") }
-            itemsIndexed(state.leaderboard) { index, debt ->
-                Card { Row(Modifier.fillMaxWidth().padding(12.dp), horizontalArrangement = Arrangement.SpaceBetween) { Text("#${index + 1} ${debt.personEmoji} ${debt.personName}"); Text(formatCurrency(debt.amount - debt.amountPaid, debt.currency), color = PrimaryGreen, fontWeight = FontWeight.Bold) } }
-            }
-            item { BannerAdView() }
+        if (!state.hasShownSignInPrompt && !state.isSignedIn) {
+            delay(3000)
+            showPrompt = true
         }
-        FloatingActionButton(onClick = onAddDebt, modifier = Modifier.align(Alignment.BottomEnd).padding(24.dp)) { Icon(Icons.Default.Add, null) }
     }
-    if (showPrompt) ModalBottomSheet(onDismissRequest = { showPrompt = false; viewModel.dismissPrompt() }) {
-        Column(Modifier.padding(20.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-            Text("☁️ Back up your debts?", style = MaterialTheme.typography.titleLarge)
-            Text("Sign in with Google to sync across devices. Your broke friends can't escape even if you change phones.")
-            Button(onClick = { viewModel.dismissPrompt(); showPrompt = false }) { Text("Maybe Later") }
+
+    Box(modifier = Modifier.fillMaxSize().background(Color(0xFF0D0D0D))) {
+        LazyColumn(
+            modifier = Modifier.fillMaxSize().padding(horizontal = 16.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp),
+            contentPadding = PaddingValues(top = 24.dp, bottom = 100.dp)
+        ) {
+            // Header
+            item {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Column {
+                        Text(
+                            "Hey ${state.userName}! 👋",
+                            color = Color.White,
+                            fontSize = 24.sp,
+                            fontWeight = FontWeight.Bold
+                        )
+                        Text(
+                            "Your money memory is sharp today",
+                            color = SubtitleGray,
+                            fontSize = 13.sp
+                        )
+                    }
+                    IconButton(
+                        onClick = onSettingsClick,
+                        modifier = Modifier.clip(CircleShape).background(Color(0xFF1E1E1E))
+                    ) {
+                        Icon(Icons.Default.Settings, null, tint = Color.White)
+                    }
+                }
+            }
+
+            // Stats Card
+            item {
+                StatsCard(
+                    totalOwedToMe = state.totalOwedToMe,
+                    totalIOwe = state.totalIOwe,
+                    recoveryRate = state.recoveryRate
+                )
+            }
+
+            // Action Row
+            item {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    ActionButton(
+                        "Add Debt", 
+                        Icons.Default.Add, 
+                        PrimaryGreen, 
+                        Modifier.weight(1f), 
+                        onAddDebtClick
+                    )
+                    ActionButton(
+                        "Split Bill", 
+                        Icons.Default.CallSplit, 
+                        Color.White, 
+                        Modifier.weight(1f), 
+                        onSplitClick
+                    )
+                }
+            }
+
+            // Overdue Section
+            if (state.overdueDebts.isNotEmpty()) {
+                item {
+                    SectionHeader("Overdue 🔥", null)
+                }
+                items(state.overdueDebts) { debt ->
+                    DebtCard(debt, state.isSignedIn, { onDebtClick(debt.id) })
+                }
+            }
+
+            // Recent Debts
+            item {
+                SectionHeader("Recent Debts 🕒", "See All") { onSeeAllClick() }
+            }
+            if (state.recentDebts.isEmpty()) {
+                item {
+                    EmptyState("No active debts. Peaceful wallet!")
+                }
+            } else {
+                items(state.recentDebts) { debt ->
+                    DebtCard(debt, state.isSignedIn, { onDebtClick(debt.id) })
+                }
+            }
+
+            // Leaderboard
+            item {
+                SectionHeader("Debt Leaderboard 🏆", null)
+            }
+            items(state.leaderboard) { debt ->
+                LeaderboardItem(debt, state.leaderboard.indexOf(debt) + 1)
+            }
+        }
+    }
+
+    if (showPrompt) {
+        ModalBottomSheet(
+            onDismissRequest = { 
+                showPrompt = false
+                viewModel.dismissPrompt()
+            },
+            containerColor = Color(0xFF1E1E1E)
+        ) {
+            Column(
+                modifier = Modifier.padding(24.dp).padding(bottom = 32.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
+                Text("☁️ Cloud Sync", fontSize = 24.sp, fontWeight = FontWeight.Bold, color = Color.White)
+                Text(
+                    "Sign in with Google to keep your data safe. Even if you change phones, your broke friends can't hide.",
+                    color = SubtitleGray,
+                    textAlign = TextAlign.Center
+                )
+                Button(
+                    onClick = { 
+                        showPrompt = false
+                        viewModel.dismissPrompt()
+                        onSettingsClick()
+                    },
+                    modifier = Modifier.fillMaxWidth().height(54.dp),
+                    colors = ButtonDefaults.buttonColors(containerColor = PrimaryGreen)
+                ) {
+                    Text("Go to Settings", color = Color.Black, fontWeight = FontWeight.Bold)
+                }
+                TextButton(onClick = { 
+                    showPrompt = false
+                    viewModel.dismissPrompt()
+                }) {
+                    Text("Maybe later", color = SubtitleGray)
+                }
+            }
         }
     }
 }
 
 @Composable
-private fun SummaryCard(title: String, amount: Double, brush: Brush, modifier: Modifier) {
-    Column(modifier.background(brush, RoundedCornerShape(8.dp)).padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        Text(title, color = androidx.compose.ui.graphics.Color.White)
-        Text(formatCurrency(amount), color = androidx.compose.ui.graphics.Color.White, fontWeight = FontWeight.ExtraBold)
+fun StatsCard(totalOwedToMe: Double, totalIOwe: Double, recoveryRate: Int) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(24.dp),
+        colors = CardDefaults.cardColors(containerColor = Color(0xFF1E1E1E))
+    ) {
+        Column(modifier = Modifier.padding(20.dp)) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Column {
+                    Text("Total Owed to Me", color = SubtitleGray, fontSize = 13.sp)
+                    Text(
+                        formatCurrency(totalOwedToMe),
+                        color = PrimaryGreen,
+                        fontSize = 28.sp,
+                        fontWeight = FontWeight.ExtraBold
+                    )
+                }
+                Box(
+                    modifier = Modifier
+                        .size(48.dp)
+                        .clip(CircleShape)
+                        .background(PrimaryGreen.copy(alpha = 0.1f)),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(Icons.Default.TrendingUp, null, tint = PrimaryGreen)
+                }
+            }
+            
+            Spacer(Modifier.height(20.dp))
+            
+            Divider(color = Color(0xFF2A2A2A))
+            
+            Spacer(Modifier.height(16.dp))
+            
+            Row(modifier = Modifier.fillMaxWidth()) {
+                Column(Modifier.weight(1f)) {
+                    Text("I Owe", color = SubtitleGray, fontSize = 12.sp)
+                    Text(
+                        formatCurrency(totalIOwe),
+                        color = DangerRed,
+                        fontSize = 16.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+                Column(Modifier.weight(1f), horizontalAlignment = Alignment.End) {
+                    Text("Recovery Rate", color = SubtitleGray, fontSize = 12.sp)
+                    Text(
+                        "$recoveryRate%",
+                        color = Color.White,
+                        fontSize = 16.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+            }
+            
+            Spacer(Modifier.height(12.dp))
+            
+            LinearProgressIndicator(
+                progress = recoveryRate / 100f,
+                modifier = Modifier.fillMaxWidth().height(6.dp).clip(CircleShape),
+                color = PrimaryGreen,
+                trackColor = Color(0xFF2A2A2A)
+            )
+        }
+    }
+}
+
+@Composable
+fun ActionButton(text: String, icon: ImageVector, color: Color, modifier: Modifier, onClick: () -> Unit) {
+    Surface(
+        modifier = modifier.height(56.dp).clickable { onClick() },
+        shape = RoundedCornerShape(16.dp),
+        color = Color(0xFF1E1E1E),
+        border = if (color == PrimaryGreen) null else BorderStroke(1.dp, Color(0xFF333333))
+    ) {
+        Row(
+            modifier = Modifier.fillMaxSize(),
+            horizontalArrangement = Arrangement.Center,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Icon(icon, null, tint = color, modifier = Modifier.size(20.dp))
+            Spacer(Modifier.width(8.dp))
+            Text(text, color = Color.White, fontWeight = FontWeight.Bold, fontSize = 14.sp)
+        }
+    }
+}
+
+@Composable
+fun SectionHeader(title: String, action: String?, onActionClick: () -> Unit = {}) {
+    Row(
+        modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Text(title, color = Color.White, fontSize = 18.sp, fontWeight = FontWeight.Bold)
+        if (action != null) {
+            Text(
+                action,
+                color = PrimaryGreen,
+                fontSize = 13.sp,
+                modifier = Modifier.clickable { onActionClick() }
+            )
+        }
+    }
+}
+
+@Composable
+fun LeaderboardItem(debt: com.dhanuk.debtbro.data.db.entity.DebtEntity, rank: Int) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(containerColor = Color(0xFF161616)),
+        shape = RoundedCornerShape(12.dp)
+    ) {
+        Row(
+            modifier = Modifier.padding(12.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(
+                "#$rank",
+                color = if (rank == 1) Color(0xFFFFD700) else SubtitleGray,
+                fontWeight = FontWeight.Bold,
+                modifier = Modifier.width(32.dp)
+            )
+            Text(debt.personEmoji, fontSize = 20.sp)
+            Spacer(Modifier.width(12.dp))
+            Text(debt.personName, color = Color.White, fontWeight = FontWeight.SemiBold, modifier = Modifier.weight(1f))
+            Text(formatCurrency(debt.amount - debt.amountPaid, debt.currency), color = PrimaryGreen, fontWeight = FontWeight.Bold)
+        }
+    }
+}
+
+@Composable
+fun EmptyState(message: String) {
+    Column(
+        modifier = Modifier.fillMaxWidth().padding(32.dp),
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        Text("📭", fontSize = 48.sp)
+        Spacer(Modifier.height(16.dp))
+        Text(message, color = SubtitleGray, textAlign = TextAlign.Center)
     }
 }

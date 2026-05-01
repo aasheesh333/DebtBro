@@ -13,6 +13,7 @@ import com.dhanuk.debtbro.presentation.navigation.DebtBroNavGraph
 import com.dhanuk.debtbro.presentation.theme.DebtBroTheme
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.lifecycle.compose.LocalLifecycleOwner
+import androidx.compose.ui.graphics.Color
 import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
 
@@ -24,11 +25,14 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContent {
-            DebtBroTheme {
+            DebtBroTheme(darkTheme = true) {
                 CompositionLocalProvider(
                     LocalLifecycleOwner provides this
                 ) {
-                    Surface(modifier = Modifier.fillMaxSize()) {
+                    Surface(
+                        modifier = Modifier.fillMaxSize(),
+                        color = Color(0xFF0D0D0D)
+                    ) {
                         DebtBroNavGraph(appPreferences = appPreferences)
                     }
                 }

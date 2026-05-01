@@ -20,4 +20,10 @@ interface PaymentDao {
 
     @Query("SELECT * FROM payments WHERE isSynced = 0")
     suspend fun getUnsyncedPayments(): List<PaymentEntity>
+
+    @Query("SELECT * FROM payments WHERE id = :id")
+    suspend fun getPaymentById(id: Int): PaymentEntity?
+
+    @Query("DELETE FROM payments WHERE id = :id")
+    suspend fun deletePaymentById(id: Int)
 }

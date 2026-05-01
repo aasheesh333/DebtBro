@@ -8,12 +8,26 @@ import javax.inject.Inject
 import javax.inject.Singleton
 
 @Singleton
-class PaymentRepository @Inject constructor(private val debtDao: DebtDao, private val paymentDao: PaymentDao) {
+class PaymentRepository @Inject constructor(
+    private val debtDao: DebtDao,
+    private val paymentDao: PaymentDao
+) {
     fun getPaymentsForDebt(debtId: Int): Flow<List<PaymentEntity>> = paymentDao.getPaymentsForDebt(debtId)
-    suspend fun insertPayment(payment: PaymentEntity): Long = paymentDao.insertPayment(payment)
+    
     suspend fun recordPayment(debtId: Int, amount: Double, note: String?) {
         val debt = debtDao.getDebtById(debtId) ?: return
         paymentDao.insertPayment(PaymentEntity(debtId = debtId, amount = amount, note = note?.ifBlank { null }))
+        updateDebtStatus(debtId)
+    }
+
+    suspend fun deletePayment(paymentId: Int) {
+        val payment = paymentDao.getPaymentById(paymentId) ?: return
+        paymentDao.deletePaymentById(paymentId)
+        updateDebtStatus(payment.debtId)
+    }
+
+    private suspend fun updateDebtStatus(debtId: Int) {
+        val debt = debtDao.getDebtById(debtId) ?: return
         val totalPaid = paymentDao.getTotalPaidForDebt(debtId) ?: 0.0
         val status = when {
             totalPaid <= 0.0 -> "PENDING"

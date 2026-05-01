@@ -15,18 +15,6 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
-data class AddDebtUiState(
-    val personName: String = "",
-    val personEmoji: String = "🙂",
-    val amount: String = "",
-    val type: String = "THEY_OWE_ME",
-    val description: String = "",
-    val currency: String = "₹",
-    val notes: String = "",
-    val dueDateDays: String = "",
-    val error: String? = null
-)
-
 @HiltViewModel
 class AddDebtViewModel @Inject constructor(
     private val debtRepository: DebtRepository,
@@ -34,20 +22,55 @@ class AddDebtViewModel @Inject constructor(
     private val authManager: AuthManager,
     private val syncManager: SyncManager
 ) : ViewModel() {
-    private val _state = MutableStateFlow(AddDebtUiState())
-    val state: StateFlow<AddDebtUiState> = _state.asStateFlow()
-    init { viewModelScope.launch { _state.value = _state.value.copy(currency = prefs.defaultCurrency.first()) } }
-    fun update(transform: AddDebtUiState.() -> AddDebtUiState) { _state.value = _state.value.transform() }
-    fun saveDebt(onSaved: () -> Unit) = viewModelScope.launch {
-        val s = _state.value
-        val amount = s.amount.toDoubleOrNull()
-        if (s.personName.isBlank() || amount == null || amount <= 0.0) {
-            _state.value = s.copy(error = "Enter a name and a valid amount")
-            return@launch
+    
+    private val _isLoading = MutableStateFlow(false)
+    val isLoading: StateFlow<Boolean> = _isLoading.asStateFlow()
+
+    fun saveDebt(
+        personName: String,
+        personEmoji: String,
+        amount: Double,
+        currency: String,
+        type: String,
+        description: String,
+        dueDate: Long?,
+        notes: String,
+        onSaved: () -> Unit
+    ) {
+        viewModelScope.launch {
+            _isLoading.value = true
+            try {
+                val id = debtRepository.insertDebt(
+                    DebtEntity(
+                        personName = personName,
+                        personEmoji = personEmoji,
+                        amount = amount,
+                        currency = currency,
+                        type = type,
+                        description = description,
+                        dueDate = dueDate,
+                        notes = notes.ifBlank { null }
+                    )
+                )
+                
+                // Sync with Firebase if user is logged in
+                authManager.getCurrentUser()?.uid?.let { uid ->
+                    val debt = debtRepository.getDebtById(id.toInt())
+                    if (debt != null) {
+                        syncManager.syncSingleDebt(uid, debt)
+                    }
+                }
+                
+                onSaved()
+            } catch (e: Exception) {
+                // Error handling can be added here
+            } finally {
+                _isLoading.value = false
+            }
         }
-        val dueDate = s.dueDateDays.toIntOrNull()?.let { System.currentTimeMillis() + it * 86400000L }
-        val id = debtRepository.insertDebt(DebtEntity(personName = s.personName.trim(), personEmoji = s.personEmoji, amount = amount, currency = s.currency, description = s.description.trim(), type = s.type, notes = s.notes.ifBlank { null }, dueDate = dueDate))
-        authManager.getCurrentUser()?.uid?.let { uid -> syncManager.syncSingleDebt(uid, debtRepository.getDebtById(id.toInt()) ?: return@let) }
-        onSaved()
+    }
+    
+    suspend fun getDefaultCurrency(): String {
+        return prefs.defaultCurrency.first()
     }
 }

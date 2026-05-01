@@ -30,6 +30,7 @@ class AppPreferences(@ApplicationContext private val context: Context) {
         val REWARD_TIMESTAMP = longPreferencesKey("reward_timestamp")
         val LAST_INTERSTITIAL_AT = longPreferencesKey("last_interstitial_at")
         val THEME_MODE = stringPreferencesKey("theme_mode")
+        val SELECTED_LANGUAGE = stringPreferencesKey("selected_language")
     }
 
     val hasCompletedOnboarding: Flow<Boolean> = context.dataStore.data.map { it[Keys.HAS_COMPLETED_ONBOARDING] ?: false }
@@ -46,6 +47,7 @@ class AppPreferences(@ApplicationContext private val context: Context) {
     val rewardTimestamp: Flow<Long> = context.dataStore.data.map { it[Keys.REWARD_TIMESTAMP] ?: 0L }
     val lastInterstitialAt: Flow<Long> = context.dataStore.data.map { it[Keys.LAST_INTERSTITIAL_AT] ?: 0L }
     val themeMode: Flow<String> = context.dataStore.data.map { it[Keys.THEME_MODE] ?: "SYSTEM" }
+    val selectedLanguage: Flow<String> = context.dataStore.data.map { it[Keys.SELECTED_LANGUAGE] ?: "en" }
 
     suspend fun setOnboardingComplete(name: String) = context.dataStore.edit {
         it[Keys.HAS_COMPLETED_ONBOARDING] = true
@@ -66,4 +68,5 @@ class AppPreferences(@ApplicationContext private val context: Context) {
     suspend fun setLastInterstitialAt(ts: Long) = context.dataStore.edit { it[Keys.LAST_INTERSTITIAL_AT] = ts }
     suspend fun setHasShownSignInPrompt(value: Boolean) = context.dataStore.edit { it[Keys.HAS_SHOWN_SIGNIN_PROMPT] = value }
     suspend fun setThemeMode(mode: String) = context.dataStore.edit { it[Keys.THEME_MODE] = mode }
+    suspend fun setLanguage(code: String) = context.dataStore.edit { it[Keys.SELECTED_LANGUAGE] = code }
 }

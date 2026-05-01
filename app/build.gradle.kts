@@ -115,5 +115,6 @@ dependencies {
     implementation(libs.coil)
     implementation(libs.kotlinx.coroutines.android)
     implementation(libs.kotlinx.coroutines.play.services)
+    implementation(libs.accompanist.permissions)
     debugImplementation(libs.androidx.compose.ui.tooling)
 }

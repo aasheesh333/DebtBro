@@ -28,6 +28,7 @@ data class SettingsUiState(
     val email: String = "",
     val userPhoto: String = "",
     val lastSynced: Long = 0L,
+    val selectedLanguage: String = "en",
     val testResult: String = ""
 )
 
@@ -40,19 +41,33 @@ class SettingsViewModel @Inject constructor(
     private val groq: GroqRepository
 ) : ViewModel() {
     private val testMessage = kotlinx.coroutines.flow.MutableStateFlow("")
-    val state: StateFlow<SettingsUiState> = combine(prefs.userName, prefs.groqApiKey, prefs.roastLevel, prefs.defaultCurrency, prefs.isGoogleSignedIn, prefs.googleUserName, prefs.googleUserEmail, prefs.googleUserPhoto, prefs.lastSyncedAt, testMessage) { values ->
-        SettingsUiState(values[0] as String, values[1] as String, values[2] as String, values[3] as String, values[4] as Boolean, values[5] as String, values[6] as String, values[7] as String, values[8] as Long, values[9] as String)
+    val state: StateFlow<SettingsUiState> = combine(
+        prefs.userName, prefs.groqApiKey, prefs.roastLevel, 
+        prefs.defaultCurrency, prefs.isGoogleSignedIn, prefs.googleUserName, 
+        prefs.googleUserEmail, prefs.googleUserPhoto, prefs.lastSyncedAt, 
+        prefs.selectedLanguage, testMessage
+    ) { v ->
+        SettingsUiState(
+            v[0] as String, v[1] as String, v[2] as String, 
+            v[3] as String, v[4] as Boolean, v[5] as String, 
+            v[6] as String, v[7] as String, v[8] as Long, 
+            v[9] as String, v[10] as String
+        )
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), SettingsUiState())
     fun saveUserName(name: String) = viewModelScope.launch { prefs.saveUserName(name) }
     fun saveGroqKey(key: String) = viewModelScope.launch { prefs.saveGroqKey(key) }
     fun setRoastLevel(level: String) = viewModelScope.launch { prefs.setRoastLevel(level) }
     fun setCurrency(c: String) = viewModelScope.launch { prefs.setCurrency(c) }
+    fun setLanguage(code: String) = viewModelScope.launch { prefs.setLanguage(code) }
     fun testGroqConnection() = viewModelScope.launch { testMessage.value = if (groq.testConnection()) "Groq OK" else "Add a valid API key" }
     fun signInWithGoogle(activity: Activity) = viewModelScope.launch {
         auth.signInWithGoogle(activity).onSuccess { user -> prefs.setGoogleSignedIn(true, user.displayName ?: "DebtBro user", user.email ?: "", user.photoUrl?.toString().orEmpty()) }
     }
     fun signOut() = viewModelScope.launch { auth.signOut(); prefs.setGoogleSignedIn(false) }
-    fun exportCsv(context: Context) = viewModelScope.launch { CsvExporter.exportDebts(context, debts.getAllDebtsOnce()) }
+    fun exportCsv(context: Context) = viewModelScope.launch { 
+        val uri = CsvExporter.exportDebts(context, debts.getAllDebtsOnce())
+        com.dhanuk.debtbro.util.shareFile(context, uri, "text/csv")
+    }
     fun clearSettledDebts() = viewModelScope.launch { debts.deleteSettledDebts() }
     fun syncNow() = viewModelScope.launch { auth.getCurrentUser()?.uid?.let { sync.mergePendingUnsynced(it) } }
 }

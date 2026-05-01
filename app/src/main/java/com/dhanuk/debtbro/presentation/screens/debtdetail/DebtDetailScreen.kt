@@ -1,34 +1,27 @@
 package com.dhanuk.debtbro.presentation.screens.debtdetail
 
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.padding
+import androidx.compose.animation.*
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowBack
-import androidx.compose.material3.Button
-import androidx.compose.material3.Card
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.FilterChip
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.LinearProgressIndicator
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.ModalBottomSheet
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
+import androidx.compose.material.icons.filled.*
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -36,6 +29,9 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.dhanuk.debtbro.presentation.components.ConfettiOverlay
 import com.dhanuk.debtbro.presentation.components.EmptyStateView
 import com.dhanuk.debtbro.presentation.components.LoadingDotsIndicator
+import com.dhanuk.debtbro.presentation.theme.DangerRed
+import com.dhanuk.debtbro.presentation.theme.PrimaryGreen
+import com.dhanuk.debtbro.presentation.theme.SubtitleGray
 import com.dhanuk.debtbro.util.copyToClipboard
 import com.dhanuk.debtbro.util.formatCurrency
 import com.dhanuk.debtbro.util.shareTextToWhatsApp
@@ -46,64 +42,329 @@ import com.dhanuk.debtbro.util.toReadableDate
 fun DebtDetailScreen(onBack: () -> Unit, viewModel: DebtDetailViewModel = hiltViewModel()) {
     val debt by viewModel.debt.collectAsStateWithLifecycle()
     val payments by viewModel.payments.collectAsStateWithLifecycle()
-    val ai by viewModel.aiMessage.collectAsStateWithLifecycle()
-    val loading by viewModel.isGeneratingAi.collectAsStateWithLifecycle()
-    val level by viewModel.roastLevel.collectAsStateWithLifecycle()
-    val showSheet by viewModel.showAddPaymentSheet.collectAsStateWithLifecycle()
-    val confetti by viewModel.showConfetti.collectAsStateWithLifecycle()
+    val aiMessage by viewModel.aiMessage.collectAsStateWithLifecycle()
+    val isGenerating by viewModel.isGeneratingAi.collectAsStateWithLifecycle()
+    val roastLevel by viewModel.roastLevel.collectAsStateWithLifecycle()
+    val showPaymentSheet by viewModel.showAddPaymentSheet.collectAsStateWithLifecycle()
+    val showEditSheet by viewModel.showEditDebtSheet.collectAsStateWithLifecycle()
+    val showConfetti by viewModel.showConfetti.collectAsStateWithLifecycle()
     val context = LocalContext.current
-    val d = debt
-    if (d == null) {
-        EmptyStateView("🧾", "Debt not found", "It may have been deleted.")
-        return
-    }
-    Column {
-        TopAppBar(title = { Text(d.personName) }, navigationIcon = { IconButton(onClick = onBack) { Icon(Icons.Default.ArrowBack, null) } })
-        LazyColumn(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
-            item {
-                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Text(d.personEmoji, fontSize = 80.sp)
-                    val remaining = (d.amount - d.amountPaid).coerceAtLeast(0.0)
-                    Text(formatCurrency(remaining, d.currency), style = MaterialTheme.typography.displayLarge, fontWeight = FontWeight.ExtraBold)
-                    LinearProgressIndicator(progress = { (d.amountPaid / d.amount).toFloat().coerceIn(0f, 1f) }, modifier = Modifier.fillMaxWidth())
-                    Text("Created ${d.createdAt.toReadableDate()} → ${d.status.lowercase().replaceFirstChar { it.uppercase() }}")
+
+    val d = debt ?: return EmptyStateView("📭", "Debt not found", "It might have been deleted.")
+
+    val remaining = (d.amount - d.amountPaid).coerceAtLeast(0.0)
+    val progress = if (d.amount > 0) (d.amountPaid / d.amount).toFloat().coerceIn(0f, 1f) else 1f
+
+    Scaffold(
+        topBar = {
+            CenterAlignedTopAppBar(
+                title = { Text(d.personName, fontWeight = FontWeight.Bold) },
+                navigationIcon = {
+                    IconButton(onClick = onBack) {
+                        Icon(Icons.Default.ArrowBack, null, tint = Color.White)
+                    }
+                },
+                actions = {
+                    IconButton(onClick = { viewModel.showEditDebtSheet.value = true }) {
+                        Icon(Icons.Default.Edit, null, tint = Color.White)
+                    }
+                    IconButton(onClick = { 
+                        viewModel.deleteDebt()
+                        onBack()
+                    }) {
+                        Icon(Icons.Default.Delete, null, tint = Color(0xFFFF4757))
+                    }
+                },
+                colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
+                    containerColor = Color(0xFF0D0D0D),
+                    titleContentColor = Color.White
+                )
+            )
+        },
+        containerColor = Color(0xFF0D0D0D)
+    ) { padding ->
+        Box(modifier = Modifier.padding(padding)) {
+            LazyColumn(
+                modifier = Modifier.fillMaxSize().padding(horizontal = 16.dp),
+                verticalArrangement = Arrangement.spacedBy(20.dp),
+                contentPadding = PaddingValues(bottom = 32.dp)
+            ) {
+                // Main Info Section
+                item {
+                    Column(
+                        modifier = Modifier.fillMaxWidth().padding(vertical = 16.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .size(80.dp)
+                                .clip(CircleShape)
+                                .background(Color(0xFF1E1E1E)),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text(d.personEmoji, fontSize = 40.sp)
+                        }
+                        Spacer(Modifier.height(16.dp))
+                        Text(
+                            if (remaining > 0) "Remaining Balance" else "Debt Settled",
+                            color = SubtitleGray,
+                            fontSize = 14.sp
+                        )
+                        Text(
+                            formatCurrency(remaining, d.currency),
+                            color = if (remaining > 0) (if (d.type == "THEY_OWE_ME") PrimaryGreen else DangerRed) else Color.White,
+                            fontSize = 42.sp,
+                            fontWeight = FontWeight.ExtraBold
+                        )
+                        
+                        Spacer(Modifier.height(16.dp))
+                        
+                        LinearProgressIndicator(
+                            progress = progress,
+                            modifier = Modifier.fillMaxWidth().height(8.dp).clip(CircleShape),
+                            color = PrimaryGreen,
+                            trackColor = Color(0xFF1E1E1E)
+                        )
+                        
+                        Row(
+                            modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            Text("Paid: ${formatCurrency(d.amountPaid, d.currency)}", color = SubtitleGray, fontSize = 12.sp)
+                            Text("Total: ${formatCurrency(d.amount, d.currency)}", color = SubtitleGray, fontSize = 12.sp)
+                        }
+                    }
+                }
+
+                // Actions Section
+                item {
+                    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                        Button(
+                            onClick = { viewModel.showAddPaymentSheet.value = true },
+                            modifier = Modifier.weight(1f).height(54.dp),
+                            colors = ButtonDefaults.buttonColors(containerColor = PrimaryGreen),
+                            shape = RoundedCornerShape(12.dp),
+                            enabled = remaining > 0
+                        ) {
+                            Icon(Icons.Default.Add, null, tint = Color.Black)
+                            Spacer(Modifier.width(8.dp))
+                            Text("Add Payment", color = Color.Black, fontWeight = FontWeight.Bold)
+                        }
+                        
+                        OutlinedButton(
+                            onClick = { viewModel.markSettled() },
+                            modifier = Modifier.weight(1f).height(54.dp),
+                            shape = RoundedCornerShape(12.dp),
+                            border = BorderStroke(1.dp, if (remaining > 0) PrimaryGreen else Color(0xFF333333)),
+                            enabled = remaining > 0
+                        ) {
+                            Text("Settle All", color = if (remaining > 0) PrimaryGreen else SubtitleGray)
+                        }
+                    }
+                }
+
+                // Nudge Section
+                item {
+                    Card(
+                        modifier = Modifier.fillMaxWidth(),
+                        colors = CardDefaults.cardColors(containerColor = Color(0xFF1E1E1E)),
+                        shape = RoundedCornerShape(16.dp)
+                    ) {
+                        Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Text("🤖 BroBot Nudge", fontWeight = FontWeight.Bold, color = Color.White)
+                                Spacer(Modifier.weight(1f))
+                                Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                                    listOf("MILD", "SAVAGE").forEach { level ->
+                                        FilterChip(
+                                            selected = roastLevel == level,
+                                            onClick = { viewModel.setRoastLevel(level) },
+                                            label = { Text(level, fontSize = 10.sp) },
+                                            colors = FilterChipDefaults.filterChipColors(
+                                                selectedContainerColor = PrimaryGreen,
+                                                selectedLabelColor = Color.Black
+                                            )
+                                        )
+                                    }
+                                }
+                            }
+
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .clip(RoundedCornerShape(12.dp))
+                                    .background(Color(0xFF2A2A2A))
+                                    .padding(16.dp)
+                            ) {
+                                if (isGenerating) {
+                                    LoadingDotsIndicator(color = PrimaryGreen)
+                                } else {
+                                    Text(
+                                        aiMessage.ifBlank { d.aiRoastGenerated ?: "Time to remind them about the money? Generate a roast!" },
+                                        color = Color.White,
+                                        fontSize = 14.sp
+                                    )
+                                }
+                            }
+
+                            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                Button(
+                                    onClick = { viewModel.generateRoast() },
+                                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF333333)),
+                                    modifier = Modifier.weight(1f)
+                                ) {
+                                    Text("Regenerate")
+                                }
+                                Button(
+                                    onClick = { 
+                                        val msg = aiMessage.ifBlank { d.aiRoastGenerated.orEmpty() }
+                                        shareTextToWhatsApp(context, msg)
+                                    },
+                                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF25D366)),
+                                    modifier = Modifier.weight(1f)
+                                ) {
+                                    Icon(Icons.Default.Share, null, modifier = Modifier.size(16.dp))
+                                    Spacer(Modifier.width(8.dp))
+                                    Text("WhatsApp")
+                                }
+                            }
+                        }
+                    }
+                }
+
+                // Payment History Section
+                item {
+                    Text("Payment History", fontWeight = FontWeight.Bold, color = Color.White, fontSize = 18.sp)
+                }
+                
+                if (payments.isEmpty()) {
+                    item {
+                        Text("No payments recorded yet.", color = SubtitleGray, modifier = Modifier.padding(vertical = 16.dp))
+                    }
+                } else {
+                    items(payments) { payment ->
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clip(RoundedCornerShape(12.dp))
+                                .background(Color(0xFF161616))
+                                .padding(16.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Column(Modifier.weight(1f)) {
+                                Text(formatCurrency(payment.amount, d.currency), color = PrimaryGreen, fontWeight = FontWeight.Bold)
+                                Text(payment.paidAt.toReadableDate(), color = SubtitleGray, fontSize = 12.sp)
+                                if (!payment.note.isNullOrBlank()) {
+                                    Text(payment.note, color = Color.White, fontSize = 13.sp, modifier = Modifier.padding(top = 4.dp))
+                                }
+                            }
+                            IconButton(onClick = { viewModel.deletePayment(payment.id) }) {
+                                Icon(Icons.Default.Delete, null, tint = SubtitleGray.copy(alpha = 0.5f), modifier = Modifier.size(20.dp))
+                            }
+                        }
+                    }
+                }
+                
+                item {
+                    Button(
+                        onClick = { viewModel.shareCard(context, d, aiMessage.ifBlank { d.aiRoastGenerated.orEmpty() }) },
+                        modifier = Modifier.fillMaxWidth().height(54.dp),
+                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF1E1E1E)),
+                        shape = RoundedCornerShape(12.dp)
+                    ) {
+                        Icon(Icons.Default.Image, null, tint = Color.White)
+                        Spacer(Modifier.width(8.dp))
+                        Text("Export as Image Card", color = Color.White)
+                    }
                 }
             }
-            item { Button(onClick = { viewModel.showAddPaymentSheet.value = true }, modifier = Modifier.fillMaxWidth()) { Text("➕ Add Payment") } }
-            item {
-                Card { Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                    Text("🤖 BroBot Says...", style = MaterialTheme.typography.titleLarge)
-                    if (loading) LoadingDotsIndicator(color = MaterialTheme.colorScheme.primary) else Text(ai.ifBlank { d.aiRoastGenerated ?: "Generate your first roast →" })
-                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) { listOf("MILD", "MEDIUM", "SAVAGE").forEach { FilterChip(level == it, {}, label = { Text(it.lowercase().replaceFirstChar { c -> c.uppercase() }) }) } }
-                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        Button(onClick = viewModel::generateRoast) { Text("Generate") }
-                        Button(onClick = { copyToClipboard(context, ai.ifBlank { d.aiRoastGenerated.orEmpty() }) }) { Text("Copy") }
-                        Button(onClick = { shareTextToWhatsApp(context, ai.ifBlank { d.aiRoastGenerated.orEmpty() }) }) { Text("WhatsApp") }
-                    }
-                } }
-            }
-            item { Button(onClick = { viewModel.shareCard(context, d, ai.ifBlank { d.aiRoastGenerated.orEmpty() }) }, modifier = Modifier.fillMaxWidth()) { Text("Share Card") } }
-            item { Button(onClick = viewModel::markSettled, modifier = Modifier.fillMaxWidth()) { Text("✅ Mark as Settled") } }
-            item { Text("Payment history", style = MaterialTheme.typography.titleLarge) }
-            if (payments.isEmpty()) item { Text("No payments recorded yet.") }
-            items(payments) { p -> Text("${formatCurrency(p.amount, d.currency)} • ${p.paidAt.toReadableDate()} • ${p.note.orEmpty()}") }
+            
+            ConfettiOverlay(showConfetti)
         }
     }
-    ConfettiOverlay(confetti)
-    if (showSheet) AddPaymentBottomSheet(remaining = (d.amount - d.amountPaid).coerceAtLeast(0.0), currency = d.currency, onDismiss = { viewModel.showAddPaymentSheet.value = false }, onSave = viewModel::addPayment)
+
+    if (showPaymentSheet) {
+        AddPaymentDialog(
+            remaining = remaining,
+            currency = d.currency,
+            onDismiss = { viewModel.showAddPaymentSheet.value = false },
+            onSave = { amount, note -> viewModel.addPayment(amount, note) }
+        )
+    }
+
+    if (showEditSheet) {
+        EditDebtDialog(
+            debt = d,
+            onDismiss = { viewModel.showEditDebtSheet.value = false },
+            onSave = { name, amount, desc, emoji -> viewModel.updateDebt(name, amount, desc, emoji) }
+        )
+    }
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun AddPaymentBottomSheet(remaining: Double, currency: String, onDismiss: () -> Unit, onSave: (Double, String) -> Unit) {
-    var amount by remember { mutableStateOf(remaining.toInt().toString()) }
+fun AddPaymentDialog(remaining: Double, currency: String, onDismiss: () -> Unit, onSave: (Double, String) -> Unit) {
+    var amount by remember { mutableStateOf(remaining.toString()) }
     var note by remember { mutableStateOf("") }
-    ModalBottomSheet(onDismissRequest = onDismiss) {
-        Column(Modifier.padding(20.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-            Text("Add Payment", style = MaterialTheme.typography.titleLarge)
-            OutlinedTextField(amount, { amount = it }, label = { Text("Amount $currency") }, modifier = Modifier.fillMaxWidth())
-            OutlinedTextField(note, { note = it }, label = { Text("Note") }, modifier = Modifier.fillMaxWidth())
-            Button(onClick = { amount.toDoubleOrNull()?.let { onSave(it, note) } }, modifier = Modifier.fillMaxWidth()) { Text("Save Payment") }
+
+    ModalBottomSheet(onDismissRequest = onDismiss, containerColor = Color(0xFF1A1A1A)) {
+        Column(Modifier.padding(24.dp).padding(bottom = 32.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
+            Text("Add Payment", fontSize = 20.sp, fontWeight = FontWeight.Bold, color = Color.White)
+            OutlinedTextField(
+                value = amount,
+                onValueChange = { if (it.all { c -> c.isDigit() || c == '.' }) amount = it },
+                label = { Text("Amount ($currency)") },
+                modifier = Modifier.fillMaxWidth(),
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+                colors = OutlinedTextFieldDefaults.colors(focusedBorderColor = PrimaryGreen)
+            )
+            OutlinedTextField(
+                value = note,
+                onValueChange = { note = it },
+                label = { Text("Note (optional)") },
+                modifier = Modifier.fillMaxWidth(),
+                colors = OutlinedTextFieldDefaults.colors(focusedBorderColor = PrimaryGreen)
+            )
+            Button(
+                onClick = { 
+                    val amt = amount.toDoubleOrNull() ?: 0.0
+                    if (amt > 0) onSave(amt, note) 
+                },
+                modifier = Modifier.fillMaxWidth().height(54.dp),
+                colors = ButtonDefaults.buttonColors(containerColor = PrimaryGreen)
+            ) {
+                Text("Save Payment", color = Color.Black, fontWeight = FontWeight.Bold)
+            }
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun EditDebtDialog(debt: DebtEntity, onDismiss: () -> Unit, onSave: (String, Double, String, String) -> Unit) {
+    var name by remember { mutableStateOf(debt.personName) }
+    var amount by remember { mutableStateOf(debt.amount.toString()) }
+    var desc by remember { mutableStateOf(debt.description) }
+    var emoji by remember { mutableStateOf(debt.personEmoji) }
+
+    ModalBottomSheet(onDismissRequest = onDismiss, containerColor = Color(0xFF1A1A1A)) {
+        Column(Modifier.padding(24.dp).padding(bottom = 32.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
+            Text("Edit Debt", fontSize = 20.sp, fontWeight = FontWeight.Bold, color = Color.White)
+            OutlinedTextField(value = name, onValueChange = { name = it }, label = { Text("Person Name") }, modifier = Modifier.fillMaxWidth())
+            OutlinedTextField(value = amount, onValueChange = { amount = it }, label = { Text("Total Amount") }, modifier = Modifier.fillMaxWidth(), keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal))
+            OutlinedTextField(value = desc, onValueChange = { desc = it }, label = { Text("Description") }, modifier = Modifier.fillMaxWidth())
+            OutlinedTextField(value = emoji, onValueChange = { emoji = it }, label = { Text("Emoji") }, modifier = Modifier.fillMaxWidth())
+            
+            Button(
+                onClick = { 
+                    val amt = amount.toDoubleOrNull() ?: debt.amount
+                    onSave(name, amt, desc, emoji) 
+                },
+                modifier = Modifier.fillMaxWidth().height(54.dp),
+                colors = ButtonDefaults.buttonColors(containerColor = PrimaryGreen)
+            ) {
+                Text("Update Debt", color = Color.Black, fontWeight = FontWeight.Bold)
+            }
         }
     }
 }

@@ -11,6 +11,6 @@ private val DarkColors = darkColorScheme(primary = PrimaryGreen, onPrimary = Bac
 private val LightColors = lightColorScheme(primary = PrimaryGreenLight, onPrimary = Color.White, background = Color(0xFFF5F5F5), surface = Color.White, onBackground = Color(0xFF0D0D0D), onSurface = Color(0xFF0D0D0D), error = DangerRedLight)
 
 @Composable
-fun DebtBroTheme(darkTheme: Boolean = isSystemInDarkTheme(), content: @Composable () -> Unit) {
-    MaterialTheme(colorScheme = if (darkTheme) DarkColors else LightColors, typography = DebtBroTypography, content = content)
+fun DebtBroTheme(darkTheme: Boolean = true, content: @Composable () -> Unit) {
+    MaterialTheme(colorScheme = DarkColors, typography = DebtBroTypography, content = content)
 }

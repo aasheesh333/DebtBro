@@ -18,6 +18,8 @@ data class DashboardUiState(
     val totalOwedToMe: Double = 0.0,
     val totalIOwe: Double = 0.0,
     val netBalance: Double = 0.0,
+    val recoveryRate: Int = 0,
+    val recentDebts: List<DebtEntity> = emptyList(),
     val overdueDebts: List<DebtEntity> = emptyList(),
     val leaderboard: List<DebtEntity> = emptyList(),
     val isSignedIn: Boolean = false,
@@ -26,21 +28,41 @@ data class DashboardUiState(
 )
 
 @HiltViewModel
-class DashboardViewModel @Inject constructor(private val debts: DebtRepository, private val prefs: AppPreferences) : ViewModel() {
-    val state: StateFlow<DashboardUiState> = combine(debts.getAllDebts(), prefs.userName, prefs.isGoogleSignedIn, prefs.googleUserPhoto, prefs.hasShownSignInPrompt) { all, name, signedIn, photo, shown ->
-        val owed = all.filter { it.type == "THEY_OWE_ME" && it.status != "SETTLED" }.sumOf { it.amount - it.amountPaid }
+class DashboardViewModel @Inject constructor(
+    private val debts: DebtRepository,
+    private val prefs: AppPreferences
+) : ViewModel() {
+    
+    val state: StateFlow<DashboardUiState> = combine(
+        debts.getAllDebts(),
+        prefs.userName,
+        prefs.isGoogleSignedIn,
+        prefs.googleUserPhoto,
+        prefs.hasShownSignInPrompt
+    ) { all, name, signedIn, photo, shown ->
+        val owedToMe = all.filter { it.type == "THEY_OWE_ME" && it.status != "SETTLED" }.sumOf { it.amount - it.amountPaid }
         val iOwe = all.filter { it.type == "I_OWE_THEM" && it.status != "SETTLED" }.sumOf { it.amount - it.amountPaid }
+        
+        val allTimeOwed = all.filter { it.type == "THEY_OWE_ME" }.sumOf { it.amount }
+        val allTimeSettled = all.filter { it.type == "THEY_OWE_ME" }.sumOf { it.amountPaid }
+        val recoveryRate = if (allTimeOwed > 0) ((allTimeSettled / allTimeOwed) * 100).toInt() else 100
+
         DashboardUiState(
             userName = name.ifBlank { "Bro" },
-            totalOwedToMe = owed,
+            totalOwedToMe = owedToMe,
             totalIOwe = iOwe,
-            netBalance = owed - iOwe,
-            overdueDebts = all.filter { it.dueDate != null && it.dueDate < System.currentTimeMillis() && it.status != "SETTLED" }.sortedBy { it.dueDate }.take(3),
-            leaderboard = all.filter { it.type == "THEY_OWE_ME" && it.status != "SETTLED" }.sortedByDescending { it.amount - it.amountPaid }.take(5),
+            netBalance = owedToMe - iOwe,
+            recoveryRate = recoveryRate,
+            recentDebts = all.filter { it.status != "SETTLED" }.sortedByDescending { it.createdAt }.take(5),
+            overdueDebts = all.filter { it.dueDate != null && it.dueDate < System.currentTimeMillis() && it.status != "SETTLED" }
+                .sortedBy { it.dueDate }.take(3),
+            leaderboard = all.filter { it.type == "THEY_OWE_ME" && it.status != "SETTLED" }
+                .sortedByDescending { it.amount - it.amountPaid }.take(5),
             isSignedIn = signedIn,
             userPhoto = photo,
             hasShownSignInPrompt = shown
         )
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), DashboardUiState())
+
     fun dismissPrompt() = viewModelScope.launch { prefs.setHasShownSignInPrompt(true) }
 }
