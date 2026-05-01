@@ -42,7 +42,7 @@ android {
         create("release") {
             storeFile = file("keystore.jks")
             storePassword = localProp("KEYSTORE_PASSWORD")
-            keyAlias = "debtbro"
+            keyAlias = "mykey"
             keyPassword = localProp("KEY_PASSWORD")
         }
     }
