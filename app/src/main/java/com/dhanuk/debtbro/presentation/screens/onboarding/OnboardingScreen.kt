@@ -36,7 +36,8 @@ import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
-fun OnboardingScreen(onOnboardingComplete: () -> Unit, viewModel: OnboardingViewModel = hiltViewModel()) {
+fun OnboardingScreen(onOnboardingComplete: () -> Unit) {
+    val viewModel: OnboardingViewModel = hiltViewModel()
     val pages = listOf(
         Triple("💸", "Track Who Owes You", "Every loan, chai, trip split, and awkward IOU in one clean place."),
         Triple("🤖", "AI Roasts Your Broke Friends", "Generate funny WhatsApp nudges that make payment reminders less painful."),

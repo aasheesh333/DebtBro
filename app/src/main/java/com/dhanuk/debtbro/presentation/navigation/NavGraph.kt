@@ -14,6 +14,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -40,6 +41,7 @@ import kotlinx.coroutines.runBlocking
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun DebtBroNavGraph(appPreferences: AppPreferences) {
+    val lifecycleOwner = LocalLifecycleOwner.current
     val nav = rememberNavController()
     var showAddDebt by remember { mutableStateOf(false) }
     val start = if (runBlocking { appPreferences.hasCompletedOnboarding.first() }) Screen.Dashboard.route else Screen.Onboarding.route
@@ -56,7 +58,15 @@ fun DebtBroNavGraph(appPreferences: AppPreferences) {
         }
     }) { padding ->
         NavHost(navController = nav, startDestination = start, modifier = Modifier.padding(padding)) {
-            composable(Screen.Onboarding.route) { OnboardingScreen(onOnboardingComplete = { nav.navigate(Screen.Dashboard.route) { popUpTo(Screen.Onboarding.route) { inclusive = true } } }) }
+            composable(Screen.Onboarding.route) {
+                OnboardingScreen(
+                    onOnboardingComplete = {
+                        nav.navigate(Screen.Dashboard.route) {
+                            popUpTo(Screen.Onboarding.route) { inclusive = true }
+                        }
+                    }
+                )
+            }
             composable(Screen.Dashboard.route) { DashboardScreen({ showAddDebt = true }, { nav.navigate(Screen.DebtList.route) }, { nav.navigate(Screen.Split.route) }, { nav.navigate(Screen.Settings.route) }, { nav.navigate(Screen.DebtDetail.createRoute(it)) }) }
             composable(Screen.DebtList.route) { DebtListScreen({ showAddDebt = true }, { nav.navigate(Screen.DebtDetail.createRoute(it)) }) }
             composable(Screen.Split.route) { SplitScreen() }

@@ -11,6 +11,8 @@ import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import com.dhanuk.debtbro.data.datastore.AppPreferences
 import com.dhanuk.debtbro.presentation.navigation.DebtBroNavGraph
 import com.dhanuk.debtbro.presentation.theme.DebtBroTheme
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
 
@@ -23,8 +25,12 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         setContent {
             DebtBroTheme {
-                Surface(modifier = Modifier.fillMaxSize()) {
-                    DebtBroNavGraph(appPreferences = appPreferences)
+                CompositionLocalProvider(
+                    LocalLifecycleOwner provides this
+                ) {
+                    Surface(modifier = Modifier.fillMaxSize()) {
+                        DebtBroNavGraph(appPreferences = appPreferences)
+                    }
                 }
             }
         }
