@@ -90,7 +90,8 @@ fun DebtListScreen(
                 colors = OutlinedTextFieldDefaults.colors(
                     focusedBorderColor = PrimaryGreen,
                     unfocusedBorderColor = Color(0xFF333333),
-                    containerColor = Color(0xFF1E1E1E)
+                    focusedContainerColor = Color(0xFF1E1E1E),
+                    unfocusedContainerColor = Color(0xFF1E1E1E)
                 )
             )
 
