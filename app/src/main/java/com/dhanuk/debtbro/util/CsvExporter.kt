@@ -12,11 +12,25 @@ object CsvExporter {
     fun exportDebts(context: Context, debts: List<DebtEntity>): Uri {
         val fileName = "debtbro-${System.currentTimeMillis()}.csv"
         val values = ContentValues().apply {
-            put(MediaStore.Downloads.DISPLAY_NAME, fileName)
-            put(MediaStore.Downloads.MIME_TYPE, "text/csv")
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) put(MediaStore.Downloads.RELATIVE_PATH, "Download/DebtBro")
+            put(MediaStore.MediaColumns.DISPLAY_NAME, fileName)
+            put(MediaStore.MediaColumns.MIME_TYPE, "text/csv")
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) put(MediaStore.MediaColumns.RELATIVE_PATH, "Download/DebtBro")
         }
-        val uri = context.contentResolver.insert(MediaStore.Downloads.EXTERNAL_CONTENT_URI, values) ?: error("Unable to create CSV")
+        val uri: Uri
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            uri = context.contentResolver.insert(MediaStore.Downloads.EXTERNAL_CONTENT_URI, values) ?: error("Unable to create CSV")
+        } else {
+            val downloadsDir = android.os.Environment.getExternalStoragePublicDirectory(android.os.Environment.DIRECTORY_DOWNLOADS)
+            if (!downloadsDir.exists()) downloadsDir.mkdirs()
+            val file = java.io.File(downloadsDir, fileName)
+            file.createNewFile()
+
+            val fileValues = ContentValues().apply {
+                put(MediaStore.MediaColumns.DATA, file.absolutePath)
+                put(MediaStore.MediaColumns.MIME_TYPE, "text/csv")
+            }
+            uri = context.contentResolver.insert(MediaStore.Files.getContentUri("external"), fileValues) ?: Uri.fromFile(file)
+        }
         context.contentResolver.openOutputStream(uri)?.use { stream ->
             OutputStreamWriter(stream).use { writer ->
                 writer.appendLine("Name,Amount,Paid,Remaining,Type,Status,Description,DueDate,CreatedAt")
