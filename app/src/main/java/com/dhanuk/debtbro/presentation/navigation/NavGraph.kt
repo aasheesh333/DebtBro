@@ -19,7 +19,6 @@ import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import androidx.navigation.navDeepLink
 import com.dhanuk.debtbro.data.datastore.AppPreferences
-import com.dhanuk.debtbro.presentation.components.BannerAdView
 import com.dhanuk.debtbro.presentation.screens.adddebt.AddDebtBottomSheet
 import com.dhanuk.debtbro.presentation.screens.analytics.AnalyticsScreen
 import com.dhanuk.debtbro.presentation.screens.dashboard.DashboardScreen
@@ -55,11 +54,12 @@ fun DebtBroNavGraph(appPreferences: AppPreferences) {
         Screen.Analytics
     )
 
+    val navTabRoutes = navTabs.map { it.route }
+
     Scaffold(
         bottomBar = {
-            if (currentRoute in navTabs.map { it.route }) {
+            if (currentRoute in navTabRoutes) {
                 Column {
-                    BannerAdView() // Global Banner Ad
                     NavigationBar(
                         containerColor = Color(0xFF111111),
                         tonalElevation = 0.dp
@@ -69,11 +69,12 @@ fun DebtBroNavGraph(appPreferences: AppPreferences) {
                             selected = currentRoute == Screen.Dashboard.route,
                             onClick = { 
                                 navController.navigate(Screen.Dashboard.route) {
-                                    popUpTo(navController.graph.findStartDestination().id) {
-                                        saveState = true
+                                    popUpTo(navController.graph.startDestinationId) {
+                                        inclusive = false
+                                        saveState = false
                                     }
                                     launchSingleTop = true
-                                    restoreState = true
+                                    restoreState = false
                                 }
                             },
                             icon = { 
@@ -99,11 +100,11 @@ fun DebtBroNavGraph(appPreferences: AppPreferences) {
                             selected = currentRoute == Screen.DebtList.route,
                             onClick = { 
                                 navController.navigate(Screen.DebtList.route) {
-                                    popUpTo(navController.graph.findStartDestination().id) {
-                                        saveState = true
+                                    popUpTo(Screen.Dashboard.route) {
+                                        inclusive = false
+                                        saveState = false
                                     }
                                     launchSingleTop = true
-                                    restoreState = true
                                 }
                             },
                             icon = { 
@@ -129,11 +130,11 @@ fun DebtBroNavGraph(appPreferences: AppPreferences) {
                             selected = currentRoute == Screen.Split.route,
                             onClick = { 
                                 navController.navigate(Screen.Split.route) {
-                                    popUpTo(navController.graph.findStartDestination().id) {
-                                        saveState = true
+                                    popUpTo(Screen.Dashboard.route) {
+                                        inclusive = false
+                                        saveState = false
                                     }
                                     launchSingleTop = true
-                                    restoreState = true
                                 }
                             },
                             icon = { 
@@ -157,11 +158,11 @@ fun DebtBroNavGraph(appPreferences: AppPreferences) {
                             selected = currentRoute == Screen.Analytics.route,
                             onClick = { 
                                 navController.navigate(Screen.Analytics.route) {
-                                    popUpTo(navController.graph.findStartDestination().id) {
-                                        saveState = true
+                                    popUpTo(Screen.Dashboard.route) {
+                                        inclusive = false
+                                        saveState = false
                                     }
                                     launchSingleTop = true
-                                    restoreState = true
                                 }
                             },
                             icon = { 

@@ -7,6 +7,7 @@ import androidx.lifecycle.viewModelScope
 import com.dhanuk.debtbro.data.datastore.AppPreferences
 import com.dhanuk.debtbro.data.db.entity.DebtEntity
 import com.dhanuk.debtbro.data.db.entity.PaymentEntity
+import com.dhanuk.debtbro.data.ads.AdManager
 import com.dhanuk.debtbro.data.firebase.AuthManager
 import com.dhanuk.debtbro.data.firebase.SyncManager
 import com.dhanuk.debtbro.data.repository.DebtRepository
@@ -14,6 +15,7 @@ import com.dhanuk.debtbro.data.repository.GroqRepository
 import com.dhanuk.debtbro.data.repository.PaymentRepository
 import com.dhanuk.debtbro.util.CanvasExporter
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -27,7 +29,8 @@ class DebtDetailViewModel @Inject constructor(
     private val groqRepository: GroqRepository,
     private val prefs: AppPreferences,
     private val authManager: AuthManager,
-    private val syncManager: SyncManager
+    private val syncManager: SyncManager,
+    private val adManager: AdManager
 ) : ViewModel() {
 
     private val debtId = checkNotNull(savedStateHandle.get<Int>("debtId"))
@@ -64,9 +67,44 @@ class DebtDetailViewModel @Inject constructor(
         syncIfSignedIn()
     }
 
-    fun generateRoast() = viewModelScope.launch {
+    private val _showRewardAd = MutableStateFlow(false)
+    val showRewardAd: StateFlow<Boolean> = _showRewardAd.asStateFlow()
+
+    private val _remainingFree = MutableStateFlow(groqRepository.remainingFreeRegenerations())
+    val remainingFree: StateFlow<Int> = _remainingFree.asStateFlow()
+
+    fun generateRoast(activity: android.app.Activity? = null) = viewModelScope.launch {
         val d = debt.value ?: return@launch
+
+        // Check if user has free regenerations left
+        if (!groqRepository.canRegenerate()) {
+            // Show reward ad to earn more
+            if (activity != null) {
+                adManager.showRewardedAd(activity, onRewarded = {
+                    groqRepository.resetRegenerationCount()
+                    _remainingFree.value = groqRepository.remainingFreeRegenerations()
+                    // Retry generation after reward
+                    generateRoastInternal(d)
+                }, onFailed = {
+                    _showRewardAd.value = true
+                })
+            } else {
+                _showRewardAd.value = true
+            }
+            return@launch
+        }
+
+        generateRoastInternal(d)
+    }
+
+    fun dismissRewardAd() {
+        _showRewardAd.value = false
+    }
+
+    private suspend fun generateRoastInternal(d: DebtEntity) {
         isGeneratingAi.value = true
+        groqRepository.incrementRegenerationCount()
+        _remainingFree.value = groqRepository.remainingFreeRegenerations()
         val message = groqRepository.generateRoast(d, roastLevel.value)
             .getOrElse { "Could not generate roast. Check your API key." }
         aiMessage.value = message
@@ -107,9 +145,15 @@ class DebtDetailViewModel @Inject constructor(
         debt.value?.let { debtRepository.deleteDebt(it) }
     }
 
-    fun shareCard(context: Context, debt: DebtEntity, message: String) {
-        val bitmap = CanvasExporter.createDebtCard(context, debt, message)
-        CanvasExporter.shareDebtCard(context, bitmap)
+    fun shareCard(context: Context, debt: DebtEntity, message: String) = viewModelScope.launch(Dispatchers.IO) {
+        runCatching {
+            val bitmap = CanvasExporter.createDebtCard(context, debt, message)
+            kotlinx.coroutines.withContext(Dispatchers.Main) {
+                CanvasExporter.shareDebtCard(context, bitmap)
+            }
+        }.onFailure {
+            it.printStackTrace()
+        }
     }
 
     private fun syncIfSignedIn() = viewModelScope.launch {

@@ -57,7 +57,7 @@ class AddDebtViewModel @Inject constructor(
                 authManager.getCurrentUser()?.uid?.let { uid ->
                     val debt = debtRepository.getDebtById(id.toInt())
                     if (debt != null) {
-                        syncManager.syncSingleDebt(uid, debt)
+                        runCatching { syncManager.pushNewDebt(uid, debt) }
                     }
                 }
                 

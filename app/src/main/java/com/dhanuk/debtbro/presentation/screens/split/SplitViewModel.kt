@@ -91,6 +91,11 @@ class SplitViewModel @Inject constructor(
         val id = splits.insertSplit(split).toInt()
         val createdSplit = split.copy(id = id)
 
+        // Push immediately to Firestore if signed in
+        authManager.getCurrentUser()?.uid?.let { uid ->
+            pushSplitImmediately(uid, createdSplit)
+        }
+
         _state.value = _state.value.copy(isLoading = false)
         onCreated(createdSplit)
         syncIfSignedIn()
@@ -138,5 +143,9 @@ class SplitViewModel @Inject constructor(
         authManager.getCurrentUser()?.uid?.let { uid ->
             runCatching { syncManager.mergePendingUnsynced(uid) }
         }
+    }
+
+    private suspend fun pushSplitImmediately(userId: String, split: SplitEntity) {
+        runCatching { syncManager.pushNewSplit(userId, split) }
     }
 }

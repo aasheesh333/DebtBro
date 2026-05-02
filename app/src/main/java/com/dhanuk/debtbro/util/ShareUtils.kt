@@ -10,6 +10,7 @@ fun shareTextToWhatsApp(context: Context, text: String) {
         type = "text/plain"
         putExtra(Intent.EXTRA_TEXT, text)
         setPackage("com.whatsapp")
+        addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
     }
     try {
         context.startActivity(intent)
@@ -17,7 +18,8 @@ fun shareTextToWhatsApp(context: Context, text: String) {
         context.startActivity(Intent.createChooser(Intent(Intent.ACTION_SEND).apply {
             type = "text/plain"
             putExtra(Intent.EXTRA_TEXT, text)
-        }, "Share via"))
+            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+        }, "Share via").apply { addFlags(Intent.FLAG_ACTIVITY_NEW_TASK) })
     }
 }
 
@@ -31,6 +33,9 @@ fun shareFile(context: Context, uri: android.net.Uri, mimeType: String = "*/*") 
         type = mimeType
         putExtra(Intent.EXTRA_STREAM, uri)
         addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+        addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
     }
-    context.startActivity(Intent.createChooser(intent, "Share Export"))
+    context.startActivity(Intent.createChooser(intent, "Share Export").apply {
+        addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+    })
 }

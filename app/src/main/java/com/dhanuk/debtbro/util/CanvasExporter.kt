@@ -8,39 +8,104 @@ import android.graphics.Canvas
 import android.graphics.Color
 import android.graphics.LinearGradient
 import android.graphics.Paint
+import android.graphics.RectF
 import android.graphics.Shader
 import android.net.Uri
 import android.provider.MediaStore
 import com.dhanuk.debtbro.data.db.entity.DebtEntity
 
 object CanvasExporter {
+    // 4:3 ratio - 1200x900 for WhatsApp friendly dimensions
+    private const val W = 1200
+    private const val H = 900
+
     fun createDebtCard(context: Context, debt: DebtEntity, aiMessage: String): Bitmap {
-        val bitmap = Bitmap.createBitmap(1080, 1080, Bitmap.Config.ARGB_8888)
+        val bitmap = Bitmap.createBitmap(W, H, Bitmap.Config.ARGB_8888)
         val canvas = Canvas(bitmap)
         val paint = Paint(Paint.ANTI_ALIAS_FLAG)
-        paint.shader = LinearGradient(0f, 0f, 1080f, 1080f, Color.rgb(13, 13, 13), Color.rgb(0, 184, 122), Shader.TileMode.CLAMP)
-        canvas.drawRect(0f, 0f, 1080f, 1080f, paint)
+
+        // 1. Background gradient
+        paint.shader = LinearGradient(0f, 0f, W.toFloat(), H.toFloat(),
+            Color.rgb(13, 13, 13), Color.rgb(0, 70, 50), Shader.TileMode.CLAMP)
+        canvas.drawRect(0f, 0f, W.toFloat(), H.toFloat(), paint)
         paint.shader = null
+
+        // 2. Top accent line
+        paint.color = Color.rgb(0, 184, 122)
+        canvas.drawRect(0f, 0f, W.toFloat(), 6f, paint)
+
+        // 3. Emoji
         paint.color = Color.WHITE
         paint.textAlign = Paint.Align.CENTER
-        paint.textSize = 130f
-        canvas.drawText(debt.personEmoji, 540f, 220f, paint)
-        paint.textSize = 62f
+        paint.textSize = 100f
+        canvas.drawText(debt.personEmoji, (W / 2).toFloat(), 140f, paint)
+
+        // 4. Person name
+        paint.textSize = 48f
         paint.isFakeBoldText = true
-        canvas.drawText(debt.personName, 540f, 330f, paint)
-        paint.textSize = 86f
-        canvas.drawText(formatCurrency(debt.amount - debt.amountPaid, debt.currency), 540f, 470f, paint)
-        paint.textSize = 36f
-        paint.isFakeBoldText = false
-        canvas.drawText(if (debt.type == "THEY_OWE_ME") "owes you" else "you owe them", 540f, 540f, paint)
-        paint.color = Color.argb(225, 20, 20, 20)
-        canvas.drawRoundRect(90f, 650f, 990f, 880f, 36f, 36f, paint)
         paint.color = Color.WHITE
-        paint.textSize = 40f
-        val message = aiMessage.ifBlank { debt.description.ifBlank { "DebtBro keeps score so you do not have to." } }
-        message.chunked(34).take(4).forEachIndexed { index, line -> canvas.drawText(line, 540f, 730f + index * 48f, paint) }
+        canvas.drawText(debt.personName, (W / 2).toFloat(), 210f, paint)
+
+        // 5. Label
+        paint.textSize = 24f
+        paint.isFakeBoldText = false
+        paint.color = Color.rgb(160, 160, 160)
+        canvas.drawText(if (debt.type == "THEY_OWE_ME") "OWES YOU" else "YOU OWE", (W / 2).toFloat(), 250f, paint)
+
+        // 6. Amount - big and bold
+        paint.textSize = 72f
+        paint.isFakeBoldText = true
+        paint.color = if (debt.type == "THEY_OWE_ME") Color.rgb(0, 230, 160) else Color.rgb(255, 71, 87)
+        val amountStr = formatCurrency(debt.amount - debt.amountPaid, debt.currency)
+        canvas.drawText(amountStr, (W / 2).toFloat(), 330f, paint)
+
+        // 7. Separator line
+        paint.color = Color.argb(80, 255, 255, 255)
+        canvas.drawLine(200f, 370f, (W - 200).toFloat(), 370f, paint)
+
+        // 8. AI Quote / Message box
+        paint.color = Color.argb(200, 20, 20, 20)
+        val roundRect = RectF(60f, 400f, (W - 60).toFloat(), 680f)
+        canvas.drawRoundRect(roundRect, 24f, 24f, paint)
+
+        // AI Quote content
+        paint.color = Color.WHITE
         paint.textSize = 30f
-        canvas.drawText("DebtBro", 540f, 1000f, paint)
+        paint.isFakeBoldText = false
+        paint.textAlign = Paint.Align.LEFT
+        val message = aiMessage.ifBlank { debt.description.ifBlank { "DebtBro keeps score so you do not have to." } }
+
+        // Word-wrap the message in the box
+        val maxWidth = W - 160f
+        val words = message.split(" ")
+        val lines = mutableListOf<String>()
+        var currentLine = ""
+        for (word in words) {
+            val testLine = if (currentLine.isEmpty()) word else "$currentLine $word"
+            if (paint.measureText(testLine) <= maxWidth) {
+                currentLine = testLine
+            } else {
+                lines.add(currentLine)
+                currentLine = word
+            }
+        }
+        if (currentLine.isNotEmpty()) lines.add(currentLine)
+
+        val startY = 470f
+        val lineHeight = 42f
+        lines.take(5).forEachIndexed { i, line ->
+            canvas.drawText(line, 120f, startY + i * lineHeight, paint)
+        }
+
+        // 9. Bottom branding bar
+        paint.color = Color.argb(160, 0, 184, 122)
+        canvas.drawRect(0f, (H - 50).toFloat(), W.toFloat(), H.toFloat(), paint)
+        paint.textSize = 22f
+        paint.color = Color.BLACK
+        paint.isFakeBoldText = true
+        paint.textAlign = Paint.Align.CENTER
+        canvas.drawText("DebtBro — because friends forget 😅", (W / 2).toFloat(), (H - 16).toFloat(), paint)
+
         return bitmap
     }
     fun saveDebtCard(context: Context, bitmap: Bitmap): Uri {
@@ -74,10 +139,14 @@ object CanvasExporter {
     }
     fun shareDebtCard(context: Context, bitmap: Bitmap) {
         val uri = saveDebtCard(context, bitmap)
-        context.startActivity(Intent.createChooser(Intent(Intent.ACTION_SEND).apply {
+        val intent = Intent(Intent.ACTION_SEND).apply {
             type = "image/png"
             putExtra(Intent.EXTRA_STREAM, uri)
             addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
-        }, "Share DebtBro card"))
+            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+        }
+        context.startActivity(Intent.createChooser(intent, "Share DebtBro card").apply {
+            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+        })
     }
 }

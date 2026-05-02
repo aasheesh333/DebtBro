@@ -141,6 +141,53 @@ class SyncManager @Inject constructor(
         }
     }
 
+    // ── Immediate push after local mutation ──────────────
+
+    /** Push a single newly created debt to Firestore immediately */
+    suspend fun pushNewDebt(userId: String, debt: DebtEntity): String {
+        val firebaseId = firebaseRepository.pushDebtToFirestore(userId, debt)
+        debtDao.updateFirebaseId(debt.id, firebaseId)
+        return firebaseId
+    }
+
+    /** Push a single updated debt to Firestore immediately */
+    suspend fun pushUpdatedDebt(userId: String, debt: DebtEntity) {
+        val firebaseId = debt.firebaseId
+        if (firebaseId.isNullOrBlank()) {
+            pushNewDebt(userId, debt)
+        } else {
+            firebaseRepository.pushDebtToFirestoreWithId(userId, debt, firebaseId)
+        }
+    }
+
+    /** Push a single payment to Firestore immediately */
+    suspend fun pushNewPayment(userId: String, debtFirebaseId: String, payment: PaymentEntity): String {
+        val pfId = firebaseRepository.pushPaymentToFirestore(userId, debtFirebaseId, payment)
+        paymentDao.updatePaymentFirebaseId(payment.id, pfId)
+        return pfId
+    }
+
+    /** Push a single new split to Firestore immediately */
+    suspend fun pushNewSplit(userId: String, split: SplitEntity): String {
+        val firebaseId = firebaseRepository.pushSplitToFirestore(userId, split)
+        splitDao.updateSplitFirebaseId(split.id, firebaseId)
+        return firebaseId
+    }
+
+    /** Delete a debt from Firestore immediately */
+    suspend fun deleteDebtFromCloud(userId: String, debt: DebtEntity) {
+        if (!debt.firebaseId.isNullOrBlank()) {
+            firebaseRepository.deleteDebtFromFirestore(userId, debt.firebaseId)
+        }
+    }
+
+    /** Delete a payment from Firestore immediately */
+    suspend fun deletePaymentFromCloud(userId: String, debtFirebaseId: String, payment: PaymentEntity) {
+        if (!payment.firebaseId.isNullOrBlank()) {
+            firebaseRepository.deletePaymentFromFirestore(userId, debtFirebaseId, payment.firebaseId)
+        }
+    }
+
     // ── Full bidirectional sync ───────────────────────────
 
     suspend fun fullSync(userId: String) {

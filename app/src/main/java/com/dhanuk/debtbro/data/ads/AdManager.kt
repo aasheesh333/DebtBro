@@ -5,8 +5,6 @@ import android.content.Context
 import com.dhanuk.debtbro.BuildConfig
 import com.dhanuk.debtbro.data.datastore.AppPreferences
 import com.google.android.gms.ads.AdRequest
-import com.google.android.gms.ads.AdSize
-import com.google.android.gms.ads.AdView
 import com.google.android.gms.ads.FullScreenContentCallback
 import com.google.android.gms.ads.LoadAdError
 import com.google.android.gms.ads.interstitial.InterstitialAd
@@ -26,11 +24,6 @@ import javax.inject.Singleton
 class AdManager @Inject constructor(private val prefs: AppPreferences) {
     private var interstitialAd: InterstitialAd? = null
     private var rewardedAd: RewardedAd? = null
-    fun loadBannerAd(context: Context): AdView = AdView(context).apply {
-        setAdSize(AdSize.BANNER)
-        adUnitId = BuildConfig.ADMOB_BANNER_ID.ifEmpty { "ca-app-pub-3940256099942544/6300978111" }
-        loadAd(AdRequest.Builder().build())
-    }
     fun loadInterstitial(context: Context) {
         val id = BuildConfig.ADMOB_INTERSTITIAL_ID.ifEmpty { "ca-app-pub-3940256099942544/1033173712" }
         InterstitialAd.load(context, id, AdRequest.Builder().build(), object : InterstitialAdLoadCallback() {
@@ -69,5 +62,4 @@ class AdManager @Inject constructor(private val prefs: AppPreferences) {
             onRewarded(reward)
         }
     }
-    fun shouldShowBanner(rewardTimestamp: Long): Boolean = System.currentTimeMillis() - rewardTimestamp > 3600000L
 }

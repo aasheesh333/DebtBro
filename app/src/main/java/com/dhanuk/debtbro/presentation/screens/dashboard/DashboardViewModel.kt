@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import com.dhanuk.debtbro.data.datastore.AppPreferences
 import com.dhanuk.debtbro.data.db.entity.DebtEntity
 import com.dhanuk.debtbro.data.firebase.AuthManager
+import com.dhanuk.debtbro.data.firebase.RealTimeSyncManager
 import com.dhanuk.debtbro.data.firebase.SyncManager
 import com.dhanuk.debtbro.data.repository.DebtRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -34,7 +35,8 @@ class DashboardViewModel @Inject constructor(
     private val debts: DebtRepository,
     private val prefs: AppPreferences,
     private val authManager: AuthManager,
-    private val syncManager: SyncManager
+    private val syncManager: SyncManager,
+    private val realTimeSyncManager: RealTimeSyncManager
 ) : ViewModel() {
 
     val state: StateFlow<DashboardUiState> = combine(
@@ -69,11 +71,15 @@ class DashboardViewModel @Inject constructor(
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), DashboardUiState())
 
     init {
-        // Auto-pull cloud data for already-signed-in users (e.g. after reinstall)
+        // Start real-time sync when user is signed in
         viewModelScope.launch {
-            if (authManager.isSignedIn()) {
-                authManager.getCurrentUser()?.uid?.let { uid ->
-                    runCatching { syncManager.fullSync(uid) }
+            authManager.authStateFlow().collect { user ->
+                if (user != null) {
+                    realTimeSyncManager.startListening(user.uid)
+                    // Also do an initial full sync to catch up
+                    runCatching { syncManager.fullSync(user.uid) }
+                } else {
+                    realTimeSyncManager.stopListening()
                 }
             }
         }

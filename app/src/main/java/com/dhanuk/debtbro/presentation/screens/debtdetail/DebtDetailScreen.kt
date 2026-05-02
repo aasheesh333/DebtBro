@@ -1,10 +1,8 @@
 package com.dhanuk.debtbro.presentation.screens.debtdetail
 
-import com.dhanuk.debtbro.data.db.entity.DebtEntity
 import androidx.compose.animation.*
 import androidx.compose.foundation.background
 import androidx.compose.foundation.BorderStroke
-import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -28,6 +26,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.dhanuk.debtbro.data.db.entity.DebtEntity
+import com.dhanuk.debtbro.data.repository.GroqRepository.Companion.MAX_FREE_REGENERATIONS
 import com.dhanuk.debtbro.presentation.components.ConfettiOverlay
 import com.dhanuk.debtbro.presentation.components.EmptyStateView
 import com.dhanuk.debtbro.presentation.components.LoadingDotsIndicator
@@ -51,6 +51,8 @@ fun DebtDetailScreen(onBack: () -> Unit, viewModel: DebtDetailViewModel = hiltVi
     val showEditSheet by viewModel.showEditDebtSheet.collectAsStateWithLifecycle()
     val showConfetti by viewModel.showConfetti.collectAsStateWithLifecycle()
     val context = LocalContext.current
+    val showRewardAd by viewModel.showRewardAd.collectAsStateWithLifecycle()
+    val remainingFree by viewModel.remainingFree.collectAsStateWithLifecycle()
 
     val d = debt ?: return EmptyStateView("📭", "Debt not found", "It might have been deleted.")
 
@@ -177,7 +179,7 @@ fun DebtDetailScreen(onBack: () -> Unit, viewModel: DebtDetailViewModel = hiltVi
                                 Text("🤖 BroBot Nudge", fontWeight = FontWeight.Bold, color = Color.White)
                                 Spacer(Modifier.weight(1f))
                                 Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                                    listOf("MILD", "SAVAGE").forEach { level ->
+                                    listOf("MILD", "MEDIUM", "SAVAGE").forEach { level ->
                                         FilterChip(
                                             selected = roastLevel == level,
                                             onClick = { viewModel.setRoastLevel(level) },
@@ -211,11 +213,18 @@ fun DebtDetailScreen(onBack: () -> Unit, viewModel: DebtDetailViewModel = hiltVi
 
                             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                                 Button(
-                                    onClick = { viewModel.generateRoast() },
+                                    onClick = {
+                                        val activity = context as? android.app.Activity
+                                        viewModel.generateRoast(activity)
+                                    },
                                     colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF333333)),
                                     modifier = Modifier.weight(1f)
                                 ) {
-                                    Text("Regenerate")
+                                    if (remainingFree > 0) {
+                                        Text("Regenerate ($remainingFree)")
+                                    } else {
+                                        Text("🎯 Regenerate")
+                                    }
                                 }
                                 Button(
                                     onClick = { 
@@ -299,6 +308,29 @@ fun DebtDetailScreen(onBack: () -> Unit, viewModel: DebtDetailViewModel = hiltVi
             debt = d,
             onDismiss = { viewModel.showEditDebtSheet.value = false },
             onSave = { name, amount, desc, emoji -> viewModel.updateDebt(name, amount, desc, emoji) }
+        )
+    }
+
+    if (showRewardAd) {
+        AlertDialog(
+            onDismissRequest = { viewModel.dismissRewardAd() },
+            title = { Text("🎯 Free Regenerations Used!", color = Color.White) },
+            text = { Text("You've used all $MAX_FREE_REGENERATIONS free regenerations. Watch a short ad to earn more!", color = Color(0xFFCCCCCC)) },
+            confirmButton = {
+                TextButton(onClick = {
+                    viewModel.dismissRewardAd()
+                    // Reload and show reward ad
+                    viewModel.generateRoast(context as? android.app.Activity)
+                }) {
+                    Text("Watch Ad", color = PrimaryGreen)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { viewModel.dismissRewardAd() }) {
+                    Text("Later", color = SubtitleGray)
+                }
+            },
+            containerColor = Color(0xFF1A1A1A)
         )
     }
 }

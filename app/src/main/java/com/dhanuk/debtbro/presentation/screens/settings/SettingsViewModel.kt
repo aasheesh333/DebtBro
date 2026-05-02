@@ -6,6 +6,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.dhanuk.debtbro.data.datastore.AppPreferences
 import com.dhanuk.debtbro.data.firebase.AuthManager
+import com.dhanuk.debtbro.data.firebase.RealTimeSyncManager
 import com.dhanuk.debtbro.data.firebase.SyncManager
 import com.dhanuk.debtbro.data.repository.DebtRepository
 import com.dhanuk.debtbro.data.repository.GroqRepository
@@ -40,6 +41,7 @@ class SettingsViewModel @Inject constructor(
     private val prefs: AppPreferences,
     private val auth: AuthManager,
     private val sync: SyncManager,
+    private val realTimeSyncManager: RealTimeSyncManager,
     private val debts: DebtRepository,
     private val groq: GroqRepository
 ) : ViewModel() {
@@ -75,15 +77,21 @@ class SettingsViewModel @Inject constructor(
             user.uid?.let { uid ->
                 isSyncing.value = true
                 syncMessage.value = "Syncing your data..."
-                runCatching { sync.fullSync(uid) }
-                    .onSuccess { syncMessage.value = "" }
+                runCatching {
+                    realTimeSyncManager.startListening(uid)
+                    sync.fullSync(uid)
+                }.onSuccess { syncMessage.value = "" }
                     .onFailure { syncMessage.value = "Sync failed: ${it.message}" }
                 isSyncing.value = false
             }
         }
     }
 
-    fun signOut() = viewModelScope.launch { auth.signOut(); prefs.setGoogleSignedIn(false) }
+    fun signOut() = viewModelScope.launch {
+        realTimeSyncManager.stopListening()
+        auth.signOut()
+        prefs.setGoogleSignedIn(false)
+    }
 
     fun exportCsv(context: Context) = viewModelScope.launch {
         val uri = CsvExporter.exportDebts(context, debts.getAllDebtsOnce())
