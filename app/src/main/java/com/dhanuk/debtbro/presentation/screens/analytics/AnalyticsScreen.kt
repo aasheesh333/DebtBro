@@ -41,7 +41,7 @@ fun AnalyticsScreen(viewModel: AnalyticsViewModel = hiltViewModel()) {
     val insight by viewModel.aiInsight.collectAsStateWithLifecycle()
     val loading by viewModel.isLoadingInsight.collectAsStateWithLifecycle()
 
-    val modelProducer = remember { CartesianChartModelProducer() }
+    val modelProducer = remember { CartesianChartModelProducer.build() }
     
     LaunchedEffect(state.monthlyData) {
         if (state.monthlyData.isNotEmpty()) {
@@ -147,15 +147,13 @@ fun AnalyticsScreen(viewModel: AnalyticsViewModel = hiltViewModel()) {
                         CartesianChartHost(
                             chart = rememberCartesianChart(
                                 rememberColumnCartesianLayer(
-                                    columnProvider = { _ ->
-                                        listOf(
-                                            rememberLineComponent(
-                                                color = PrimaryGreen,
-                                                thickness = 12.dp,
-                                                shape = com.patrykandpatrick.vico.core.common.shape.Shape.Rounded(4)
-                                            )
+                                    columnProvider = com.patrykandpatrick.vico.core.cartesian.layer.ColumnCartesianLayer.ColumnProvider.series(
+                                        rememberLineComponent(
+                                            color = PrimaryGreen,
+                                            thickness = 12.dp,
+                                            shape = com.patrykandpatrick.vico.core.common.shape.Shape.Rounded(4)
                                         )
-                                    }
+                                    )
                                 ),
                                 startAxis = rememberStartAxis(
                                     label = com.patrykandpatrick.vico.compose.common.component.rememberTextComponent(color = SubtitleGray)

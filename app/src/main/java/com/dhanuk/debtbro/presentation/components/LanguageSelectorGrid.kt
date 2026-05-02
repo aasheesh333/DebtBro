@@ -73,7 +73,7 @@ fun LanguageSelectorGrid(
             placeholder = { Text("Search language...", color = SubtitleGray) },
             leadingIcon = { Icon(Icons.Default.Search, null, tint = SubtitleGray) },
             modifier = Modifier.fillMaxWidth(),
-            colors = TextFieldDefaults.outlinedTextFieldColors(
+            colors = OutlinedTextFieldDefaults.colors(
                 focusedBorderColor = PrimaryGreen,
                 unfocusedBorderColor = Color(0xFF333333),
                 focusedTextColor = OnSurfaceDark,
