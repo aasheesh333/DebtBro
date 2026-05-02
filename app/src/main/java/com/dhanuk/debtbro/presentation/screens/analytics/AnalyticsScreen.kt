@@ -31,6 +31,7 @@ import com.patrykandpatrick.vico.compose.cartesian.axis.rememberStartAxis
 import com.patrykandpatrick.vico.compose.cartesian.layer.rememberColumnCartesianLayer
 import com.patrykandpatrick.vico.compose.cartesian.rememberCartesianChart
 import com.patrykandpatrick.vico.compose.common.component.rememberLineComponent
+import com.patrykandpatrick.vico.compose.common.shape.toVicoShape
 import com.patrykandpatrick.vico.core.cartesian.data.CartesianChartModelProducer
 import com.patrykandpatrick.vico.core.cartesian.data.columnSeries
 import kotlinx.coroutines.Dispatchers
@@ -45,7 +46,7 @@ fun AnalyticsScreen(viewModel: AnalyticsViewModel = hiltViewModel()) {
     
     LaunchedEffect(state.monthlyData) {
         if (state.monthlyData.isNotEmpty()) {
-            modelProducer.runTransaction {
+            modelProducer.tryRunTransaction {
                 columnSeries {
                     series(state.monthlyData.map { it.second })
                 }
@@ -151,7 +152,7 @@ fun AnalyticsScreen(viewModel: AnalyticsViewModel = hiltViewModel()) {
                                         rememberLineComponent(
                                             color = PrimaryGreen,
                                             thickness = 12.dp,
-                                            shape = com.patrykandpatrick.vico.core.common.shape.Shape.Rounded(4)
+                                            shape = RoundedCornerShape(topStart = 4.dp, topEnd = 4.dp).toVicoShape()
                                         )
                                     )
                                 ),

@@ -1,5 +1,7 @@
 package com.dhanuk.debtbro.presentation.screens.dashboard
 
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
