@@ -44,14 +44,31 @@ object CanvasExporter {
         return bitmap
     }
     fun saveDebtCard(context: Context, bitmap: Bitmap): Uri {
+        val fileName = "debtbro-card-${System.currentTimeMillis()}.png"
         val values = ContentValues().apply {
-            put(MediaStore.Images.Media.DISPLAY_NAME, "debtbro-card-${System.currentTimeMillis()}.png")
-            put(MediaStore.Images.Media.MIME_TYPE, "image/png")
+            put(MediaStore.MediaColumns.DISPLAY_NAME, fileName)
+            put(MediaStore.MediaColumns.MIME_TYPE, "image/png")
             if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.Q) {
-                put(MediaStore.Images.Media.RELATIVE_PATH, "Pictures/DebtBro")
+                put(MediaStore.MediaColumns.RELATIVE_PATH, "Pictures/DebtBro")
             }
         }
-        val uri = context.contentResolver.insert(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, values) ?: error("Unable to save card")
+        val uri: Uri
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.Q) {
+            uri = context.contentResolver.insert(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, values) ?: error("Unable to save card")
+        } else {
+            val picsDir = android.os.Environment.getExternalStoragePublicDirectory(android.os.Environment.DIRECTORY_PICTURES)
+            val debtBroDir = java.io.File(picsDir, "DebtBro")
+            if (!debtBroDir.exists()) debtBroDir.mkdirs()
+            val file = java.io.File(debtBroDir, fileName)
+            file.createNewFile()
+
+            val fileValues = ContentValues().apply {
+                put(MediaStore.MediaColumns.DATA, file.absolutePath)
+                put(MediaStore.MediaColumns.MIME_TYPE, "image/png")
+            }
+            uri = context.contentResolver.insert(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, fileValues) ?: Uri.fromFile(file)
+        }
+
         context.contentResolver.openOutputStream(uri)?.use { bitmap.compress(Bitmap.CompressFormat.PNG, 100, it) }
         return uri
     }
