@@ -5,6 +5,7 @@ import com.dhanuk.debtbro.data.db.dao.DebtDao
 import com.dhanuk.debtbro.data.db.dao.PaymentDao
 import com.dhanuk.debtbro.data.db.dao.SplitDao
 import com.dhanuk.debtbro.data.db.entity.DebtEntity
+import com.dhanuk.debtbro.data.db.entity.SplitEntity
 import javax.inject.Inject
 import javax.inject.Singleton
 
