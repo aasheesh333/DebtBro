@@ -4,6 +4,8 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.dhanuk.debtbro.data.datastore.AppPreferences
 import com.dhanuk.debtbro.data.db.entity.DebtEntity
+import com.dhanuk.debtbro.data.firebase.AuthManager
+import com.dhanuk.debtbro.data.firebase.SyncManager
 import com.dhanuk.debtbro.data.repository.DebtRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.SharingStarted
@@ -30,9 +32,11 @@ data class DashboardUiState(
 @HiltViewModel
 class DashboardViewModel @Inject constructor(
     private val debts: DebtRepository,
-    private val prefs: AppPreferences
+    private val prefs: AppPreferences,
+    private val authManager: AuthManager,
+    private val syncManager: SyncManager
 ) : ViewModel() {
-    
+
     val state: StateFlow<DashboardUiState> = combine(
         debts.getAllDebts(),
         prefs.userName,
@@ -42,7 +46,7 @@ class DashboardViewModel @Inject constructor(
     ) { all, name, signedIn, photo, shown ->
         val owedToMe = all.filter { it.type == "THEY_OWE_ME" && it.status != "SETTLED" }.sumOf { it.amount - it.amountPaid }
         val iOwe = all.filter { it.type == "I_OWE_THEM" && it.status != "SETTLED" }.sumOf { it.amount - it.amountPaid }
-        
+
         val allTimeOwed = all.filter { it.type == "THEY_OWE_ME" }.sumOf { it.amount }
         val allTimeSettled = all.filter { it.type == "THEY_OWE_ME" }.sumOf { it.amountPaid }
         val recoveryRate = if (allTimeOwed > 0) ((allTimeSettled / allTimeOwed) * 100).toInt() else 100
@@ -63,6 +67,17 @@ class DashboardViewModel @Inject constructor(
             hasShownSignInPrompt = shown
         )
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), DashboardUiState())
+
+    init {
+        // Auto-pull cloud data for already-signed-in users (e.g. after reinstall)
+        viewModelScope.launch {
+            if (authManager.isSignedIn()) {
+                authManager.getCurrentUser()?.uid?.let { uid ->
+                    runCatching { syncManager.fullSync(uid) }
+                }
+            }
+        }
+    }
 
     fun dismissPrompt() = viewModelScope.launch { prefs.setHasShownSignInPrompt(true) }
 }

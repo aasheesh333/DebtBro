@@ -11,6 +11,7 @@ import com.dhanuk.debtbro.data.repository.DebtRepository
 import com.dhanuk.debtbro.data.repository.GroqRepository
 import com.dhanuk.debtbro.util.CsvExporter
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
@@ -29,7 +30,9 @@ data class SettingsUiState(
     val userPhoto: String = "",
     val lastSynced: Long = 0L,
     val selectedLanguage: String = "en",
-    val testResult: String = ""
+    val testResult: String = "",
+    val isSyncing: Boolean = false,
+    val syncMessage: String = ""
 )
 
 @HiltViewModel
@@ -40,34 +43,62 @@ class SettingsViewModel @Inject constructor(
     private val debts: DebtRepository,
     private val groq: GroqRepository
 ) : ViewModel() {
-    private val testMessage = kotlinx.coroutines.flow.MutableStateFlow("")
+    private val testMessage = MutableStateFlow("")
+    private val isSyncing = MutableStateFlow(false)
+    private val syncMessage = MutableStateFlow("")
+
     val state: StateFlow<SettingsUiState> = combine(
-        prefs.userName, prefs.groqApiKey, prefs.roastLevel, 
-        prefs.defaultCurrency, prefs.isGoogleSignedIn, prefs.googleUserName, 
-        prefs.googleUserEmail, prefs.googleUserPhoto, prefs.lastSyncedAt, 
-        prefs.selectedLanguage, testMessage
+        prefs.userName, prefs.groqApiKey, prefs.roastLevel,
+        prefs.defaultCurrency, prefs.isGoogleSignedIn, prefs.googleUserName,
+        prefs.googleUserEmail, prefs.googleUserPhoto, prefs.lastSyncedAt,
+        prefs.selectedLanguage, testMessage, isSyncing, syncMessage
     ) { v ->
         SettingsUiState(
-            v[0] as String, v[1] as String, v[2] as String, 
-            v[3] as String, v[4] as Boolean, v[5] as String, 
-            v[6] as String, v[7] as String, v[8] as Long, 
-            v[9] as String, v[10] as String
+            v[0] as String, v[1] as String, v[2] as String,
+            v[3] as String, v[4] as Boolean, v[5] as String,
+            v[6] as String, v[7] as String, v[8] as Long,
+            v[9] as String, v[10] as String, v[11] as Boolean, v[12] as String
         )
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), SettingsUiState())
+
     fun saveUserName(name: String) = viewModelScope.launch { prefs.saveUserName(name) }
     fun saveGroqKey(key: String) = viewModelScope.launch { prefs.saveGroqKey(key) }
     fun setRoastLevel(level: String) = viewModelScope.launch { prefs.setRoastLevel(level) }
     fun setCurrency(c: String) = viewModelScope.launch { prefs.setCurrency(c) }
     fun setLanguage(code: String) = viewModelScope.launch { prefs.setLanguage(code) }
     fun testGroqConnection() = viewModelScope.launch { testMessage.value = if (groq.testConnection()) "Groq OK" else "Add a valid API key" }
+
     fun signInWithGoogle(activity: Activity) = viewModelScope.launch {
-        auth.signInWithGoogle(activity).onSuccess { user -> prefs.setGoogleSignedIn(true, user.displayName ?: "DebtBro user", user.email ?: "", user.photoUrl?.toString().orEmpty()) }
+        auth.signInWithGoogle(activity).onSuccess { user ->
+            prefs.setGoogleSignedIn(true, user.displayName ?: "DebtBro user", user.email ?: "", user.photoUrl?.toString().orEmpty())
+            // Auto-sync: pull cloud data after sign-in so previous data appears
+            user.uid?.let { uid ->
+                isSyncing.value = true
+                syncMessage.value = "Syncing your data..."
+                runCatching { sync.fullSync(uid) }
+                    .onSuccess { syncMessage.value = "" }
+                    .onFailure { syncMessage.value = "Sync failed: ${it.message}" }
+                isSyncing.value = false
+            }
+        }
     }
+
     fun signOut() = viewModelScope.launch { auth.signOut(); prefs.setGoogleSignedIn(false) }
-    fun exportCsv(context: Context) = viewModelScope.launch { 
+
+    fun exportCsv(context: Context) = viewModelScope.launch {
         val uri = CsvExporter.exportDebts(context, debts.getAllDebtsOnce())
         com.dhanuk.debtbro.util.shareFile(context, uri, "text/csv")
     }
+
     fun clearSettledDebts() = viewModelScope.launch { debts.deleteSettledDebts() }
-    fun syncNow() = viewModelScope.launch { auth.getCurrentUser()?.uid?.let { sync.mergePendingUnsynced(it) } }
+
+    fun syncNow() = viewModelScope.launch {
+        val userId = auth.getCurrentUser()?.uid ?: return@launch
+        isSyncing.value = true
+        syncMessage.value = "Syncing..."
+        runCatching { sync.fullSync(userId) }
+            .onSuccess { syncMessage.value = "" }
+            .onFailure { syncMessage.value = "Sync failed: ${it.message}" }
+        isSyncing.value = false
+    }
 }

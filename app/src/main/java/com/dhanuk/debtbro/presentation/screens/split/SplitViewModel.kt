@@ -4,6 +4,8 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.dhanuk.debtbro.data.db.entity.DebtEntity
 import com.dhanuk.debtbro.data.db.entity.SplitEntity
+import com.dhanuk.debtbro.data.firebase.AuthManager
+import com.dhanuk.debtbro.data.firebase.SyncManager
 import com.dhanuk.debtbro.data.repository.DebtRepository
 import com.dhanuk.debtbro.data.repository.GroqRepository
 import com.dhanuk.debtbro.data.repository.SplitRepository
@@ -28,9 +30,11 @@ data class SplitUiState(
 class SplitViewModel @Inject constructor(
     private val splits: SplitRepository,
     private val debts: DebtRepository,
-    private val groq: GroqRepository
+    private val groq: GroqRepository,
+    private val authManager: AuthManager,
+    private val syncManager: SyncManager
 ) : ViewModel() {
-    
+
     private val _state = MutableStateFlow(SplitUiState())
     val state: StateFlow<SplitUiState> = _state.asStateFlow()
 
@@ -38,7 +42,6 @@ class SplitViewModel @Inject constructor(
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     init {
-        // Calculate per person whenever totalAmount or participants change
         viewModelScope.launch {
             _state.collect { s ->
                 val total = s.totalAmount.toDoubleOrNull() ?: 0.0
@@ -53,7 +56,7 @@ class SplitViewModel @Inject constructor(
     fun updateTitle(value: String) { _state.value = _state.value.copy(title = value) }
     fun updateTotal(value: String) { _state.value = _state.value.copy(totalAmount = value) }
     fun updateParticipant(value: String) { _state.value = _state.value.copy(participantName = value) }
-    
+
     fun addParticipant(name: String = _state.value.participantName) {
         val trimmed = name.trim()
         if (trimmed.isNotBlank() && _state.value.participants.size < 50) {
@@ -78,7 +81,7 @@ class SplitViewModel @Inject constructor(
         val s = _state.value
         val total = s.totalAmount.toDoubleOrNull() ?: return@launch
         _state.value = s.copy(isLoading = true)
-        
+
         val split = SplitEntity(
             title = s.title.ifBlank { "Untitled split" },
             totalAmount = total,
@@ -87,9 +90,10 @@ class SplitViewModel @Inject constructor(
         )
         val id = splits.insertSplit(split).toInt()
         val createdSplit = split.copy(id = id)
-        
+
         _state.value = _state.value.copy(isLoading = false)
         onCreated(createdSplit)
+        syncIfSignedIn()
     }
 
     fun createDebtsFromSplit(split: SplitEntity) = viewModelScope.launch {
@@ -108,6 +112,7 @@ class SplitViewModel @Inject constructor(
                 )
             )
         }
+        syncIfSignedIn()
     }
 
     fun getAiSummary(split: SplitEntity) = viewModelScope.launch {
@@ -121,10 +126,17 @@ class SplitViewModel @Inject constructor(
             split.perPersonAmount,
             names.size
         ).getOrElse { "Everyone owes ${split.perPersonAmount.toInt()} each. Receipts don't lie." }
-        
+
         splits.updateAiSummary(split.id, summary)
         if (_state.value.title == split.title) {
             _state.value = _state.value.copy(aiSummary = summary)
+        }
+        syncIfSignedIn()
+    }
+
+    private fun syncIfSignedIn() = viewModelScope.launch {
+        authManager.getCurrentUser()?.uid?.let { uid ->
+            runCatching { syncManager.mergePendingUnsynced(uid) }
         }
     }
 }

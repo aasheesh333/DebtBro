@@ -7,6 +7,8 @@ import androidx.lifecycle.viewModelScope
 import com.dhanuk.debtbro.data.datastore.AppPreferences
 import com.dhanuk.debtbro.data.db.entity.DebtEntity
 import com.dhanuk.debtbro.data.db.entity.PaymentEntity
+import com.dhanuk.debtbro.data.firebase.AuthManager
+import com.dhanuk.debtbro.data.firebase.SyncManager
 import com.dhanuk.debtbro.data.repository.DebtRepository
 import com.dhanuk.debtbro.data.repository.GroqRepository
 import com.dhanuk.debtbro.data.repository.PaymentRepository
@@ -23,11 +25,13 @@ class DebtDetailViewModel @Inject constructor(
     private val debtRepository: DebtRepository,
     private val paymentRepository: PaymentRepository,
     private val groqRepository: GroqRepository,
-    private val prefs: AppPreferences
+    private val prefs: AppPreferences,
+    private val authManager: AuthManager,
+    private val syncManager: SyncManager
 ) : ViewModel() {
-    
+
     private val debtId = checkNotNull(savedStateHandle.get<Int>("debtId"))
-    
+
     val debt: StateFlow<DebtEntity?> = debtRepository.observeDebtById(debtId)
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), null)
 
@@ -39,7 +43,7 @@ class DebtDetailViewModel @Inject constructor(
     val isGeneratingAi = MutableStateFlow(false)
     val roastLevel: StateFlow<String> = prefs.roastLevel
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), "MEDIUM")
-    
+
     val showAddPaymentSheet = MutableStateFlow(false)
     val showEditDebtSheet = MutableStateFlow(false)
     private val _showConfetti = MutableStateFlow(false)
@@ -52,10 +56,12 @@ class DebtDetailViewModel @Inject constructor(
             _showConfetti.value = true
         }
         showAddPaymentSheet.value = false
+        syncIfSignedIn()
     }
 
     fun deletePayment(paymentId: Int) = viewModelScope.launch {
         paymentRepository.deletePayment(paymentId)
+        syncIfSignedIn()
     }
 
     fun generateRoast() = viewModelScope.launch {
@@ -66,6 +72,7 @@ class DebtDetailViewModel @Inject constructor(
         aiMessage.value = message
         debtRepository.updateRoast(d.id, message, System.currentTimeMillis())
         isGeneratingAi.value = false
+        syncIfSignedIn()
     }
 
     fun setRoastLevel(level: String) = viewModelScope.launch {
@@ -80,6 +87,7 @@ class DebtDetailViewModel @Inject constructor(
                 _showConfetti.value = true
             }
         }
+        syncIfSignedIn()
     }
 
     fun updateDebt(name: String, amount: Double, description: String, emoji: String) = viewModelScope.launch {
@@ -92,16 +100,21 @@ class DebtDetailViewModel @Inject constructor(
             ))
             showEditDebtSheet.value = false
         }
+        syncIfSignedIn()
     }
 
     fun deleteDebt() = viewModelScope.launch {
-        debt.value?.let {
-            debtRepository.deleteDebt(it)
-        }
+        debt.value?.let { debtRepository.deleteDebt(it) }
     }
 
     fun shareCard(context: Context, debt: DebtEntity, message: String) {
         val bitmap = CanvasExporter.createDebtCard(context, debt, message)
         CanvasExporter.shareDebtCard(context, bitmap)
+    }
+
+    private fun syncIfSignedIn() = viewModelScope.launch {
+        authManager.getCurrentUser()?.uid?.let { uid ->
+            runCatching { syncManager.mergePendingUnsynced(uid) }
+        }
     }
 }
