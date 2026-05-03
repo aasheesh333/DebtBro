@@ -11,3 +11,7 @@
 -keep class com.google.android.gms.** { *; }
 -keep class com.google.firebase.** { *; }
 -keep class com.onesignal.** { *; }
+-keep @androidx.annotation.Keep class *
+-keepclassmembers class * {
+    @androidx.annotation.Keep *;
+}

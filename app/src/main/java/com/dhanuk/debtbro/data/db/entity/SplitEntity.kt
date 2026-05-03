@@ -1,5 +1,6 @@
 package com.dhanuk.debtbro.data.db.entity
 
+import androidx.annotation.Keep
 import androidx.room.Entity
 import androidx.room.PrimaryKey
 
@@ -14,4 +15,12 @@ data class SplitEntity(
     val aiSummary: String? = null,
     val createdAt: Long = System.currentTimeMillis(),
     val isSynced: Boolean = false
-)
+) {
+    @Keep
+    constructor() : this(
+        title = "",
+        totalAmount = 0.0,
+        participants = "",
+        perPersonAmount = 0.0
+    )
+}

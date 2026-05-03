@@ -1,5 +1,6 @@
 package com.dhanuk.debtbro.data.db.entity
 
+import androidx.annotation.Keep
 import androidx.room.Entity
 import androidx.room.ForeignKey
 import androidx.room.Index
@@ -18,4 +19,10 @@ data class PaymentEntity(
     val note: String? = null,
     val paidAt: Long = System.currentTimeMillis(),
     val isSynced: Boolean = false
-)
+) {
+    @Keep
+    constructor() : this(
+        debtId = 0,
+        amount = 0.0
+    )
+}

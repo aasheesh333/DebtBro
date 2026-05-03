@@ -1,5 +1,6 @@
 package com.dhanuk.debtbro.data.db.entity
 
+import androidx.annotation.Keep
 import androidx.room.Entity
 import androidx.room.PrimaryKey
 
@@ -22,4 +23,12 @@ data class DebtEntity(
     val notes: String? = null,
     val isSynced: Boolean = false,
     val updatedAt: Long = System.currentTimeMillis()
-)
+) {
+    @Keep
+    constructor() : this(
+        personName = "",
+        personEmoji = "",
+        amount = 0.0,
+        type = ""
+    )
+}
