@@ -84,7 +84,7 @@ class DebtDetailViewModel @Inject constructor(
                     groqRepository.resetRegenerationCount()
                     _remainingFree.value = groqRepository.remainingFreeRegenerations()
                     // Retry generation after reward
-                    generateRoastInternal(d)
+                    viewModelScope.launch { generateRoastInternal(d) }
                 }, onFailed = {
                     _showRewardAd.value = true
                 })
