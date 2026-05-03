@@ -152,11 +152,46 @@ class DebtDetailViewModel @Inject constructor(
     fun shareCard(context: Context, debt: DebtEntity, message: String) = viewModelScope.launch(Dispatchers.IO) {
         runCatching {
             val bitmap = CanvasExporter.createDebtCard(context, debt, message, roastLevel.value)
+            val uri = CanvasExporter.saveDebtCard(context, bitmap)
             kotlinx.coroutines.withContext(Dispatchers.Main) {
-                CanvasExporter.shareDebtCard(context, bitmap)
+                val intent = android.content.Intent(android.content.Intent.ACTION_SEND).apply {
+                    type = "image/png"
+                    putExtra(android.content.Intent.EXTRA_STREAM, uri)
+                    addFlags(android.content.Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                    addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK)
+                }
+                context.startActivity(android.content.Intent.createChooser(intent, "Share DebtBro card").apply {
+                    addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK)
+                })
             }
         }.onFailure {
             it.printStackTrace()
+            kotlinx.coroutines.withContext(Dispatchers.Main) {
+                android.widget.Toast.makeText(context, "Failed to create image: ${it.message}", android.widget.Toast.LENGTH_LONG).show()
+            }
+        }
+    }
+
+    fun shareCardToWhatsApp(context: Context, debt: DebtEntity, message: String) = viewModelScope.launch(Dispatchers.IO) {
+        runCatching {
+            val bitmap = CanvasExporter.createDebtCard(context, debt, message, roastLevel.value)
+            val uri = CanvasExporter.saveDebtCard(context, bitmap)
+            kotlinx.coroutines.withContext(Dispatchers.Main) {
+                val intent = android.content.Intent(android.content.Intent.ACTION_SEND).apply {
+                    type = "image/png"
+                    putExtra(android.content.Intent.EXTRA_STREAM, uri)
+                    putExtra(android.content.Intent.EXTRA_TEXT, message)
+                    setPackage("com.whatsapp")
+                    addFlags(android.content.Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                    addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK)
+                }
+                context.startActivity(intent)
+            }
+        }.onFailure {
+            it.printStackTrace()
+            kotlinx.coroutines.withContext(Dispatchers.Main) {
+                com.dhanuk.debtbro.util.shareTextToWhatsApp(context, message)
+            }
         }
     }
 

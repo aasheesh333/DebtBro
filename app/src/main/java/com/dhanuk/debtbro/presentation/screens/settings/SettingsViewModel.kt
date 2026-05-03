@@ -94,12 +94,14 @@ class SettingsViewModel @Inject constructor(
     }
 
     fun exportCsv(context: Context) = viewModelScope.launch {
-        try {
-            val uri = CsvExporter.exportDebts(context, debts.getAllDebtsOnce())
+        val uriResult = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+            runCatching { CsvExporter.exportDebts(context, debts.getAllDebtsOnce()) }
+        }
+        uriResult.onSuccess { uri ->
             com.dhanuk.debtbro.util.shareFile(context, uri, "text/csv")
-        } catch (e: Exception) {
+        }.onFailure { e ->
             e.printStackTrace()
-            // Show error to user or fallback behavior
+            syncMessage.value = "Export failed: ${e.message}"
         }
     }
 

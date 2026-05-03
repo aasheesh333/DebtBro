@@ -1,6 +1,5 @@
 package com.dhanuk.debtbro.util
 
-import android.content.ContentValues
 import android.content.Context
 import android.content.Intent
 import android.graphics.Bitmap
@@ -11,8 +10,9 @@ import android.graphics.Paint
 import android.graphics.RectF
 import android.graphics.Shader
 import android.net.Uri
-import android.provider.MediaStore
+import androidx.core.content.FileProvider
 import com.dhanuk.debtbro.data.db.entity.DebtEntity
+import java.io.File
 
 object CanvasExporter {
     // 4:3 ratio - 1200x900 for WhatsApp friendly dimensions
@@ -23,15 +23,15 @@ object CanvasExporter {
         val bitmap = Bitmap.createBitmap(W, H, Bitmap.Config.ARGB_8888)
         val canvas = Canvas(bitmap)
         val paint = Paint(Paint.ANTI_ALIAS_FLAG)
-        
+
         // Determine colors based on roast level for more impactful sharing
         val isSavage = roastLevel.equals("SAVAGE", ignoreCase = true)
-        val backgroundStartColor = if (isSavage) Color.rgb(80, 0, 0) else Color.rgb(13, 13, 13) // Dark red for savage
-        val backgroundEndColor = if (isSavage) Color.rgb(130, 0, 0) else Color.rgb(0, 70, 50) // Deeper red for savage
-        val accentColor = if (isSavage) Color.rgb(255, 69, 0) else Color.rgb(0, 184, 122) // Orange-red for savage
-        val boxColor = if (isSavage) Color.argb(230, 20, 0, 0) else Color.argb(200, 20, 20, 20) // More opaque red for savage
+        val backgroundStartColor = if (isSavage) Color.rgb(80, 0, 0) else Color.rgb(13, 13, 13)
+        val backgroundEndColor = if (isSavage) Color.rgb(130, 0, 0) else Color.rgb(0, 70, 50)
+        val accentColor = if (isSavage) Color.rgb(255, 69, 0) else Color.rgb(0, 184, 122)
+        val boxColor = if (isSavage) Color.argb(230, 20, 0, 0) else Color.argb(200, 20, 20, 20)
         val boxTextColor = if (isSavage) Color.WHITE else Color.WHITE
-        val brandingColor = if (isSavage) Color.argb(200, 255, 69, 0) else Color.argb(160, 0, 184, 122) // More visible orange for savage
+        val brandingColor = if (isSavage) Color.argb(200, 255, 69, 0) else Color.argb(160, 0, 184, 122)
 
         // 1. Background gradient
         paint.shader = LinearGradient(0f, 0f, W.toFloat(), H.toFloat(),
@@ -113,63 +113,31 @@ object CanvasExporter {
         paint.color = Color.BLACK
         paint.isFakeBoldText = true
         paint.textAlign = Paint.Align.CENTER
-        canvas.drawText("DebtBro — because friends forget 😅", (W / 2).toFloat(), (H - 16).toFloat(), paint)
+        canvas.drawText("DebtBro — because friends forget \uD83D\uDE05", (W / 2).toFloat(), (H - 16).toFloat(), paint)
 
         return bitmap
     }
+
+    /** Saves bitmap to app cache and returns a FileProvider URI (works on all Android versions). */
     fun saveDebtCard(context: Context, bitmap: Bitmap): Uri {
-        val fileName = "debtbro-card-${System.currentTimeMillis()}.png"
-        val values = ContentValues().apply {
-            put(MediaStore.MediaColumns.DISPLAY_NAME, fileName)
-            put(MediaStore.MediaColumns.MIME_TYPE, "image/png")
-            if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.Q) {
-                put(MediaStore.MediaColumns.RELATIVE_PATH, "Pictures/DebtBro")
-            }
-        }
-        val uri: Uri
-        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.Q) {
-            uri = context.contentResolver.insert(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, values) ?: error("Unable to save card")
-        } else {
-            val picsDir = android.os.Environment.getExternalStoragePublicDirectory(android.os.Environment.DIRECTORY_PICTURES)
-            val debtBroDir = java.io.File(picsDir, "DebtBro")
-            if (!debtBroDir.exists()) debtBroDir.mkdirs()
-            val file = java.io.File(debtBroDir, fileName)
-            file.createNewFile()
-
-            val fileValues = ContentValues().apply {
-                put(MediaStore.MediaColumns.DATA, file.absolutePath)
-                put(MediaStore.MediaColumns.MIME_TYPE, "image/png")
-            }
-            uri = context.contentResolver.insert(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, fileValues) ?: Uri.fromFile(file)
-        }
-
-        context.contentResolver.openOutputStream(uri)?.use { bitmap.compress(Bitmap.CompressFormat.PNG, 100, it) }
-        return uri
+        val cacheDir = File(context.cacheDir, "share_images")
+        cacheDir.mkdirs()
+        val file = File(cacheDir, "debtbro-card-${System.currentTimeMillis()}.png")
+        file.outputStream().use { bitmap.compress(Bitmap.CompressFormat.PNG, 100, it) }
+        return FileProvider.getUriForFile(context, "${context.packageName}.fileprovider", file)
     }
+
+    /** Shares the bitmap as an image via ACTION_SEND. */
     fun shareDebtCard(context: Context, bitmap: Bitmap) {
-        try {
-            val uri = saveDebtCard(context, bitmap)
-            val intent = Intent(Intent.ACTION_SEND).apply {
-                type = "image/png"
-                putExtra(Intent.EXTRA_STREAM, uri)
-                addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
-                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-            }
-            context.startActivity(Intent.createChooser(intent, "Share DebtBro card").apply {
-                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-            })
-        } catch (e: Exception) {
-            e.printStackTrace()
-            // Fallback to text sharing if image sharing fails
-            val fallbackText = "Check out DebtBro - the app that tracks debts with style!\nDownload now: https://play.google.com/store/apps/details?id=com.dhanuk.debtbro"
-            val fallbackIntent = Intent(Intent.ACTION_SEND).apply {
-                type = "text/plain"
-                putExtra(Intent.EXTRA_TEXT, fallbackText)
-                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-            }
-            context.startActivity(Intent.createChooser(fallbackIntent, "Share via").apply {
-                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-            })
+        val uri = saveDebtCard(context, bitmap)
+        val intent = Intent(Intent.ACTION_SEND).apply {
+            type = "image/png"
+            putExtra(Intent.EXTRA_STREAM, uri)
+            addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
         }
+        context.startActivity(Intent.createChooser(intent, "Share DebtBro card").apply {
+            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+        })
     }
 }

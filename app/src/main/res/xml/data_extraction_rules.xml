@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+   Allow no backup/data extraction — fresh install = clean state.
+-->
+<data-extraction-rules>
+    <cloud-backup>
+        <include domain="none" path="" />
+    </cloud-backup>
+    <device-transfer>
+        <include domain="none" path="" />
+    </device-transfer>
+</data-extraction-rules>

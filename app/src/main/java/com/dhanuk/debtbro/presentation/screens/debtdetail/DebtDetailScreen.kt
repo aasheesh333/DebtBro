@@ -26,6 +26,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import android.widget.Toast
 import com.dhanuk.debtbro.data.db.entity.DebtEntity
 import com.dhanuk.debtbro.data.repository.GroqRepository.Companion.MAX_FREE_REGENERATIONS
 import com.dhanuk.debtbro.presentation.components.ConfettiOverlay
@@ -36,7 +37,6 @@ import com.dhanuk.debtbro.presentation.theme.PrimaryGreen
 import com.dhanuk.debtbro.presentation.theme.SubtitleGray
 import com.dhanuk.debtbro.util.copyToClipboard
 import com.dhanuk.debtbro.util.formatCurrency
-import com.dhanuk.debtbro.util.shareTextToWhatsApp
 import com.dhanuk.debtbro.util.toReadableDate
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -228,13 +228,13 @@ fun DebtDetailScreen(onBack: () -> Unit, viewModel: DebtDetailViewModel = hiltVi
                                 }
                                 Button(
                                     onClick = { 
-                                        val msg = aiMessage.ifBlank { d.aiRoastGenerated.orEmpty() }
-                                        shareTextToWhatsApp(context, msg)
+                                        Toast.makeText(context, "Generating image...", Toast.LENGTH_SHORT).show()
+                                        viewModel.shareCardToWhatsApp(context, d, aiMessage.ifBlank { d.aiRoastGenerated.orEmpty() })
                                     },
                                     colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF25D366)),
                                     modifier = Modifier.weight(1f)
                                 ) {
-                                    Icon(Icons.Default.Share, null, modifier = Modifier.size(16.dp))
+                                    Icon(Icons.Default.Image, null, modifier = Modifier.size(16.dp))
                                     Spacer(Modifier.width(8.dp))
                                     Text("WhatsApp")
                                 }
@@ -278,7 +278,10 @@ fun DebtDetailScreen(onBack: () -> Unit, viewModel: DebtDetailViewModel = hiltVi
                 
                 item {
                     Button(
-                        onClick = { viewModel.shareCard(context, d, aiMessage.ifBlank { d.aiRoastGenerated.orEmpty() }) },
+                        onClick = { 
+                            Toast.makeText(context, "Preparing image...", Toast.LENGTH_SHORT).show()
+                            viewModel.shareCard(context, d, aiMessage.ifBlank { d.aiRoastGenerated.orEmpty() })
+                        },
                         modifier = Modifier.fillMaxWidth().height(54.dp),
                         colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF1E1E1E)),
                         shape = RoundedCornerShape(12.dp)
