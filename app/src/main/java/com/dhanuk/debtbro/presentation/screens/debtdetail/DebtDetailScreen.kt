@@ -290,7 +290,9 @@ fun DebtDetailScreen(onBack: () -> Unit, viewModel: DebtDetailViewModel = hiltVi
                 }
             }
             
-            ConfettiOverlay(showConfetti)
+            ConfettiOverlay(showConfetti) {
+                viewModel.dismissConfetti()
+            }
         }
     }
 

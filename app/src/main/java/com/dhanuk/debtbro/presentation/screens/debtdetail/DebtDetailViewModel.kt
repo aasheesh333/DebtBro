@@ -101,6 +101,10 @@ class DebtDetailViewModel @Inject constructor(
         _showRewardAd.value = false
     }
 
+    fun dismissConfetti() {
+        _showConfetti.value = false
+    }
+
     private suspend fun generateRoastInternal(d: DebtEntity) {
         isGeneratingAi.value = true
         groqRepository.incrementRegenerationCount()
@@ -147,7 +151,7 @@ class DebtDetailViewModel @Inject constructor(
 
     fun shareCard(context: Context, debt: DebtEntity, message: String) = viewModelScope.launch(Dispatchers.IO) {
         runCatching {
-            val bitmap = CanvasExporter.createDebtCard(context, debt, message)
+            val bitmap = CanvasExporter.createDebtCard(context, debt, message, roastLevel.value)
             kotlinx.coroutines.withContext(Dispatchers.Main) {
                 CanvasExporter.shareDebtCard(context, bitmap)
             }

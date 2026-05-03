@@ -69,12 +69,12 @@ fun DebtBroNavGraph(appPreferences: AppPreferences) {
                             selected = currentRoute == Screen.Dashboard.route,
                             onClick = { 
                                 navController.navigate(Screen.Dashboard.route) {
-                                    popUpTo(navController.graph.startDestinationId) {
+                                    popUpTo(Screen.Dashboard.route) {
                                         inclusive = false
                                         saveState = false
                                     }
                                     launchSingleTop = true
-                                    restoreState = false
+                                    restoreState = true
                                 }
                             },
                             icon = { 
@@ -100,7 +100,7 @@ fun DebtBroNavGraph(appPreferences: AppPreferences) {
                             selected = currentRoute == Screen.DebtList.route,
                             onClick = { 
                                 navController.navigate(Screen.DebtList.route) {
-                                    popUpTo(Screen.Dashboard.route) {
+                                    popUpTo(Screen.DebtList.route) {
                                         inclusive = false
                                         saveState = false
                                     }
@@ -130,7 +130,7 @@ fun DebtBroNavGraph(appPreferences: AppPreferences) {
                             selected = currentRoute == Screen.Split.route,
                             onClick = { 
                                 navController.navigate(Screen.Split.route) {
-                                    popUpTo(Screen.Dashboard.route) {
+                                    popUpTo(Screen.Split.route) {
                                         inclusive = false
                                         saveState = false
                                     }
@@ -158,7 +158,7 @@ fun DebtBroNavGraph(appPreferences: AppPreferences) {
                             selected = currentRoute == Screen.Analytics.route,
                             onClick = { 
                                 navController.navigate(Screen.Analytics.route) {
-                                    popUpTo(Screen.Dashboard.route) {
+                                    popUpTo(Screen.Analytics.route) {
                                         inclusive = false
                                         saveState = false
                                     }

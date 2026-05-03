@@ -29,7 +29,7 @@ object CsvExporter {
                 put(MediaStore.MediaColumns.DATA, file.absolutePath)
                 put(MediaStore.MediaColumns.MIME_TYPE, "text/csv")
             }
-            uri = context.contentResolver.insert(MediaStore.Files.getContentUri("external"), fileValues) ?: Uri.fromFile(file)
+            uri = context.contentResolver.insert(MediaStore.Downloads.EXTERNAL_CONTENT_URI, fileValues) ?: Uri.fromFile(file)
         }
         context.contentResolver.openOutputStream(uri)?.use { stream ->
             OutputStreamWriter(stream).use { writer ->

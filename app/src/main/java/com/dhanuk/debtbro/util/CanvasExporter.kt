@@ -19,19 +19,28 @@ object CanvasExporter {
     private const val W = 1200
     private const val H = 900
 
-    fun createDebtCard(context: Context, debt: DebtEntity, aiMessage: String): Bitmap {
+    fun createDebtCard(context: Context, debt: DebtEntity, aiMessage: String, roastLevel: String = "MEDIUM"): Bitmap {
         val bitmap = Bitmap.createBitmap(W, H, Bitmap.Config.ARGB_8888)
         val canvas = Canvas(bitmap)
         val paint = Paint(Paint.ANTI_ALIAS_FLAG)
+        
+        // Determine colors based on roast level for more impactful sharing
+        val isSavage = roastLevel.equals("SAVAGE", ignoreCase = true)
+        val backgroundStartColor = if (isSavage) Color.rgb(80, 0, 0) else Color.rgb(13, 13, 13) // Dark red for savage
+        val backgroundEndColor = if (isSavage) Color.rgb(130, 0, 0) else Color.rgb(0, 70, 50) // Deeper red for savage
+        val accentColor = if (isSavage) Color.rgb(255, 69, 0) else Color.rgb(0, 184, 122) // Orange-red for savage
+        val boxColor = if (isSavage) Color.argb(230, 20, 0, 0) else Color.argb(200, 20, 20, 20) // More opaque red for savage
+        val boxTextColor = if (isSavage) Color.WHITE else Color.WHITE
+        val brandingColor = if (isSavage) Color.argb(200, 255, 69, 0) else Color.argb(160, 0, 184, 122) // More visible orange for savage
 
         // 1. Background gradient
         paint.shader = LinearGradient(0f, 0f, W.toFloat(), H.toFloat(),
-            Color.rgb(13, 13, 13), Color.rgb(0, 70, 50), Shader.TileMode.CLAMP)
+            backgroundStartColor, backgroundEndColor, Shader.TileMode.CLAMP)
         canvas.drawRect(0f, 0f, W.toFloat(), H.toFloat(), paint)
         paint.shader = null
 
         // 2. Top accent line
-        paint.color = Color.rgb(0, 184, 122)
+        paint.color = accentColor
         canvas.drawRect(0f, 0f, W.toFloat(), 6f, paint)
 
         // 3. Emoji
@@ -64,12 +73,12 @@ object CanvasExporter {
         canvas.drawLine(200f, 370f, (W - 200).toFloat(), 370f, paint)
 
         // 8. AI Quote / Message box
-        paint.color = Color.argb(200, 20, 20, 20)
+        paint.color = boxColor
         val roundRect = RectF(60f, 400f, (W - 60).toFloat(), 680f)
         canvas.drawRoundRect(roundRect, 24f, 24f, paint)
 
         // AI Quote content
-        paint.color = Color.WHITE
+        paint.color = boxTextColor
         paint.textSize = 30f
         paint.isFakeBoldText = false
         paint.textAlign = Paint.Align.LEFT
@@ -98,7 +107,7 @@ object CanvasExporter {
         }
 
         // 9. Bottom branding bar
-        paint.color = Color.argb(160, 0, 184, 122)
+        paint.color = brandingColor
         canvas.drawRect(0f, (H - 50).toFloat(), W.toFloat(), H.toFloat(), paint)
         paint.textSize = 22f
         paint.color = Color.BLACK
