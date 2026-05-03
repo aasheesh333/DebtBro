@@ -76,7 +76,7 @@ android {
 dependencies {
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.splashscreen)
-    implementation(platform(libs.androidx.compose.bom))
+    implementation(libs.androidx.compose.bom)
     implementation(libs.androidx.compose.ui)
     implementation(libs.androidx.compose.foundation)
     implementation(libs.androidx.compose.ui.tooling.preview)
@@ -116,5 +116,6 @@ dependencies {
     implementation(libs.kotlinx.coroutines.android)
     implementation(libs.kotlinx.coroutines.play.services)
     implementation(libs.accompanist.permissions)
+    implementation(libs.androidx.material)
     debugImplementation(libs.androidx.compose.ui.tooling)
 }
