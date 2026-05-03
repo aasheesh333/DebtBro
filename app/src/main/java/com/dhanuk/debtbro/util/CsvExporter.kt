@@ -6,6 +6,7 @@ import android.net.Uri
 import android.os.Build
 import android.provider.MediaStore
 import com.dhanuk.debtbro.data.db.entity.DebtEntity
+import java.io.IOException
 import java.io.OutputStreamWriter
 
 object CsvExporter {
@@ -31,14 +32,14 @@ object CsvExporter {
             }
             uri = context.contentResolver.insert(MediaStore.Downloads.EXTERNAL_CONTENT_URI, fileValues) ?: Uri.fromFile(file)
         }
-        context.contentResolver.openOutputStream(uri)?.use { stream ->
+        return context.contentResolver.openOutputStream(uri)?.use { stream ->
             OutputStreamWriter(stream).use { writer ->
                 writer.appendLine("Name,Amount,Paid,Remaining,Type,Status,Description,DueDate,CreatedAt")
                 debts.forEach { d ->
                     writer.appendLine(listOf(d.personName, d.amount, d.amountPaid, d.amount - d.amountPaid, d.type, d.status, d.description, d.dueDate?.toReadableDate().orEmpty(), d.createdAt.toReadableDate()).joinToString(",") { "\"${it.toString().replace("\"", "\"\"")}\"" })
                 }
             }
-        }
-        return uri
+            uri
+        } ?: throw IOException("Unable to write CSV")
     }
 }

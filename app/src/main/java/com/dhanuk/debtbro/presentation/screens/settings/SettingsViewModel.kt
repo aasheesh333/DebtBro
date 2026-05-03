@@ -94,8 +94,13 @@ class SettingsViewModel @Inject constructor(
     }
 
     fun exportCsv(context: Context) = viewModelScope.launch {
-        val uri = CsvExporter.exportDebts(context, debts.getAllDebtsOnce())
-        com.dhanuk.debtbro.util.shareFile(context, uri, "text/csv")
+        try {
+            val uri = CsvExporter.exportDebts(context, debts.getAllDebtsOnce())
+            com.dhanuk.debtbro.util.shareFile(context, uri, "text/csv")
+        } catch (e: Exception) {
+            e.printStackTrace()
+            // Show error to user or fallback behavior
+        }
     }
 
     fun clearSettledDebts() = viewModelScope.launch { debts.deleteSettledDebts() }

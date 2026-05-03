@@ -147,15 +147,29 @@ object CanvasExporter {
         return uri
     }
     fun shareDebtCard(context: Context, bitmap: Bitmap) {
-        val uri = saveDebtCard(context, bitmap)
-        val intent = Intent(Intent.ACTION_SEND).apply {
-            type = "image/png"
-            putExtra(Intent.EXTRA_STREAM, uri)
-            addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
-            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+        try {
+            val uri = saveDebtCard(context, bitmap)
+            val intent = Intent(Intent.ACTION_SEND).apply {
+                type = "image/png"
+                putExtra(Intent.EXTRA_STREAM, uri)
+                addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            }
+            context.startActivity(Intent.createChooser(intent, "Share DebtBro card").apply {
+                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            })
+        } catch (e: Exception) {
+            e.printStackTrace()
+            // Fallback to text sharing if image sharing fails
+            val fallbackText = "Check out DebtBro - the app that tracks debts with style!\nDownload now: https://play.google.com/store/apps/details?id=com.dhanuk.debtbro"
+            val fallbackIntent = Intent(Intent.ACTION_SEND).apply {
+                type = "text/plain"
+                putExtra(Intent.EXTRA_TEXT, fallbackText)
+                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            }
+            context.startActivity(Intent.createChooser(fallbackIntent, "Share via").apply {
+                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            })
         }
-        context.startActivity(Intent.createChooser(intent, "Share DebtBro card").apply {
-            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-        })
     }
 }
