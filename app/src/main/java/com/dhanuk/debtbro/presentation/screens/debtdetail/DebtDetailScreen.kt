@@ -291,6 +291,25 @@ fun DebtDetailScreen(onBack: () -> Unit, viewModel: DebtDetailViewModel = hiltVi
                         Text("Export as Image Card", color = Color.White)
                     }
                 }
+                
+                item {
+                    OutlinedButton(
+                        onClick = { 
+                            Toast.makeText(context, "Sharing to WhatsApp...", Toast.LENGTH_SHORT).show()
+                            viewModel.shareCardToWhatsApp(context, d, aiMessage.ifBlank { d.aiRoastGenerated.orEmpty() })
+                        },
+                        modifier = Modifier.fillMaxWidth().height(54.dp),
+                        colors = ButtonDefaults.outlinedButtonColors(
+                            contentColor = Color(0xFF25D366),
+                            borderColor = Color(0xFF25D366)
+                        ),
+                        shape = RoundedCornerShape(12.dp)
+                    ) {
+                        Icon(androidx.compose.material.icons.Icons.Filled.Send, null, tint = Color(0xFF25D366))
+                        Spacer(Modifier.width(8.dp))
+                        Text("Share to WhatsApp", color = Color(0xFF25D366))
+                    }
+                }
             }
             
             ConfettiOverlay(showConfetti) {

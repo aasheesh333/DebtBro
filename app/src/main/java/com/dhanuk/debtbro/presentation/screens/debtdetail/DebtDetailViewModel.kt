@@ -174,7 +174,7 @@ class DebtDetailViewModel @Inject constructor(
 
     fun shareCardToWhatsApp(context: Context, debt: DebtEntity, message: String) = viewModelScope.launch(Dispatchers.IO) {
         runCatching {
-            val bitmap = CanvasExporter.createDebtCard(context, debt, message, roastLevel.value)
+            val bitmap = CanvasExporter.createDebtCard(context, debt, message, "MEDIUM")
             val uri = CanvasExporter.saveDebtCard(context, bitmap)
             kotlinx.coroutines.withContext(Dispatchers.Main) {
                 val intent = android.content.Intent(android.content.Intent.ACTION_SEND).apply {

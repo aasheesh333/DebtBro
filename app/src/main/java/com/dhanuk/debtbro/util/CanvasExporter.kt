@@ -12,12 +12,15 @@ import android.graphics.Shader
 import android.net.Uri
 import androidx.core.content.FileProvider
 import com.dhanuk.debtbro.data.db.entity.DebtEntity
+import com.dhanuk.debtbro.util.formatCurrency
 import java.io.File
+import java.text.SimpleDateFormat
+import java.util.*
 
 object CanvasExporter {
-    // 4:3 ratio - 1200x900 for WhatsApp friendly dimensions
-    private const val W = 1200
-    private const val H = 900
+    // 3:4 ratio - 900x1200 for better WhatsApp sharing
+    private const val W = 900
+    private const val H = 1200
 
     fun createDebtCard(context: Context, debt: DebtEntity, aiMessage: String, roastLevel: String = "MEDIUM"): Bitmap {
         val bitmap = Bitmap.createBitmap(W, H, Bitmap.Config.ARGB_8888)
@@ -30,7 +33,6 @@ object CanvasExporter {
         val backgroundEndColor = if (isSavage) Color.rgb(130, 0, 0) else Color.rgb(0, 70, 50)
         val accentColor = if (isSavage) Color.rgb(255, 69, 0) else Color.rgb(0, 184, 122)
         val boxColor = if (isSavage) Color.argb(230, 20, 0, 0) else Color.argb(200, 20, 20, 20)
-        val boxTextColor = if (isSavage) Color.WHITE else Color.WHITE
         val brandingColor = if (isSavage) Color.argb(200, 255, 69, 0) else Color.argb(160, 0, 184, 122)
 
         // 1. Background gradient
@@ -40,6 +42,7 @@ object CanvasExporter {
         paint.shader = null
 
         // 2. Top accent line
+        paint.style = Paint.Style.FILL
         paint.color = accentColor
         canvas.drawRect(0f, 0f, W.toFloat(), 6f, paint)
 
@@ -72,41 +75,40 @@ object CanvasExporter {
         paint.color = Color.argb(80, 255, 255, 255)
         canvas.drawLine(200f, 370f, (W - 200).toFloat(), 370f, paint)
 
-        // 8. AI Quote / Message box
+        // 8. Debt details section
         paint.color = boxColor
-        val roundRect = RectF(60f, 400f, (W - 60).toFloat(), 680f)
+        val roundRect = RectF(60f, 400f, (W - 60).toFloat(), 700f)
         canvas.drawRoundRect(roundRect, 24f, 24f, paint)
 
-        // AI Quote content
-        paint.color = boxTextColor
+        // 9. Debt details content
+        paint.color = Color.WHITE
         paint.textSize = 30f
+        paint.textAlign = Paint.Align.LEFT
+        paint.isFakeBoldText = false
+        canvas.drawText("Name: ${debt.personName}", 100f, 450f, paint)
+        canvas.drawText("Amount: ${formatCurrency(debt.amount - debt.amountPaid, debt.currency)}", 100f, 500f, paint)
+        canvas.drawText("For: ${debt.description}", 100f, 550f, paint)
+        val dateFormat = SimpleDateFormat("dd MMM yyyy", Locale.getDefault())
+        val dueDate = dateFormat.format(Date(debt.dueDate))
+        canvas.drawText("Due: $dueDate", 100f, 600f, paint)
+        if (!debt.notes.isNullOrBlank()) {
+            canvas.drawText("Note: ${debt.notes}", 100f, 650f, paint)
+        }
+
+        // 10. AI Quote / Message box
+        paint.color = boxColor
+        val quoteRect = RectF(60f, 720f, (W - 60).toFloat(), 1000f)
+        canvas.drawRoundRect(quoteRect, 24f, 24f, paint)
+
+        // AI Quote content
+        paint.color = if (isSavage) Color.WHITE else Color.WHITE
+        paint.textSize = 36f
         paint.isFakeBoldText = false
         paint.textAlign = Paint.Align.LEFT
         val message = aiMessage.ifBlank { debt.description.ifBlank { "DebtBro keeps score so you do not have to." } }
+        canvas.drawText(message, 100f, 780f, paint)
 
-        // Word-wrap the message in the box
-        val maxWidth = W - 160f
-        val words = message.split(" ")
-        val lines = mutableListOf<String>()
-        var currentLine = ""
-        for (word in words) {
-            val testLine = if (currentLine.isEmpty()) word else "$currentLine $word"
-            if (paint.measureText(testLine) <= maxWidth) {
-                currentLine = testLine
-            } else {
-                lines.add(currentLine)
-                currentLine = word
-            }
-        }
-        if (currentLine.isNotEmpty()) lines.add(currentLine)
-
-        val startY = 470f
-        val lineHeight = 42f
-        lines.take(5).forEachIndexed { i, line ->
-            canvas.drawText(line, 120f, startY + i * lineHeight, paint)
-        }
-
-        // 9. Bottom branding bar
+        // 11. Bottom branding bar
         paint.color = brandingColor
         canvas.drawRect(0f, (H - 50).toFloat(), W.toFloat(), H.toFloat(), paint)
         paint.textSize = 22f
