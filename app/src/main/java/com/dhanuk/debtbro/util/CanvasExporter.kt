@@ -12,7 +12,6 @@ import android.graphics.Shader
 import android.net.Uri
 import androidx.core.content.FileProvider
 import com.dhanuk.debtbro.data.db.entity.DebtEntity
-import com.dhanuk.debtbro.util.formatCurrency
 import java.io.File
 import java.text.SimpleDateFormat
 import java.util.*
