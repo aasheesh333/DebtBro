@@ -300,9 +300,9 @@ fun DebtDetailScreen(onBack: () -> Unit, viewModel: DebtDetailViewModel = hiltVi
                         },
                         modifier = Modifier.fillMaxWidth().height(54.dp),
                         colors = ButtonDefaults.outlinedButtonColors(
-                            contentColor = Color(0xFF25D366),
-                            borderColor = Color(0xFF25D366)
+                            contentColor = Color(0xFF25D366)
                         ),
+                        border = BorderStroke(1.dp, Color(0xFF25D366)),
                         shape = RoundedCornerShape(12.dp)
                     ) {
                         Icon(androidx.compose.material.icons.Icons.Filled.Send, null, tint = Color(0xFF25D366))

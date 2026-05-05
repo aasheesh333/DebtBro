@@ -88,7 +88,7 @@ object CanvasExporter {
         canvas.drawText("Amount: ${formatCurrency(debt.amount - debt.amountPaid, debt.currency)}", 100f, 500f, paint)
         canvas.drawText("For: ${debt.description}", 100f, 550f, paint)
         val dateFormat = SimpleDateFormat("dd MMM yyyy", Locale.getDefault())
-        val dueDate = dateFormat.format(Date(debt.dueDate))
+        val dueDate = debt.dueDate?.let { dateFormat.format(Date(it)) } ?: "No due date"
         canvas.drawText("Due: $dueDate", 100f, 600f, paint)
         if (!debt.notes.isNullOrBlank()) {
             canvas.drawText("Note: ${debt.notes}", 100f, 650f, paint)
