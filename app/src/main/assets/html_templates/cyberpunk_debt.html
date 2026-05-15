@@ -2,34 +2,79 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Cyberpunk Debt</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;900&family=JetBrains+Mono&display=swap" rel="stylesheet">
     <style>
-        body { font-family: 'JetBrains Mono', monospace; background-color: #000; display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; }
-        .cyber-post { width: 1080px; height: 1350px; background: #000; color: #0ff; padding: 60px; box-sizing: border-box; border: 10px solid #0ff; position: relative; box-shadow: inset 0 0 50px #0ff, 0 0 50px #0ff; }
-        .orbitron { font-family: 'Orbitron', sans-serif; }
-        .glitch { position: relative; color: #0ff; }
-        .glitch::after { content: attr(data-text); position: absolute; left: 2px; text-shadow: -2px 0 #f0f; top: 0; color: #0ff; background: black; overflow: hidden; clip: rect(0px, 900px, 0px, 0px); animation: noise-anim 2s infinite linear alternate-reverse; }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Courier New', monospace; background-color: #000; display: flex; justify-content: center; align-items: center; min-height: 100vh; }
+        .cyber-post { width: 1080px; height: 1350px; background: #000; color: #0ff; padding: 60px; border: 10px solid #0ff; position: relative; box-shadow: inset 0 0 50px #0ff, 0 0 50px #0ff; }
+        .text-center { text-align: center; }
+        .mb-20 { margin-bottom: 5rem; }
+        .mb-12 { margin-bottom: 3rem; }
+        .mb-10 { margin-bottom: 2.5rem; }
+        .mb-2 { margin-bottom: 0.5rem; }
+        .mt-4 { margin-top: 1rem; }
+        .mt-10 { margin-top: 2.5rem; }
+        .mt-2 { margin-top: 0.5rem; }
+        .text-7xl { font-size: 5rem; }
+        .text-5xl { font-size: 3rem; }
+        .text-4xl { font-size: 2.25rem; }
+        .text-xl { font-size: 1.25rem; }
+        .text-sm { font-size: 0.875rem; }
+        .text-xs { font-size: 0.75rem; }
+        .text-9xl { font-size: 8rem; }
+        .font-black { font-weight: 900; }
+        .font-bold { font-weight: bold; }
+        .tracking-widest { letter-spacing: 0.2em; }
+        .uppercase { text-transform: uppercase; }
+        .italic { font-style: italic; }
+        .text-white { color: #fff; }
+        .text-cyan-400 { color: #22d3ee; }
+        .opacity-50 { opacity: 0.5; }
+        .opacity-70 { opacity: 0.7; }
+        .flex { display: flex; }
+        .justify-between { justify-content: space-between; }
+        .justify-center { justify-content: center; }
+        .items-center { align-items: center; }
+        .border-2 { border-width: 2px; border-style: solid; }
+        .border-cyan-400 { border-color: #22d3ee; }
+        .border-l-4 { border-left-width: 4px; border-left-style: solid; }
+        .p-10 { padding: 2.5rem; }
+        .p-6 { padding: 1.5rem; }
+        .py-10 { padding-top: 2.5rem; padding-bottom: 2.5rem; }
+        .px-4 { padding-left: 1rem; padding-right: 1rem; }
+        .relative { position: relative; }
+        .absolute { position: absolute; }
+        .bottom-20 { bottom: 5rem; }
+        .left-0 { left: 0; }
+        .right-0 { right: 0; }
+        .-top-4 { top: -1rem; }
+        .left-10 { left: 2.5rem; }
+        .bg-black { background-color: #000; }
+        .bg-cyan-900\/30 { background-color: rgba(21, 94, 117, 0.3); }
+        .text-right { text-align: right; }
+        .glitch { position: relative; color: #0ff; font-family: 'Impact', 'Arial Black', sans-serif; }
+        .orbitron { font-family: 'Impact', 'Arial Black', sans-serif; }
+        .animate-pulse { animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite; }
+        @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
         @keyframes noise-anim { 0% { clip: rect(10px, 9999px, 20px, 0); } 100% { clip: rect(80px, 9999px, 90px, 0); } }
     </style>
 </head>
 <body>
     <div class="cyber-post">
         <div class="orbitron text-center mb-20">
-            <h1 class="text-7xl font-black glitch" data-text="DEBT DETECTED">DEBT DETECTED</h1>
+            <h1 class="text-7xl font-black glitch">DEBT DETECTED</h1>
             <p class="text-xl mt-4 tracking-widest opacity-70">SYSTEM ALERT // 0x444_DEBT</p>
         </div>
 
         <div class="border-2 border-cyan-400 p-10 relative">
-            <div class="absolute -top-4 left-10 bg-black px-4 text-cyan-400 font-bold uppercase">Identity Verified</div>
+            <div class="absolute -top-4 left-10 px-4 text-cyan-400 font-bold uppercase" style="background-color: #000;">Identity Verified</div>
             <div class="flex justify-between items-center mb-12">
                 <div>
                     <p class="text-xs uppercase opacity-50">Lender</p>
                     <p class="text-4xl font-bold">{{lenderName}}</p>
                 </div>
-                <div class="text-5xl">⚡</div>
+                <div class="text-5xl">&#x26A1;</div>
                 <div class="text-right">
                     <p class="text-xs uppercase opacity-50">Debtor</p>
                     <p class="text-4xl font-bold">{{borrowerName}}</p>
@@ -41,7 +86,7 @@
                 <p class="orbitron text-9xl font-black text-white">{{currency}}{{amount}}</p>
             </div>
 
-            <div class="bg-cyan-900/30 p-6 border-l-4 border-cyan-400 mt-10">
+            <div class="p-6 border-l-4 border-cyan-400 mt-10" style="background-color: rgba(21, 94, 117, 0.3);">
                 <p class="text-xl italic">"{{description}} - {{dueDate}}"</p>
                 <p class="text-sm mt-2 opacity-70">Status: OVERDUE // Action: PAY_NOW</p>
             </div>
