@@ -14,10 +14,10 @@ import javax.inject.Singleton
 class GroqRepository @Inject constructor(private val api: GroqApiService, private val prefs: AppPreferences) {
     companion object {
         const val MAX_FREE_REGENERATIONS = 5
+        private const val API_COOLDOWN_MS = 1000L
     }
 
     private var lastApiCallTime = 0L
-    private const val API_COOLDOWN_MS = 1000L
 
     private suspend fun ensureRateLimit() {
         val now = System.currentTimeMillis()

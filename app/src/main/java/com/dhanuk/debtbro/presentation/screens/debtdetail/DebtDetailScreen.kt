@@ -30,7 +30,6 @@ import android.content.ContextWrapper
 import android.app.Activity
 import android.widget.Toast
 import com.dhanuk.debtbro.data.db.entity.DebtEntity
-import com.dhanuk.debtbro.data.db.entity.DebtEntity
 import com.dhanuk.debtbro.data.repository.GroqRepository.Companion.MAX_FREE_REGENERATIONS
 import com.dhanuk.debtbro.presentation.components.ConfettiOverlay
 import com.dhanuk.debtbro.presentation.components.EmptyStateView
@@ -218,15 +217,6 @@ fun DebtDetailScreen(onBack: () -> Unit, viewModel: DebtDetailViewModel = hiltVi
     }
 }
 
-fun android.content.Context.findActivity(): Activity? {
-    var ctx = this
-    while (ctx is ContextWrapper) {
-        if (ctx is Activity) return ctx
-        ctx = ctx.baseContext
-    }
-    return null
-}
-
                             Box(
                                 modifier = Modifier
                                     .fillMaxWidth()
@@ -271,9 +261,18 @@ fun android.content.Context.findActivity(): Activity? {
                                     Icon(Icons.Default.Image, null, modifier = Modifier.size(16.dp))
                                     Spacer(Modifier.width(8.dp))
                                     Text("WhatsApp")
-                                }
-                            }
-                        }
+        }
+    }
+}
+
+fun android.content.Context.findActivity(): Activity? {
+    var ctx = this
+    while (ctx is ContextWrapper) {
+        if (ctx is Activity) return ctx
+        ctx = ctx.baseContext
+    }
+    return null
+}
                     }
                 }
 
