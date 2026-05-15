@@ -172,6 +172,9 @@ class DebtDetailViewModel @Inject constructor(
                 CanvasExporter.createDebtCard(context, debt, actualMessage, roastLevel.value)
             }
             HtmlExporter.shareImage(context, bitmap)
+            kotlinx.coroutines.withContext(Dispatchers.Main) {
+                android.widget.Toast.makeText(context, "New design generated!", android.widget.Toast.LENGTH_SHORT).show()
+            }
         }.onFailure {
             it.printStackTrace()
             kotlinx.coroutines.withContext(Dispatchers.Main) {
@@ -208,6 +211,9 @@ class DebtDetailViewModel @Inject constructor(
                     addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK)
                 }
                 context.startActivity(intent)
+            }
+            kotlinx.coroutines.withContext(Dispatchers.Main) {
+                android.widget.Toast.makeText(context, "New design generated!", android.widget.Toast.LENGTH_SHORT).show()
             }
         }.onFailure {
             it.printStackTrace()

@@ -17,109 +17,239 @@ import java.text.SimpleDateFormat
 import java.util.*
 
 object CanvasExporter {
-    // 3:4 ratio - 900x1200 for better WhatsApp sharing
     private const val W = 900
-    private const val H = 1200
+    private val H = 1350
+
+    private var lastStyle = -1
+    private fun nextStyle(): Int {
+        var s: Int
+        do { s = (0..3).random() } while (s == lastStyle)
+        lastStyle = s
+        return s
+    }
 
     fun createDebtCard(context: Context, debt: DebtEntity, aiMessage: String, roastLevel: String = "MEDIUM"): Bitmap {
+        val style = nextStyle()
         val bitmap = Bitmap.createBitmap(W, H, Bitmap.Config.ARGB_8888)
         val canvas = Canvas(bitmap)
         val paint = Paint(Paint.ANTI_ALIAS_FLAG)
 
-        // Determine colors based on roast level for more impactful sharing
-        val isSavage = roastLevel.equals("SAVAGE", ignoreCase = true)
-        val backgroundStartColor = if (isSavage) Color.rgb(80, 0, 0) else Color.rgb(13, 13, 13)
-        val backgroundEndColor = if (isSavage) Color.rgb(130, 0, 0) else Color.rgb(0, 70, 50)
-        val accentColor = if (isSavage) Color.rgb(255, 69, 0) else Color.rgb(0, 184, 122)
-        val boxColor = if (isSavage) Color.argb(230, 20, 0, 0) else Color.argb(200, 20, 20, 20)
-        val brandingColor = if (isSavage) Color.argb(200, 255, 69, 0) else Color.argb(160, 0, 184, 122)
-
-        // 1. Background gradient
-        paint.shader = LinearGradient(0f, 0f, W.toFloat(), H.toFloat(),
-            backgroundStartColor, backgroundEndColor, Shader.TileMode.CLAMP)
-        canvas.drawRect(0f, 0f, W.toFloat(), H.toFloat(), paint)
-        paint.shader = null
-
-        // 2. Top accent line
-        paint.style = Paint.Style.FILL
-        paint.color = accentColor
-        canvas.drawRect(0f, 0f, W.toFloat(), 6f, paint)
-
-        // 3. Emoji
-        paint.color = Color.WHITE
-        paint.textAlign = Paint.Align.CENTER
-        paint.textSize = 100f
-        canvas.drawText(debt.personEmoji, (W / 2).toFloat(), 140f, paint)
-
-        // 4. Person name
-        paint.textSize = 48f
-        paint.isFakeBoldText = true
-        paint.color = Color.WHITE
-        canvas.drawText(debt.personName, (W / 2).toFloat(), 210f, paint)
-
-        // 5. Label
-        paint.textSize = 24f
-        paint.isFakeBoldText = false
-        paint.color = Color.rgb(160, 160, 160)
-        canvas.drawText(if (debt.type == "THEY_OWE_ME") "OWES YOU" else "YOU OWE", (W / 2).toFloat(), 250f, paint)
-
-        // 6. Amount - big and bold
-        paint.textSize = 72f
-        paint.isFakeBoldText = true
-        paint.color = if (debt.type == "THEY_OWE_ME") Color.rgb(0, 230, 160) else Color.rgb(255, 71, 87)
-        val amountStr = formatCurrency(debt.amount - debt.amountPaid, debt.currency)
-        canvas.drawText(amountStr, (W / 2).toFloat(), 330f, paint)
-
-        // 7. Separator line
-        paint.color = Color.argb(80, 255, 255, 255)
-        canvas.drawLine(200f, 370f, (W - 200).toFloat(), 370f, paint)
-
-        // 8. Debt details section
-        paint.color = boxColor
-        val roundRect = RectF(60f, 400f, (W - 60).toFloat(), 700f)
-        canvas.drawRoundRect(roundRect, 24f, 24f, paint)
-
-        // 9. Debt details content
-        paint.color = Color.WHITE
-        paint.textSize = 30f
-        paint.textAlign = Paint.Align.LEFT
-        paint.isFakeBoldText = false
-        canvas.drawText("Name: ${debt.personName}", 100f, 450f, paint)
-        canvas.drawText("Amount: ${formatCurrency(debt.amount - debt.amountPaid, debt.currency)}", 100f, 500f, paint)
-        canvas.drawText("For: ${debt.description}", 100f, 550f, paint)
-        val dateFormat = SimpleDateFormat("dd MMM yyyy", Locale.getDefault())
-        val dueDate = debt.dueDate?.let { dateFormat.format(Date(it)) } ?: "No due date"
-        canvas.drawText("Due: $dueDate", 100f, 600f, paint)
-        if (!debt.notes.isNullOrBlank()) {
-            canvas.drawText("Note: ${debt.notes}", 100f, 650f, paint)
-        }
-
-        // 10. AI Quote / Message box
-        paint.color = boxColor
-        val quoteRect = RectF(60f, 720f, (W - 60).toFloat(), 1000f)
-        canvas.drawRoundRect(quoteRect, 24f, 24f, paint)
-
-        // AI Quote content
-        paint.color = if (isSavage) Color.WHITE else Color.WHITE
-        paint.textSize = 36f
-        paint.isFakeBoldText = false
-        paint.textAlign = Paint.Align.LEFT
+        val remaining = debt.amount - debt.amountPaid
+        val amountStr = formatCurrency(remaining, debt.currency)
+        val dueDate = debt.dueDate?.let { SimpleDateFormat("dd MMM yyyy", Locale.getDefault()).format(Date(it)) } ?: "No due date"
         val message = aiMessage.ifBlank { debt.description.ifBlank { "DebtBro keeps score so you do not have to." } }
-        canvas.drawText(message, 100f, 780f, paint)
 
-        // 11. Bottom branding bar
-        paint.color = brandingColor
-        canvas.drawRect(0f, (H - 50).toFloat(), W.toFloat(), H.toFloat(), paint)
-        paint.textSize = 22f
-        paint.color = Color.BLACK
-        paint.isFakeBoldText = true
-        paint.textAlign = Paint.Align.CENTER
-        canvas.drawText("DebtBro — because friends forget \uD83D\uDE05", (W / 2).toFloat(), (H - 16).toFloat(), paint)
+        when (style) {
+            0 -> drawWallOfShame(canvas, paint, debt, amountStr, dueDate, message)
+            1 -> drawInstaVibe(canvas, paint, debt, amountStr, dueDate, message)
+            2 -> drawElegantMinimal(canvas, paint, debt, amountStr, dueDate, message)
+            3 -> drawCyberpunk(canvas, paint, debt, amountStr, dueDate, message)
+        }
 
         return bitmap
     }
 
-    /** Saves bitmap to app cache and returns a FileProvider URI (works on all Android versions). */
+    private fun drawWallOfShame(canvas: Canvas, paint: Paint, debt: DebtEntity, amount: String, dueDate: String, message: String) {
+        val bg = LinearGradient(0f, 0f, W.toFloat(), H.toFloat(), Color.rgb(255, 200, 50), Color.rgb(200, 150, 30), Shader.TileMode.CLAMP)
+        canvas.drawRect(0f, 0f, W.toFloat(), H.toFloat(), Paint().apply { shader = bg })
+
+        paint.color = Color.BLACK
+        canvas.drawRect(30f, 30f, (W - 30).toFloat(), (H - 30).toFloat(), paint)
+        canvas.drawRect(40f, 40f, (W - 40).toFloat(), (H - 40).toFloat(), Paint().apply { color = Color.rgb(255, 220, 100) })
+
+        paint.textAlign = Paint.Align.CENTER
+        paint.color = Color.BLACK
+        paint.textSize = 48f
+        paint.isFakeBoldText = true
+        canvas.drawText("WANTED", (W / 2).toFloat(), 140f, paint)
+
+        paint.textSize = 36f
+        canvas.drawText("FOR DEBT", (W / 2).toFloat(), 190f, paint)
+
+        paint.textSize = 100f
+        canvas.drawText(debt.personEmoji, (W / 2).toFloat(), 320f, paint)
+
+        paint.textSize = 52f
+        paint.isFakeBoldText = true
+        canvas.drawText(debt.personName, (W / 2).toFloat(), 400f, paint)
+
+        paint.textSize = 80f
+        paint.color = Color.rgb(180, 0, 0)
+        canvas.drawText(amount, (W / 2).toFloat(), 520f, paint)
+
+        paint.textSize = 32f
+        paint.color = Color.BLACK
+        canvas.drawText("Due: $dueDate", (W / 2).toFloat(), 600f, paint)
+
+        paint.textSize = 28f
+        canvas.drawText("For: ${debt.description}", (W / 2).toFloat(), 660f, paint)
+
+        val box = RectF(80f, 720f, (W - 80).toFloat(), 1050f)
+        canvas.drawRoundRect(box, 20f, 20f, Paint().apply { color = Color.argb(100, 0, 0, 0) })
+        paint.color = Color.WHITE
+        paint.textSize = 30f
+        paint.textAlign = Paint.Align.LEFT
+        canvas.drawText(message, 120f, 790f, paint)
+
+        paint.textAlign = Paint.Align.CENTER
+        paint.textSize = 24f
+        paint.color = Color.BLACK
+        canvas.drawText("DebtBro", (W / 2).toFloat(), (H - 80).toFloat(), paint)
+    }
+
+    private fun drawInstaVibe(canvas: Canvas, paint: Paint, debt: DebtEntity, amount: String, dueDate: String, message: String) {
+        val bg = LinearGradient(0f, 0f, W.toFloat(), H.toFloat(), Color.rgb(20, 30, 60), Color.rgb(40, 60, 100), Shader.TileMode.CLAMP)
+        canvas.drawRect(0f, 0f, W.toFloat(), H.toFloat(), Paint().apply { shader = bg })
+
+        val card = RectF(50f, 100f, (W - 50).toFloat(), 1100f)
+        canvas.drawRoundRect(card, 30f, 30f, Paint().apply { color = Color.argb(80, 255, 255, 255) })
+
+        paint.textAlign = Paint.Align.CENTER
+        paint.color = Color.rgb(100, 200, 255)
+        paint.textSize = 40f
+        paint.isFakeBoldText = true
+        canvas.drawText("DEBT ALERT", (W / 2).toFloat(), 170f, paint)
+
+        paint.textSize = 100f
+        paint.color = Color.WHITE
+        canvas.drawText(debt.personEmoji, (W / 2).toFloat(), 300f, paint)
+
+        paint.textSize = 52f
+        paint.isFakeBoldText = true
+        canvas.drawText(debt.personName, (W / 2).toFloat(), 380f, paint)
+
+        paint.textSize = 28f
+        paint.color = Color.rgb(180, 180, 180)
+        canvas.drawText(if (debt.type == "THEY_OWE_ME") "OWES YOU" else "YOU OWE", (W / 2).toFloat(), 430f, paint)
+
+        paint.textSize = 72f
+        paint.color = Color.rgb(100, 200, 255)
+        paint.isFakeBoldText = true
+        canvas.drawText(amount, (W / 2).toFloat(), 530f, paint)
+
+        paint.textSize = 30f
+        paint.color = Color.WHITE
+        paint.isFakeBoldText = false
+        canvas.drawText("Due: $dueDate", (W / 2).toFloat(), 600f, paint)
+        canvas.drawText("For: ${debt.description}", (W / 2).toFloat(), 650f, paint)
+
+        val quoteBox = RectF(80f, 720f, (W - 80).toFloat(), 1000f)
+        canvas.drawRoundRect(quoteBox, 20f, 20f, Paint().apply { color = Color.argb(60, 100, 200, 255) })
+        paint.textSize = 30f
+        paint.color = Color.WHITE
+        paint.textAlign = Paint.Align.LEFT
+        canvas.drawText(message, 120f, 790f, paint)
+
+        paint.textAlign = Paint.Align.CENTER
+        paint.textSize = 22f
+        paint.color = Color.rgb(150, 150, 150)
+        canvas.drawText("DebtBro", (W / 2).toFloat(), (H - 60).toFloat(), paint)
+    }
+
+    private fun drawElegantMinimal(canvas: Canvas, paint: Paint, debt: DebtEntity, amount: String, dueDate: String, message: String) {
+        canvas.drawRect(0f, 0f, W.toFloat(), H.toFloat(), Paint().apply { color = Color.WHITE })
+
+        paint.color = Color.rgb(200, 180, 150)
+        canvas.drawRect(0f, 0f, W.toFloat(), 8f, paint)
+
+        paint.textAlign = Paint.Align.CENTER
+        paint.color = Color.rgb(80, 80, 80)
+        paint.textSize = 36f
+        paint.isFakeBoldText = true
+        canvas.drawText("Gentle Reminder", (W / 2).toFloat(), 100f, paint)
+
+        paint.color = Color.rgb(200, 180, 150)
+        canvas.drawLine(200f, 120f, (W - 200).toFloat(), 120f, paint)
+
+        paint.textSize = 100f
+        paint.color = Color.rgb(60, 60, 60)
+        canvas.drawText(debt.personEmoji, (W / 2).toFloat(), 240f, paint)
+
+        paint.textSize = 48f
+        paint.isFakeBoldText = true
+        canvas.drawText(debt.personName, (W / 2).toFloat(), 320f, paint)
+
+        paint.textSize = 72f
+        paint.color = Color.rgb(180, 150, 100)
+        canvas.drawText(amount, (W / 2).toFloat(), 420f, paint)
+
+        paint.textSize = 28f
+        paint.color = Color.rgb(120, 120, 120)
+        canvas.drawText("Due: $dueDate", (W / 2).toFloat(), 490f, paint)
+        canvas.drawText("For: ${debt.description}", (W / 2).toFloat(), 540f, paint)
+
+        paint.color = Color.rgb(220, 210, 200)
+        canvas.drawLine(100f, 580f, (W - 100).toFloat(), 580f, paint)
+
+        paint.textSize = 30f
+        paint.color = Color.rgb(80, 80, 80)
+        paint.textAlign = Paint.Align.LEFT
+        canvas.drawText(message, 100f, 650f, paint)
+
+        paint.textAlign = Paint.Align.CENTER
+        paint.textSize = 24f
+        paint.color = Color.rgb(180, 150, 100)
+        paint.isFakeBoldText = true
+        canvas.drawText("DebtBro Luxury", (W / 2).toFloat(), (H - 80).toFloat(), paint)
+
+        paint.color = Color.rgb(200, 180, 150)
+        canvas.drawRect(0f, (H - 8).toFloat(), W.toFloat(), H.toFloat(), paint)
+    }
+
+    private fun drawCyberpunk(canvas: Canvas, paint: Paint, debt: DebtEntity, amount: String, dueDate: String, message: String) {
+        canvas.drawRect(0f, 0f, W.toFloat(), H.toFloat(), Paint().apply { color = Color.BLACK })
+
+        val cyan = Color.rgb(0, 255, 255)
+        val border = RectF(20f, 20f, (W - 20).toFloat(), (H - 20).toFloat())
+        canvas.drawRoundRect(border, 10f, 10f, Paint().apply { color = cyan; style = Paint.Style.STROKE; strokeWidth = 4f })
+
+        paint.textAlign = Paint.Align.CENTER
+        paint.color = cyan
+        paint.textSize = 44f
+        paint.isFakeBoldText = true
+        canvas.drawText("DEBT DETECTED", (W / 2).toFloat(), 100f, paint)
+
+        paint.textSize = 24f
+        paint.color = Color.rgb(0, 200, 200)
+        canvas.drawText("SYSTEM ALERT // PRIORITY: HIGH", (W / 2).toFloat(), 140f, paint)
+
+        paint.textSize = 100f
+        paint.color = Color.WHITE
+        canvas.drawText(debt.personEmoji, (W / 2).toFloat(), 270f, paint)
+
+        paint.textSize = 48f
+        paint.isFakeBoldText = true
+        canvas.drawText(debt.personName, (W / 2).toFloat(), 350f, paint)
+
+        paint.textSize = 28f
+        paint.color = Color.rgb(0, 200, 200)
+        canvas.drawText("TARGET: ${if (debt.type == "THEY_OWE_ME") "DEBTOR" else "CREDITOR"}", (W / 2).toFloat(), 400f, paint)
+
+        paint.textSize = 72f
+        paint.color = cyan
+        paint.isFakeBoldText = true
+        canvas.drawText(amount, (W / 2).toFloat(), 500f, paint)
+
+        paint.textSize = 28f
+        paint.color = Color.WHITE
+        canvas.drawText("DUE: $dueDate", (W / 2).toFloat(), 560f, paint)
+        canvas.drawText("REASON: ${debt.description}", (W / 2).toFloat(), 610f, paint)
+
+        val box = RectF(60f, 660f, (W - 60).toFloat(), 1000f)
+        canvas.drawRect(box, Paint().apply { color = Color.argb(40, 0, 255, 255) })
+        canvas.drawRect(box, Paint().apply { color = cyan; style = Paint.Style.STROKE; strokeWidth = 2f })
+
+        paint.textSize = 28f
+        paint.color = Color.WHITE
+        paint.textAlign = Paint.Align.LEFT
+        canvas.drawText(message, 100f, 730f, paint)
+
+        paint.textAlign = Paint.Align.CENTER
+        paint.textSize = 20f
+        paint.color = cyan
+        canvas.drawText("DEBTBRO_OS v2.0", (W / 2).toFloat(), (H - 60).toFloat(), paint)
+    }
+
     fun saveDebtCard(context: Context, bitmap: Bitmap): Uri {
         val cacheDir = File(context.cacheDir, "share_images")
         cacheDir.mkdirs()
@@ -128,7 +258,6 @@ object CanvasExporter {
         return FileProvider.getUriForFile(context, "${context.packageName}.fileprovider", file)
     }
 
-    /** Shares the bitmap as an image via ACTION_SEND. */
     fun shareDebtCard(context: Context, bitmap: Bitmap) {
         val uri = saveDebtCard(context, bitmap)
         val intent = Intent(Intent.ACTION_SEND).apply {
