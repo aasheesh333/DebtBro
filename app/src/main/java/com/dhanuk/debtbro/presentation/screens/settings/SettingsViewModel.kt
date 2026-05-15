@@ -22,7 +22,6 @@ import javax.inject.Inject
 
 data class SettingsUiState(
     val userName: String = "",
-    val groqKey: String = "",
     val roastLevel: String = "MEDIUM",
     val currency: String = "₹",
     val isSignedIn: Boolean = false,
@@ -55,10 +54,17 @@ class SettingsViewModel @Inject constructor(
         prefs.selectedLanguage, isSyncing, syncMessage
     ) { v ->
         SettingsUiState(
-            v[0] as String, v[1] as String,
-            v[2] as String, v[3] as Boolean, v[4] as String,
-            v[5] as String, v[6] as String, v[7] as Long,
-            v[8] as String, v[9] as Boolean, v[10] as String
+            userName = v[0] as String,
+            roastLevel = v[1] as String,
+            currency = v[2] as String,
+            isSignedIn = v[3] as Boolean,
+            googleName = v[4] as String,
+            email = v[5] as String,
+            userPhoto = v[6] as String,
+            lastSynced = v[7] as Long,
+            selectedLanguage = v[8] as String,
+            isSyncing = v[9] as Boolean,
+            syncMessage = v[10] as String
         )
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), SettingsUiState())
 
