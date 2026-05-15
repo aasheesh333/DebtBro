@@ -26,7 +26,10 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import android.content.ContextWrapper
+import android.app.Activity
 import android.widget.Toast
+import com.dhanuk.debtbro.data.db.entity.DebtEntity
 import com.dhanuk.debtbro.data.db.entity.DebtEntity
 import com.dhanuk.debtbro.data.repository.GroqRepository.Companion.MAX_FREE_REGENERATIONS
 import com.dhanuk.debtbro.presentation.components.ConfettiOverlay
@@ -72,11 +75,33 @@ fun DebtDetailScreen(onBack: () -> Unit, viewModel: DebtDetailViewModel = hiltVi
                     IconButton(onClick = { viewModel.showEditDebtSheet.value = true }) {
                         Icon(Icons.Default.Edit, null, tint = Color.White)
                     }
-                    IconButton(onClick = { 
-                        viewModel.deleteDebt()
-                        onBack()
-                    }) {
+                    var showDeleteConfirm by remember { mutableStateOf(false) }
+
+                    IconButton(onClick = { showDeleteConfirm = true }) {
                         Icon(Icons.Default.Delete, null, tint = Color(0xFFFF4757))
+                    }
+
+                    if (showDeleteConfirm) {
+                        AlertDialog(
+                            onDismissRequest = { showDeleteConfirm = false },
+                            containerColor = Color(0xFF1A1A1A),
+                            title = { Text("Delete Debt?", color = Color.White) },
+                            text = { Text("This will permanently delete this debt and all its payments. This cannot be undone.", color = Color(0xFFCCCCCC)) },
+                            confirmButton = {
+                                TextButton(onClick = {
+                                    viewModel.deleteDebt()
+                                    showDeleteConfirm = false
+                                    onBack()
+                                }) {
+                                    Text("Delete", color = Color(0xFFFF4757))
+                                }
+                            },
+                            dismissButton = {
+                                TextButton(onClick = { showDeleteConfirm = false }) {
+                                    Text("Cancel", color = SubtitleGray)
+                                }
+                            }
+                        )
                     }
                 },
                 colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
@@ -189,9 +214,18 @@ fun DebtDetailScreen(onBack: () -> Unit, viewModel: DebtDetailViewModel = hiltVi
                                                 selectedLabelColor = Color.Black
                                             )
                                         )
-                                    }
-                                }
-                            }
+        }
+    }
+}
+
+fun android.content.Context.findActivity(): Activity? {
+    var ctx = this
+    while (ctx is ContextWrapper) {
+        if (ctx is Activity) return ctx
+        ctx = ctx.baseContext
+    }
+    return null
+}
 
                             Box(
                                 modifier = Modifier
@@ -214,7 +248,7 @@ fun DebtDetailScreen(onBack: () -> Unit, viewModel: DebtDetailViewModel = hiltVi
                             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                                 Button(
                                     onClick = {
-                                        val activity = context as? android.app.Activity
+                                        val activity = context.findActivity()
                                         viewModel.generateRoast(activity)
                                     },
                                     colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF333333)),
@@ -343,8 +377,7 @@ fun DebtDetailScreen(onBack: () -> Unit, viewModel: DebtDetailViewModel = hiltVi
             confirmButton = {
                 TextButton(onClick = {
                     viewModel.dismissRewardAd()
-                    // Reload and show reward ad
-                    viewModel.generateRoast(context as? android.app.Activity)
+                    viewModel.generateRoast(context.findActivity())
                 }) {
                     Text("Watch Ad", color = PrimaryGreen)
                 }

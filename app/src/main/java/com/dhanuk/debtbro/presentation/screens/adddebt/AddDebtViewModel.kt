@@ -63,7 +63,7 @@ class AddDebtViewModel @Inject constructor(
                 
                 onSaved()
             } catch (e: Exception) {
-                // Error handling can be added here
+                android.util.Log.e("AddDebtViewModel", "Failed to save debt: ${e.message}", e)
             } finally {
                 _isLoading.value = false
             }

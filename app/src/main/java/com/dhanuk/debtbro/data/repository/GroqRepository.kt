@@ -16,12 +16,27 @@ class GroqRepository @Inject constructor(private val api: GroqApiService, privat
         const val MAX_FREE_REGENERATIONS = 5
     }
 
-    private var regenerationCount = 0
+    private var lastApiCallTime = 0L
+    private const val API_COOLDOWN_MS = 1000L
 
-    fun canRegenerate(): Boolean = regenerationCount < MAX_FREE_REGENERATIONS
-    fun resetRegenerationCount() { regenerationCount = 0 }
-    fun incrementRegenerationCount() { regenerationCount++ }
-    fun remainingFreeRegenerations(): Int = (MAX_FREE_REGENERATIONS - regenerationCount).coerceAtLeast(0)
+    private suspend fun ensureRateLimit() {
+        val now = System.currentTimeMillis()
+        val elapsed = now - lastApiCallTime
+        if (elapsed < API_COOLDOWN_MS) {
+            kotlinx.coroutines.delay(API_COOLDOWN_MS - elapsed)
+        }
+        lastApiCallTime = System.currentTimeMillis()
+    }
+
+    suspend fun canRegenerate(): Boolean = getRegenerationCount() < MAX_FREE_REGENERATIONS
+    suspend fun resetRegenerationCount() { prefs.saveAiRegenerationCount(0) }
+    suspend fun incrementRegenerationCount() {
+        val current = getRegenerationCount()
+        prefs.saveAiRegenerationCount(current + 1)
+    }
+    suspend fun remainingFreeRegenerations(): Int = (MAX_FREE_REGENERATIONS - getRegenerationCount()).coerceAtLeast(0)
+
+    private suspend fun getRegenerationCount(): Int = prefs.getAiRegenerationCount()
 
     private suspend fun apiKey(): String = prefs.groqApiKey.first().ifEmpty { BuildConfig.GROQ_API_KEY }
     private fun systemPrompt(roastLevel: String, selectedLangCode: String): String {
@@ -81,14 +96,16 @@ Key rules:
         return "$langInstruction\n$prompt"
     }
     suspend fun generateRoast(debt: DebtEntity, roastLevel: String): Result<String> = runCatching {
+        ensureRateLimit()
         val key = apiKey()
         if (key.isEmpty()) return Result.failure(Exception("NO_API_KEY"))
         val now = System.currentTimeMillis()
         val daysOverdue = if (debt.dueDate != null && debt.dueDate < now) ((now - debt.dueDate) / 86400000).toInt() else 0
-        val amountStr = "${debt.currency}${debt.amount - debt.amountPaid}"
+        val currency = prefs.defaultCurrency.first()
+        val amountStr = "${currency}${debt.amount - debt.amountPaid}"
         val personContext = when {
-            debt.description.isNotBlank() -> "$debt.description (₹${debt.amount} total)"
-            else -> "a debt of ₹${debt.amount}"
+            debt.description.isNotBlank() -> "$debt.description (${currency}${debt.amount} total)"
+            else -> "a debt of ${currency}${debt.amount}"
         }
         val response = api.chat(
             auth = "Bearer $key",
@@ -111,28 +128,33 @@ Write a creative WhatsApp reminder message. Make it 3 lines max, personal, and f
         response.choices.first().message.content.trim()
     }
     suspend fun analyzeDebts(totalLent: Double, totalOwed: Double, recoveryRate: Int, worstDebtor: String): Result<String> = runCatching {
+        ensureRateLimit()
         val key = apiKey()
         if (key.isEmpty()) return Result.failure(Exception("NO_API_KEY"))
         val langCode = prefs.selectedLanguage.first()
+        val currency = prefs.defaultCurrency.first()
         val langInstruction = systemPrompt("MILD", langCode).substringBefore("\n")
         val response = api.chat("Bearer $key", GroqRequest(messages = listOf(
             GroqMessage("system", "$langInstruction\nYou are a funny personal finance analyst. Give ONE sharp 2-line insight. No disclaimers."),
-            GroqMessage("user", "Total lent: ₹$totalLent to friends. Total I owe: ₹$totalOwed. Recovery rate: $recoveryRate%. Worst debtor: $worstDebtor. Give ONE sharp, funny, honest 2-line insight. Hinglish welcome.")
+            GroqMessage("user", "Total lent: ${currency}$totalLent to friends. Total I owe: ${currency}$totalOwed. Recovery rate: $recoveryRate%. Worst debtor: $worstDebtor. Give ONE sharp, funny, honest 2-line insight. Hinglish welcome.")
         ), model = "llama-3.3-70b-versatile", temperature = 0.3, max_tokens = 150))
         response.choices.first().message.content.trim()
     }
     suspend fun generateSplitSummary(title: String, total: Double, perPerson: Double, count: Int): Result<String> = runCatching {
+        ensureRateLimit()
         val key = apiKey()
         if (key.isEmpty()) return Result.failure(Exception("NO_API_KEY"))
         val langCode = prefs.selectedLanguage.first()
+        val currency = prefs.defaultCurrency.first()
         val langInstruction = systemPrompt("MILD", langCode).substringBefore("\n")
         val response = api.chat("Bearer $key", GroqRequest(messages = listOf(
             GroqMessage("system", "$langInstruction\nYou are a funny commentator. One line only. Be creative."),
-            GroqMessage("user", "Split: $title, Total: ₹$total, $count people, ₹$perPerson each. Write ONE funny line about this. Hinglish ok.")
+            GroqMessage("user", "Split: $title, Total: ${currency}$total, $count people, ${currency}$perPerson each. Write ONE funny line about this. Hinglish ok.")
         ), model = "llama-3.3-70b-versatile", temperature = 1.0, max_tokens = 100))
         response.choices.first().message.content.trim()
     }
     suspend fun testConnection(): Boolean = runCatching {
+        ensureRateLimit()
         val key = apiKey()
         if (key.isEmpty()) return@runCatching false
         api.chat("Bearer $key", GroqRequest(messages = listOf(GroqMessage("user", "Say OK")), max_tokens = 10)).choices.isNotEmpty()

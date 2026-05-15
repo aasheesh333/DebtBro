@@ -168,13 +168,37 @@ fun SettingsScreen(viewModel: SettingsViewModel = hiltViewModel()) {
                             onClick = { viewModel.exportCsv(context) }
                         )
                         Divider(color = Color(0xFF2A2A2A))
+                        var showClearConfirm by remember { mutableStateOf(false) }
+
                         SettingsActionItem(
                             title = "Clear Settled Debts",
                             subtitle = "Permanently delete fully paid debts",
                             icon = Icons.Default.DeleteSweep,
                             color = Color(0xFFFF4757),
-                            onClick = { viewModel.clearSettledDebts() }
+                            onClick = { showClearConfirm = true }
                         )
+
+                        if (showClearConfirm) {
+                            AlertDialog(
+                                onDismissRequest = { showClearConfirm = false },
+                                containerColor = Color(0xFF1A1A1A),
+                                title = { Text("Clear Settled Debts?", color = Color.White) },
+                                text = { Text("This will permanently delete all settled debts. This cannot be undone.", color = Color(0xFFCCCCCC)) },
+                                confirmButton = {
+                                    TextButton(onClick = {
+                                        viewModel.clearSettledDebts()
+                                        showClearConfirm = false
+                                    }) {
+                                        Text("Delete All", color = Color(0xFFFF4757))
+                                    }
+                                },
+                                dismissButton = {
+                                    TextButton(onClick = { showClearConfirm = false }) {
+                                        Text("Cancel", color = SubtitleGray)
+                                    }
+                                }
+                            )
+                        }
                     }
                 }
             }

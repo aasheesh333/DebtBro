@@ -27,6 +27,8 @@ import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.platform.LocalContext
+import android.widget.Toast
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.dhanuk.debtbro.presentation.theme.DangerRed
@@ -44,6 +46,7 @@ fun AddDebtBottomSheet(
 ) {
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     val hapticFeedback = LocalHapticFeedback.current
+    val context = LocalContext.current
     val isLoading by viewModel.isLoading.collectAsStateWithLifecycle()
     
     var personName by remember { mutableStateOf("") }
@@ -333,21 +336,32 @@ fun AddDebtBottomSheet(
                 onClick = {
                     triedToSave = true
                     val amtValue = amount.toDoubleOrNull() ?: 0.0
-                    if (personName.isNotBlank() && amtValue > 0) {
-                        viewModel.saveDebt(
-                            personName = personName.trim(),
-                            personEmoji = selectedEmoji,
-                            amount = amtValue,
-                            currency = selectedCurrency,
-                            type = debtType,
-                            description = description.trim(),
-                            dueDate = selectedDate,
-                            notes = notes.trim(),
-                            onSaved = {
-                                hapticFeedback.performHapticFeedback(HapticFeedbackType.LongPress)
-                                onDebtAdded()
-                            }
-                        )
+                    when {
+                        personName.isBlank() -> {
+                            Toast.makeText(context, "Please enter a name", Toast.LENGTH_SHORT).show()
+                        }
+                        amtValue <= 0 -> {
+                            Toast.makeText(context, "Please enter a valid amount", Toast.LENGTH_SHORT).show()
+                        }
+                        amtValue > 1_000_000_000 -> {
+                            Toast.makeText(context, "Amount seems too large. Please verify.", Toast.LENGTH_SHORT).show()
+                        }
+                        else -> {
+                            viewModel.saveDebt(
+                                personName = personName.trim(),
+                                personEmoji = selectedEmoji,
+                                amount = amtValue,
+                                currency = selectedCurrency,
+                                type = debtType,
+                                description = description.trim(),
+                                dueDate = selectedDate,
+                                notes = notes.trim(),
+                                onSaved = {
+                                    hapticFeedback.performHapticFeedback(HapticFeedbackType.LongPress)
+                                    onDebtAdded()
+                                }
+                            )
+                        }
                     }
                 },
                 modifier = Modifier

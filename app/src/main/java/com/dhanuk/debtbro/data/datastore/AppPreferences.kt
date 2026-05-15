@@ -3,6 +3,7 @@ package com.dhanuk.debtbro.data.datastore
 import android.content.Context
 import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
+import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.datastore.preferences.core.longPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
@@ -31,6 +32,8 @@ class AppPreferences(@ApplicationContext private val context: Context) {
         val LAST_INTERSTITIAL_AT = longPreferencesKey("last_interstitial_at")
         val THEME_MODE = stringPreferencesKey("theme_mode")
         val SELECTED_LANGUAGE = stringPreferencesKey("selected_language")
+        val AI_REGENERATION_COUNT = intPreferencesKey("ai_regeneration_count")
+        val AI_REGENERATION_DATE = stringPreferencesKey("ai_regeneration_date")
     }
 
     val hasCompletedOnboarding: Flow<Boolean> = context.dataStore.data.map { it[Keys.HAS_COMPLETED_ONBOARDING] ?: false }
@@ -69,4 +72,20 @@ class AppPreferences(@ApplicationContext private val context: Context) {
     suspend fun setHasShownSignInPrompt(value: Boolean) = context.dataStore.edit { it[Keys.HAS_SHOWN_SIGNIN_PROMPT] = value }
     suspend fun setThemeMode(mode: String) = context.dataStore.edit { it[Keys.THEME_MODE] = mode }
     suspend fun setLanguage(code: String) = context.dataStore.edit { it[Keys.SELECTED_LANGUAGE] = code }
+
+    suspend fun saveAiRegenerationCount(count: Int) {
+        val today = java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.getDefault()).format(java.util.Date())
+        context.dataStore.edit {
+            it[Keys.AI_REGENERATION_COUNT] = count
+            it[Keys.AI_REGENERATION_DATE] = today
+        }
+    }
+
+    suspend fun getAiRegenerationCount(): Int {
+        val prefs = context.dataStore.data.first()
+        val count = prefs[Keys.AI_REGENERATION_COUNT] ?: 0
+        val date = prefs[Keys.AI_REGENERATION_DATE] ?: ""
+        val today = java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.getDefault()).format(java.util.Date())
+        return if (date != today) 0 else count
+    }
 }

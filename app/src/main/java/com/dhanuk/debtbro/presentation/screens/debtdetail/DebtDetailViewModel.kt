@@ -71,21 +71,26 @@ class DebtDetailViewModel @Inject constructor(
     private val _showRewardAd = MutableStateFlow(false)
     val showRewardAd: StateFlow<Boolean> = _showRewardAd.asStateFlow()
 
-    private val _remainingFree = MutableStateFlow(groqRepository.remainingFreeRegenerations())
+    private val _remainingFree = MutableStateFlow(5)
     val remainingFree: StateFlow<Int> = _remainingFree.asStateFlow()
+
+    init {
+        viewModelScope.launch {
+            _remainingFree.value = groqRepository.remainingFreeRegenerations()
+        }
+    }
 
     fun generateRoast(activity: android.app.Activity? = null) = viewModelScope.launch {
         val d = debt.value ?: return@launch
 
-        // Check if user has free regenerations left
         if (!groqRepository.canRegenerate()) {
-            // Show reward ad to earn more
             if (activity != null) {
                 adManager.showRewardedAd(activity, onRewarded = {
-                    groqRepository.resetRegenerationCount()
-                    _remainingFree.value = groqRepository.remainingFreeRegenerations()
-                    // Retry generation after reward
-                    viewModelScope.launch { generateRoastInternal(d) }
+                    viewModelScope.launch {
+                        groqRepository.resetRegenerationCount()
+                        _remainingFree.value = groqRepository.remainingFreeRegenerations()
+                        generateRoastInternal(d)
+                    }
                 }, onFailed = {
                     _showRewardAd.value = true
                 })
@@ -151,13 +156,20 @@ class DebtDetailViewModel @Inject constructor(
     }
 
     fun shareCard(context: Context, debt: DebtEntity, message: String) = viewModelScope.launch(Dispatchers.IO) {
+        val actualMessage = message.ifBlank {
+            val defaultQuote = when (debt.type) {
+                "THEY_OWE_ME" -> "Hey! Still waiting for that money 😅"
+                else -> "Don't worry, I'll pay you soon 🤞"
+            }
+            debt.aiRoastGenerated ?: defaultQuote
+        }
         runCatching {
             val userName = prefs.userName.first().ifBlank { "Your Friend" }
             val bitmap = try {
-                HtmlExporter.generateShareableImage(context, debt, userName, message)
+                HtmlExporter.generateShareableImage(context, debt, userName, actualMessage)
             } catch (e: Exception) {
                 android.util.Log.e("DebtDetailVM", "HTML export failed, falling back to Canvas: ${e.message}")
-                CanvasExporter.createDebtCard(context, debt, message, roastLevel.value)
+                CanvasExporter.createDebtCard(context, debt, actualMessage, roastLevel.value)
             }
             HtmlExporter.shareImage(context, bitmap)
         }.onFailure {
@@ -169,21 +181,28 @@ class DebtDetailViewModel @Inject constructor(
     }
 
     fun shareCardToWhatsApp(context: Context, debt: DebtEntity, message: String) = viewModelScope.launch(Dispatchers.IO) {
+        val actualMessage = message.ifBlank {
+            val defaultQuote = when (debt.type) {
+                "THEY_OWE_ME" -> "Hey! Still waiting for that money 😅"
+                else -> "Don't worry, I'll pay you soon 🤞"
+            }
+            debt.aiRoastGenerated ?: defaultQuote
+        }
         runCatching {
             val userName = prefs.userName.first().ifBlank { "Your Friend" }
             val (bitmap, uri) = try {
-                val bmp = HtmlExporter.generateShareableImage(context, debt, userName, message)
+                val bmp = HtmlExporter.generateShareableImage(context, debt, userName, actualMessage)
                 Pair(bmp, HtmlExporter.getShareableUri(context, bmp))
             } catch (e: Exception) {
                 android.util.Log.e("DebtDetailVM", "HTML export failed, falling back to Canvas: ${e.message}")
-                val bmp = CanvasExporter.createDebtCard(context, debt, message, roastLevel.value)
+                val bmp = CanvasExporter.createDebtCard(context, debt, actualMessage, roastLevel.value)
                 Pair(bmp, CanvasExporter.saveDebtCard(context, bmp))
             }
             kotlinx.coroutines.withContext(Dispatchers.Main) {
                 val intent = android.content.Intent(android.content.Intent.ACTION_SEND).apply {
                     type = "image/png"
                     putExtra(android.content.Intent.EXTRA_STREAM, uri)
-                    putExtra(android.content.Intent.EXTRA_TEXT, message)
+                    putExtra(android.content.Intent.EXTRA_TEXT, actualMessage)
                     setPackage("com.whatsapp")
                     addFlags(android.content.Intent.FLAG_GRANT_READ_URI_PERMISSION)
                     addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK)
@@ -193,7 +212,7 @@ class DebtDetailViewModel @Inject constructor(
         }.onFailure {
             it.printStackTrace()
             kotlinx.coroutines.withContext(Dispatchers.Main) {
-                com.dhanuk.debtbro.util.shareTextToWhatsApp(context, message)
+                com.dhanuk.debtbro.util.shareTextToWhatsApp(context, actualMessage)
             }
         }
     }

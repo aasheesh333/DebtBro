@@ -42,12 +42,20 @@ object CsvExporter {
         OutputStreamWriter(stream).use { writer ->
             writer.appendLine("Name,Amount,Paid,Remaining,Type,Status,Description,DueDate,CreatedAt")
             debts.forEach { d ->
-                writer.appendLine(listOf(
+                val fields = listOf(
                     d.personName, d.amount.toString(), d.amountPaid.toString(),
                     (d.amount - d.amountPaid).toString(), d.type, d.status,
                     d.description, d.dueDate?.toReadableDate().orEmpty(),
                     d.createdAt.toReadableDate()
-                ).joinToString(",") { "\"${it.replace("\"", "\"\"")}\"" })
+                )
+                val csvLine = fields.joinToString(",") { field ->
+                    val escaped = field
+                        .replace("\"", "\"\"")
+                        .replace("\n", " ")
+                        .replace("\r", " ")
+                    "\"$escaped\""
+                }
+                writer.appendLine(csvLine)
             }
         }
     }

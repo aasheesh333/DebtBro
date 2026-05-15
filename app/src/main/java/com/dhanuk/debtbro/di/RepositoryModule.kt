@@ -1,9 +1,4 @@
 package com.dhanuk.debtbro.di
 
-import dagger.Module
-import dagger.hilt.InstallIn
-import dagger.hilt.components.SingletonComponent
-
-@Module
-@InstallIn(SingletonComponent::class)
-object RepositoryModule
+// Repositories use @Inject constructors directly — no module needed.
+// This file kept for future repository bindings if needed.

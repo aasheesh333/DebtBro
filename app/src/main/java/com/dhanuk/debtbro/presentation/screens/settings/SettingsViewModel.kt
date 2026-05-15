@@ -78,16 +78,18 @@ class SettingsViewModel @Inject constructor(
     fun signInWithGoogle(activity: Activity) = viewModelScope.launch {
         auth.signInWithGoogle(activity).onSuccess { user ->
             prefs.setGoogleSignedIn(true, user.displayName ?: "DebtBro user", user.email ?: "", user.photoUrl?.toString().orEmpty())
-            // Auto-sync: pull cloud data after sign-in so previous data appears
             user.uid?.let { uid ->
                 isSyncing.value = true
                 syncMessage.value = "Syncing your data..."
-                runCatching {
+                try {
                     realTimeSyncManager.startListening(uid)
                     sync.fullSync(uid)
-                }.onSuccess { syncMessage.value = "" }
-                    .onFailure { syncMessage.value = "Sync failed: ${it.message}" }
-                isSyncing.value = false
+                    syncMessage.value = ""
+                } catch (e: Exception) {
+                    syncMessage.value = "Sync failed: ${e.message}"
+                } finally {
+                    isSyncing.value = false
+                }
             }
         }
     }
@@ -103,10 +105,21 @@ class SettingsViewModel @Inject constructor(
             runCatching { CsvExporter.exportDebts(context, debts.getAllDebtsOnce()) }
         }
         uriResult.onSuccess { uri ->
-            com.dhanuk.debtbro.util.shareFile(context, uri, "text/csv")
+            val shareIntent = android.content.Intent(android.content.Intent.ACTION_SEND).apply {
+                type = "text/csv"
+                putExtra(android.content.Intent.EXTRA_STREAM, uri)
+                addFlags(android.content.Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK)
+            }
+            val chooser = android.content.Intent.createChooser(shareIntent, "Export CSV").apply {
+                addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK)
+            }
+            context.startActivity(chooser)
         }.onFailure { e ->
             e.printStackTrace()
-            syncMessage.value = "Export failed: ${e.message}"
+            kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Main) {
+                android.widget.Toast.makeText(context, "Export failed: ${e.message}", android.widget.Toast.LENGTH_LONG).show()
+            }
         }
     }
 
@@ -116,9 +129,13 @@ class SettingsViewModel @Inject constructor(
         val userId = auth.getCurrentUser()?.uid ?: return@launch
         isSyncing.value = true
         syncMessage.value = "Syncing..."
-        runCatching { sync.fullSync(userId) }
-            .onSuccess { syncMessage.value = "" }
-            .onFailure { syncMessage.value = "Sync failed: ${it.message}" }
-        isSyncing.value = false
+        try {
+            sync.fullSync(userId)
+            syncMessage.value = ""
+        } catch (e: Exception) {
+            syncMessage.value = "Sync failed: ${e.message}"
+        } finally {
+            isSyncing.value = false
+        }
     }
 }

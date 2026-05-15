@@ -29,8 +29,12 @@ import com.dhanuk.debtbro.presentation.screens.settings.SettingsScreen
 import com.dhanuk.debtbro.presentation.screens.split.SplitScreen
 import com.dhanuk.debtbro.presentation.theme.PrimaryGreen
 import com.dhanuk.debtbro.presentation.theme.SubtitleGray
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.ui.Alignment
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.material3.CircularProgressIndicator
 import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.runBlocking
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -38,10 +42,21 @@ fun DebtBroNavGraph(appPreferences: AppPreferences) {
     val navController = rememberNavController()
     var showAddDebt by remember { mutableStateOf(false) }
     
-    val startDestination = if (runBlocking { appPreferences.hasCompletedOnboarding.first() }) {
-        Screen.Dashboard.route
-    } else {
-        Screen.Onboarding.route
+    var startDestination by remember { mutableStateOf<String?>(null) }
+    
+    LaunchedEffect(Unit) {
+        startDestination = if (appPreferences.hasCompletedOnboarding.first()) {
+            Screen.Dashboard.route
+        } else {
+            Screen.Onboarding.route
+        }
+    }
+    
+    if (startDestination == null) {
+        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+            CircularProgressIndicator(color = PrimaryGreen)
+        }
+        return
     }
     
     val backStackEntry by navController.currentBackStackEntryAsState()
@@ -189,7 +204,7 @@ fun DebtBroNavGraph(appPreferences: AppPreferences) {
     ) { paddingValues ->
         NavHost(
             navController = navController,
-            startDestination = startDestination,
+            startDestination = startDestination!!,
             modifier = Modifier.padding(paddingValues)
         ) {
             composable(Screen.Onboarding.route) {

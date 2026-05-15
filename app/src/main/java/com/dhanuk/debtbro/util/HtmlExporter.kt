@@ -32,8 +32,18 @@ object HtmlExporter {
 
     @Volatile
     private var lastError: String? = null
+    private var lastTemplateIndex = -1
 
     fun getLastError(): String? = lastError
+
+    private fun getRandomTemplateIndex(): Int {
+        var newIndex: Int
+        do {
+            newIndex = (0 until templates.size).random()
+        } while (newIndex == lastTemplateIndex && templates.size > 1)
+        lastTemplateIndex = newIndex
+        return newIndex
+    }
 
     suspend fun generateShareableImage(
         context: Context,
@@ -42,7 +52,9 @@ object HtmlExporter {
         aiMessage: String
     ): Bitmap = withContext(Dispatchers.Main) {
         try {
-            val templateFile = getRandomTemplate()
+            val templateIndex = getRandomTemplateIndex()
+            val templateFile = templates[templateIndex]
+            android.util.Log.d("HtmlExporter", "Using template: $templateFile (index: $templateIndex)")
             val htmlContent = loadAndFillTemplate(context, templateFile, debt, lenderName, aiMessage)
             renderHtmlToBitmap(context, htmlContent)
         } catch (e: Exception) {
@@ -50,10 +62,6 @@ object HtmlExporter {
             android.util.Log.e("HtmlExporter", "HTML export failed: ${e.message}", e)
             throw e
         }
-    }
-
-    private fun getRandomTemplate(): String {
-        return templates.random()
     }
 
     private fun loadAndFillTemplate(
@@ -100,7 +108,6 @@ object HtmlExporter {
                         useWideViewPort = true
                         cacheMode = WebSettings.LOAD_NO_CACHE
                         domStorageEnabled = true
-                        databaseEnabled = true
                     }
                     setBackgroundColor(Color.WHITE)
                 }
@@ -108,11 +115,11 @@ object HtmlExporter {
                 val timeoutHandler = android.os.Handler(android.os.Looper.getMainLooper())
                 val timeoutRunnable = Runnable {
                     if (continuation.isActive) {
-                        webView.destroy()
+                        try { webView.destroy() } catch (_: Exception) {}
                         continuation.resumeWithException(TimeoutException("WebView render timeout"))
                     }
                 }
-                timeoutHandler.postDelayed(timeoutRunnable, 12000)
+                timeoutHandler.postDelayed(timeoutRunnable, 14000)
 
                 webView.webViewClient = object : WebViewClient() {
                     override fun onPageFinished(view: WebView?, url: String?) {
@@ -138,14 +145,14 @@ object HtmlExporter {
                                 if (continuation.isActive) {
                                     continuation.resume(bitmap)
                                 }
-                                webView.destroy()
                             } catch (e: Exception) {
                                 if (continuation.isActive) {
                                     continuation.resumeWithException(e)
                                 }
-                                webView.destroy()
+                            } finally {
+                                try { webView.destroy() } catch (_: Exception) {}
                             }
-                        }, 1000)
+                        }, 500)
                     }
 
                     override fun onReceivedError(
@@ -168,7 +175,7 @@ object HtmlExporter {
 
                 continuation.invokeOnCancellation {
                     timeoutHandler.removeCallbacks(timeoutRunnable)
-                    webView.destroy()
+                    try { webView.destroy() } catch (_: Exception) {}
                 }
             }
         }
