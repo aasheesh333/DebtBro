@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>The Wall of Shame</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Bungee&family=Outfit:wght@400;800&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Outfit', sans-serif; background-color: #111; display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; }
+        .shame-post { width: 1080px; height: 1350px; background: #ffde03; color: #000; padding: 60px; box-sizing: border-box; position: relative; border: 30px solid #000; }
+        .bungee { font-family: 'Bungee', cursive; }
+        .sticker { background: #000; color: #ffde03; padding: 10px 30px; transform: rotate(-5deg); display: inline-block; font-weight: bold; font-size: 3rem; }
+    </style>
+</head>
+<body>
+    <div class="shame-post">
+        <div class="text-center mb-16">
+            <div class="sticker bungee text-5xl mb-8">WANTED FOR DEBT</div>
+            <h1 class="bungee text-8xl uppercase leading-none">{{borrowerName}}</h1>
+        </div>
+
+        <div class="flex flex-col items-center justify-center h-3/5 text-center">
+            <div class="bg-white border-8 border-black p-12 shadow-[20px_20px_0px_0px_rgba(0,0,0,1)]">
+                <p class="text-4xl font-bold mb-4">You borrowed from {{lenderName}}</p>
+                <p class="text-[12rem] font-black leading-none mb-6">{{currency}}{{amount}}</p>
+                <p class="text-3xl font-medium italic">"{{debtQuote}}"</p>
+            </div>
+        </div>
+
+        <div class="absolute bottom-20 left-0 right-0 text-center">
+            <div class="flex justify-center gap-20 text-4xl font-black uppercase mb-10">
+                <div>📅 {{dueDate}}</div>
+                <div>📝 {{description}}</div>
+            </div>
+            <p class="bungee text-3xl opacity-50">DebtBro official record</p>
+        </div>
+    </div>
+</body>
+</html>

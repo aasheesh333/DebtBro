@@ -14,6 +14,7 @@ import com.dhanuk.debtbro.data.repository.DebtRepository
 import com.dhanuk.debtbro.data.repository.GroqRepository
 import com.dhanuk.debtbro.data.repository.PaymentRepository
 import com.dhanuk.debtbro.util.CanvasExporter
+import com.dhanuk.debtbro.util.HtmlExporter
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.*
@@ -151,19 +152,9 @@ class DebtDetailViewModel @Inject constructor(
 
     fun shareCard(context: Context, debt: DebtEntity, message: String) = viewModelScope.launch(Dispatchers.IO) {
         runCatching {
-            val bitmap = CanvasExporter.createDebtCard(context, debt, message, roastLevel.value)
-            val uri = CanvasExporter.saveDebtCard(context, bitmap)
-            kotlinx.coroutines.withContext(Dispatchers.Main) {
-                val intent = android.content.Intent(android.content.Intent.ACTION_SEND).apply {
-                    type = "image/png"
-                    putExtra(android.content.Intent.EXTRA_STREAM, uri)
-                    addFlags(android.content.Intent.FLAG_GRANT_READ_URI_PERMISSION)
-                    addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK)
-                }
-                context.startActivity(android.content.Intent.createChooser(intent, "Share DebtBro card").apply {
-                    addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK)
-                })
-            }
+            val userName = prefs.userName.first().ifBlank { "Your Friend" }
+            val bitmap = HtmlExporter.generateShareableImage(context, debt, userName, message)
+            HtmlExporter.shareImage(context, bitmap)
         }.onFailure {
             it.printStackTrace()
             kotlinx.coroutines.withContext(Dispatchers.Main) {
@@ -174,8 +165,9 @@ class DebtDetailViewModel @Inject constructor(
 
     fun shareCardToWhatsApp(context: Context, debt: DebtEntity, message: String) = viewModelScope.launch(Dispatchers.IO) {
         runCatching {
-            val bitmap = CanvasExporter.createDebtCard(context, debt, message, "MEDIUM")
-            val uri = CanvasExporter.saveDebtCard(context, bitmap)
+            val userName = prefs.userName.first().ifBlank { "Your Friend" }
+            val bitmap = HtmlExporter.generateShareableImage(context, debt, userName, message)
+            val uri = HtmlExporter.getShareableUri(context, bitmap)
             kotlinx.coroutines.withContext(Dispatchers.Main) {
                 val intent = android.content.Intent(android.content.Intent.ACTION_SEND).apply {
                     type = "image/png"
