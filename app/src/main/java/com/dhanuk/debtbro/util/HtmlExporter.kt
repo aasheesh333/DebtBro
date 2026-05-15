@@ -101,8 +101,6 @@ object HtmlExporter {
                         cacheMode = WebSettings.LOAD_NO_CACHE
                         domStorageEnabled = true
                         databaseEnabled = true
-                        setSupportZoom(false)
-                        setSupportOffline(false)
                     }
                     setBackgroundColor(Color.WHITE)
                 }
