@@ -153,7 +153,12 @@ class DebtDetailViewModel @Inject constructor(
     fun shareCard(context: Context, debt: DebtEntity, message: String) = viewModelScope.launch(Dispatchers.IO) {
         runCatching {
             val userName = prefs.userName.first().ifBlank { "Your Friend" }
-            val bitmap = HtmlExporter.generateShareableImage(context, debt, userName, message)
+            val bitmap = try {
+                HtmlExporter.generateShareableImage(context, debt, userName, message)
+            } catch (e: Exception) {
+                android.util.Log.e("DebtDetailVM", "HTML export failed, falling back to Canvas: ${e.message}")
+                CanvasExporter.createDebtCard(context, debt, message, roastLevel.value)
+            }
             HtmlExporter.shareImage(context, bitmap)
         }.onFailure {
             it.printStackTrace()
@@ -166,8 +171,14 @@ class DebtDetailViewModel @Inject constructor(
     fun shareCardToWhatsApp(context: Context, debt: DebtEntity, message: String) = viewModelScope.launch(Dispatchers.IO) {
         runCatching {
             val userName = prefs.userName.first().ifBlank { "Your Friend" }
-            val bitmap = HtmlExporter.generateShareableImage(context, debt, userName, message)
-            val uri = HtmlExporter.getShareableUri(context, bitmap)
+            val (bitmap, uri) = try {
+                val bmp = HtmlExporter.generateShareableImage(context, debt, userName, message)
+                Pair(bmp, HtmlExporter.getShareableUri(context, bmp))
+            } catch (e: Exception) {
+                android.util.Log.e("DebtDetailVM", "HTML export failed, falling back to Canvas: ${e.message}")
+                val bmp = CanvasExporter.createDebtCard(context, debt, message, roastLevel.value)
+                Pair(bmp, CanvasExporter.saveDebtCard(context, bmp))
+            }
             kotlinx.coroutines.withContext(Dispatchers.Main) {
                 val intent = android.content.Intent(android.content.Intent.ACTION_SEND).apply {
                     type = "image/png"

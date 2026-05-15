@@ -4,17 +4,15 @@ import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.Canvas
 import android.graphics.Color
-import android.graphics.Paint
-import android.graphics.pdf.PdfDocument
-import android.os.Build
-import android.print.PrintAttributes
-import android.print.pdf.PrintedPdfDocument
+import android.webkit.WebSettings
 import android.webkit.WebView
 import android.webkit.WebViewClient
 import com.dhanuk.debtbro.data.db.entity.DebtEntity
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.TimeoutCancellationException
 import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.withContext
+import kotlinx.coroutines.withTimeout
 import java.io.File
 import java.io.FileOutputStream
 import java.text.SimpleDateFormat
@@ -32,16 +30,10 @@ object HtmlExporter {
         "cyberpunk_debt.html"
     )
 
-    data class DebtData(
-        val lenderName: String,
-        val borrowerName: String,
-        val amount: String,
-        val currency: String,
-        val description: String,
-        val dueDate: String,
-        val debtQuote: String,
-        val personEmoji: String
-    )
+    @Volatile
+    private var lastError: String? = null
+
+    fun getLastError(): String? = lastError
 
     suspend fun generateShareableImage(
         context: Context,
@@ -49,9 +41,15 @@ object HtmlExporter {
         lenderName: String,
         aiMessage: String
     ): Bitmap = withContext(Dispatchers.Main) {
-        val templateFile = getRandomTemplate()
-        val htmlContent = loadAndFillTemplate(context, templateFile, debt, lenderName, aiMessage)
-        renderHtmlToBitmap(context, htmlContent)
+        try {
+            val templateFile = getRandomTemplate()
+            val htmlContent = loadAndFillTemplate(context, templateFile, debt, lenderName, aiMessage)
+            renderHtmlToBitmap(context, htmlContent)
+        } catch (e: Exception) {
+            lastError = e.message
+            android.util.Log.e("HtmlExporter", "HTML export failed: ${e.message}", e)
+            throw e
+        }
     }
 
     private fun getRandomTemplate(): String {
@@ -74,65 +72,106 @@ object HtmlExporter {
         val formattedAmount = "${debt.currency}${(debt.amount - debt.amountPaid).toLong()}"
 
         return htmlContent
-            .replace("{{lenderName}}", lenderName)
-            .replace("{{borrowerName}}", debt.personName)
+            .replace("{{lenderName}}", escapeHtml(lenderName))
+            .replace("{{borrowerName}}", escapeHtml(debt.personName))
             .replace("{{amount}}", formattedAmount)
             .replace("{{currency}}", debt.currency)
-            .replace("{{description}}", debt.description.ifBlank { "Personal Loan" })
+            .replace("{{description}}", escapeHtml(debt.description.ifBlank { "Personal Loan" }))
             .replace("{{dueDate}}", dueDateStr)
-            .replace("{{debtQuote}}", aiMessage.ifBlank { "Please repay soon!" })
+            .replace("{{debtQuote}}", escapeHtml(aiMessage.ifBlank { "Please repay soon!" }))
+    }
+
+    private fun escapeHtml(text: String): String {
+        return text
+            .replace("&", "&amp;")
+            .replace("<", "&lt;")
+            .replace(">", "&gt;")
+            .replace("\"", "&quot;")
+            .replace("'", "&#39;")
     }
 
     private suspend fun renderHtmlToBitmap(context: Context, html: String): Bitmap =
-        suspendCancellableCoroutine { continuation ->
-            val webView = WebView(context).apply {
-                settings.javaScriptEnabled = true
-                settings.loadWithOverviewMode = true
-                settings.useWideViewPort = true
-                setBackgroundColor(Color.WHITE)
-            }
-
-            webView.webViewClient = object : WebViewClient() {
-                override fun onPageFinished(view: WebView?, url: String?) {
-                    super.onPageFinished(view, url)
-                    view?.postDelayed({
-                        try {
-                            val width = 1080
-                            val height = 1350
-                            view.measure(
-                                android.view.View.MeasureSpec.makeMeasureSpec(width, android.view.View.MeasureSpec.EXACTLY),
-                                android.view.View.MeasureSpec.makeMeasureSpec(height, android.view.View.MeasureSpec.EXACTLY)
-                            )
-                            view.layout(0, 0, width, height)
-
-                            val bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
-                            val canvas = Canvas(bitmap)
-                            canvas.drawColor(Color.WHITE)
-                            view.draw(canvas)
-
-                            if (continuation.isActive) {
-                                continuation.resume(bitmap)
-                            }
-                            webView.destroy()
-                        } catch (e: Exception) {
-                            if (continuation.isActive) {
-                                continuation.resumeWithException(e)
-                            }
-                        }
-                    }, 500)
+        withTimeout(15000L) {
+            suspendCancellableCoroutine { continuation ->
+                val webView = WebView(context).apply {
+                    settings.apply {
+                        javaScriptEnabled = true
+                        loadWithOverviewMode = true
+                        useWideViewPort = true
+                        cacheMode = WebSettings.LOAD_NO_CACHE
+                        domStorageEnabled = true
+                        databaseEnabled = true
+                        setSupportZoom(false)
+                        setSupportOffline(false)
+                    }
+                    setBackgroundColor(Color.WHITE)
                 }
-            }
 
-            webView.loadDataWithBaseURL(
-                "file:///android_asset/",
-                html,
-                "text/html",
-                "UTF-8",
-                null
-            )
+                val timeoutHandler = android.os.Handler(android.os.Looper.getMainLooper())
+                val timeoutRunnable = Runnable {
+                    if (continuation.isActive) {
+                        webView.destroy()
+                        continuation.resumeWithException(TimeoutException("WebView render timeout"))
+                    }
+                }
+                timeoutHandler.postDelayed(timeoutRunnable, 12000)
 
-            continuation.invokeOnCancellation {
-                webView.destroy()
+                webView.webViewClient = object : WebViewClient() {
+                    override fun onPageFinished(view: WebView?, url: String?) {
+                        super.onPageFinished(view, url)
+                        timeoutHandler.removeCallbacks(timeoutRunnable)
+
+                        view?.postDelayed({
+                            try {
+                                val width = 1080
+                                val height = 1350
+
+                                view.measure(
+                                    android.view.View.MeasureSpec.makeMeasureSpec(width, android.view.View.MeasureSpec.EXACTLY),
+                                    android.view.View.MeasureSpec.makeMeasureSpec(height, android.view.View.MeasureSpec.EXACTLY)
+                                )
+                                view.layout(0, 0, width, height)
+
+                                val bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
+                                val canvas = Canvas(bitmap)
+                                canvas.drawColor(Color.WHITE)
+                                view.draw(canvas)
+
+                                if (continuation.isActive) {
+                                    continuation.resume(bitmap)
+                                }
+                                webView.destroy()
+                            } catch (e: Exception) {
+                                if (continuation.isActive) {
+                                    continuation.resumeWithException(e)
+                                }
+                                webView.destroy()
+                            }
+                        }, 1000)
+                    }
+
+                    override fun onReceivedError(
+                        view: WebView?,
+                        errorCode: Int,
+                        description: String?,
+                        failingUrl: String?
+                    ) {
+                        android.util.Log.e("HtmlExporter", "WebView error: $description (code: $errorCode)")
+                    }
+                }
+
+                webView.loadDataWithBaseURL(
+                    "file:///android_asset/",
+                    html,
+                    "text/html",
+                    "UTF-8",
+                    null
+                )
+
+                continuation.invokeOnCancellation {
+                    timeoutHandler.removeCallbacks(timeoutRunnable)
+                    webView.destroy()
+                }
             }
         }
 
@@ -168,3 +207,5 @@ object HtmlExporter {
         })
     }
 }
+
+class TimeoutException(message: String) : Exception(message)
