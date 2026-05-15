@@ -41,6 +41,15 @@ import com.dhanuk.debtbro.util.copyToClipboard
 import com.dhanuk.debtbro.util.formatCurrency
 import com.dhanuk.debtbro.util.toReadableDate
 
+fun android.content.Context.findActivity(): Activity? {
+    var ctx = this
+    while (ctx is ContextWrapper) {
+        if (ctx is Activity) return ctx
+        ctx = ctx.baseContext
+    }
+    return null
+}
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun DebtDetailScreen(onBack: () -> Unit, viewModel: DebtDetailViewModel = hiltViewModel()) {
@@ -263,15 +272,6 @@ fun DebtDetailScreen(onBack: () -> Unit, viewModel: DebtDetailViewModel = hiltVi
                                     Text("WhatsApp")
         }
     }
-}
-
-fun android.content.Context.findActivity(): Activity? {
-    var ctx = this
-    while (ctx is ContextWrapper) {
-        if (ctx is Activity) return ctx
-        ctx = ctx.baseContext
-    }
-    return null
 }
                     }
                 }
