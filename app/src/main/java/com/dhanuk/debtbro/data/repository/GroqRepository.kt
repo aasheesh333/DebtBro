@@ -82,7 +82,7 @@ Key rules:
     }
     suspend fun generateRoast(debt: DebtEntity, roastLevel: String): Result<String> = runCatching {
         val key = apiKey()
-        if (key.isEmpty()) error("NO_API_KEY")
+        if (key.isEmpty()) return Result.failure(Exception("NO_API_KEY"))
         val now = System.currentTimeMillis()
         val daysOverdue = if (debt.dueDate != null && debt.dueDate < now) ((now - debt.dueDate) / 86400000).toInt() else 0
         val amountStr = "${debt.currency}${debt.amount - debt.amountPaid}"
@@ -112,7 +112,7 @@ Write a creative WhatsApp reminder message. Make it 3 lines max, personal, and f
     }
     suspend fun analyzeDebts(totalLent: Double, totalOwed: Double, recoveryRate: Int, worstDebtor: String): Result<String> = runCatching {
         val key = apiKey()
-        if (key.isEmpty()) error("NO_API_KEY")
+        if (key.isEmpty()) return Result.failure(Exception("NO_API_KEY"))
         val langCode = prefs.selectedLanguage.first()
         val langInstruction = systemPrompt("MILD", langCode).substringBefore("\n")
         val response = api.chat("Bearer $key", GroqRequest(messages = listOf(
@@ -123,7 +123,7 @@ Write a creative WhatsApp reminder message. Make it 3 lines max, personal, and f
     }
     suspend fun generateSplitSummary(title: String, total: Double, perPerson: Double, count: Int): Result<String> = runCatching {
         val key = apiKey()
-        if (key.isEmpty()) error("NO_API_KEY")
+        if (key.isEmpty()) return Result.failure(Exception("NO_API_KEY"))
         val langCode = prefs.selectedLanguage.first()
         val langInstruction = systemPrompt("MILD", langCode).substringBefore("\n")
         val response = api.chat("Bearer $key", GroqRequest(messages = listOf(

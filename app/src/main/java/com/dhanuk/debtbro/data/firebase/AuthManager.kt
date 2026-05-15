@@ -46,7 +46,7 @@ class AuthManager @Inject constructor(
             val authResult = auth.signInWithCredential(firebaseCredential).await()
             authResult.user ?: error("Firebase login failed")
         } else {
-            error("Invalid credential type")
+            return Result.failure(Exception("Invalid credential type"))
         }
     }
 

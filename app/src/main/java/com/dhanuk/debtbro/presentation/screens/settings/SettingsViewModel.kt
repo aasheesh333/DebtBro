@@ -45,30 +45,29 @@ class SettingsViewModel @Inject constructor(
     private val debts: DebtRepository,
     private val groq: GroqRepository
 ) : ViewModel() {
-    private val testMessage = MutableStateFlow("")
-    private val isSyncing = MutableStateFlow(false)
+        private val isSyncing = MutableStateFlow(false)
     private val syncMessage = MutableStateFlow("")
 
     val state: StateFlow<SettingsUiState> = combine(
-        prefs.userName, prefs.groqApiKey, prefs.roastLevel,
+        prefs.userName, prefs.roastLevel,
         prefs.defaultCurrency, prefs.isGoogleSignedIn, prefs.googleUserName,
         prefs.googleUserEmail, prefs.googleUserPhoto, prefs.lastSyncedAt,
-        prefs.selectedLanguage, testMessage, isSyncing, syncMessage
+        prefs.selectedLanguage, isSyncing, syncMessage
     ) { v ->
         SettingsUiState(
-            v[0] as String, v[1] as String, v[2] as String,
-            v[3] as String, v[4] as Boolean, v[5] as String,
-            v[6] as String, v[7] as String, v[8] as Long,
-            v[9] as String, v[10] as String, v[11] as Boolean, v[12] as String
+            v[0] as String, v[1] as String,
+            v[2] as String, v[3] as Boolean, v[4] as String,
+            v[5] as String, v[6] as String, v[7] as Long,
+            v[8] as String, v[9] as Boolean, v[10] as String
         )
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), SettingsUiState())
 
     fun saveUserName(name: String) = viewModelScope.launch { prefs.saveUserName(name) }
-    fun saveGroqKey(key: String) = viewModelScope.launch { prefs.saveGroqKey(key) }
+    
     fun setRoastLevel(level: String) = viewModelScope.launch { prefs.setRoastLevel(level) }
     fun setCurrency(c: String) = viewModelScope.launch { prefs.setCurrency(c) }
     fun setLanguage(code: String) = viewModelScope.launch { prefs.setLanguage(code) }
-    fun testGroqConnection() = viewModelScope.launch { testMessage.value = if (groq.testConnection()) "Groq OK" else "Add a valid API key" }
+    
 
     fun signInWithGoogle(activity: Activity) = viewModelScope.launch {
         auth.signInWithGoogle(activity).onSuccess { user ->
