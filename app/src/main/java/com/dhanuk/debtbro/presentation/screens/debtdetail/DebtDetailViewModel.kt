@@ -17,6 +17,7 @@ import com.dhanuk.debtbro.util.CanvasExporter
 import com.dhanuk.debtbro.util.HtmlExporter
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -78,10 +79,17 @@ class DebtDetailViewModel @Inject constructor(
     private val _remainingFree = MutableStateFlow(5)
     val remainingFree: StateFlow<Int> = _remainingFree.asStateFlow()
 
+    private val _toastEvent = MutableSharedFlow<String>()
+    val toastEvent: SharedFlow<String> = _toastEvent.asSharedFlow()
+
     init {
         viewModelScope.launch {
             _remainingFree.value = groqRepository.remainingFreeRegenerations()
         }
+    }
+
+    fun preloadRewardedAd(context: Context) {
+        adManager.loadRewardedAd(context)
     }
 
     fun generateRoast(activity: android.app.Activity? = null) = viewModelScope.launch {
@@ -96,7 +104,11 @@ class DebtDetailViewModel @Inject constructor(
                         generateRoastInternal(d)
                     }
                 }, onFailed = {
-                    _showRewardAd.value = true
+                    adManager.loadRewardedAd(activity)
+                    viewModelScope.launch {
+                        _toastEvent.emit("Ad loading, please try again in a moment")
+                    }
+                    _showRewardAd.value = false
                 })
             } else {
                 _showRewardAd.value = true
@@ -166,6 +178,14 @@ class DebtDetailViewModel @Inject constructor(
         _isExportingImage.value = true
         _exportElapsed.value = 0L
         val startTime = System.currentTimeMillis()
+
+        val elapsedJob = viewModelScope.launch {
+            while (isActive) {
+                delay(100)
+                _exportElapsed.value = System.currentTimeMillis() - startTime
+            }
+        }
+
         val actualMessage = message.ifBlank {
             val defaultQuote = when (debt.type) {
                 "THEY_OWE_ME" -> "Hey! Still waiting for that money 😅"
@@ -182,22 +202,32 @@ class DebtDetailViewModel @Inject constructor(
                 CanvasExporter.createDebtCard(context, debt, actualMessage, roastLevel.value)
             }
             HtmlExporter.shareImage(context, bitmap)
-            _exportElapsed.value = System.currentTimeMillis() - startTime
             kotlinx.coroutines.withContext(Dispatchers.Main) {
                 android.widget.Toast.makeText(context, "New design generated!", android.widget.Toast.LENGTH_SHORT).show()
             }
         } catch (e: Exception) {
             e.printStackTrace()
-            _exportElapsed.value = System.currentTimeMillis() - startTime
             kotlinx.coroutines.withContext(Dispatchers.Main) {
                 android.widget.Toast.makeText(context, "Failed to create image: ${e.message}", android.widget.Toast.LENGTH_LONG).show()
             }
         } finally {
+            elapsedJob.cancel()
             _isExportingImage.value = false
         }
     }
 
     fun shareCardToWhatsApp(context: Context, debt: DebtEntity, message: String) = viewModelScope.launch(Dispatchers.IO) {
+        _isExportingImage.value = true
+        _exportElapsed.value = 0L
+        val startTime = System.currentTimeMillis()
+
+        val elapsedJob = viewModelScope.launch {
+            while (isActive) {
+                delay(100)
+                _exportElapsed.value = System.currentTimeMillis() - startTime
+            }
+        }
+
         val actualMessage = message.ifBlank {
             val defaultQuote = when (debt.type) {
                 "THEY_OWE_ME" -> "Hey! Still waiting for that money 😅"
@@ -205,7 +235,7 @@ class DebtDetailViewModel @Inject constructor(
             }
             debt.aiRoastGenerated ?: defaultQuote
         }
-        runCatching {
+        try {
             val userName = prefs.userName.first().ifBlank { "Your Friend" }
             val (bitmap, uri) = try {
                 val bmp = HtmlExporter.generateShareableImage(context, debt, userName, actualMessage)
@@ -229,11 +259,14 @@ class DebtDetailViewModel @Inject constructor(
             kotlinx.coroutines.withContext(Dispatchers.Main) {
                 android.widget.Toast.makeText(context, "New design generated!", android.widget.Toast.LENGTH_SHORT).show()
             }
-        }.onFailure {
-            it.printStackTrace()
+        } catch (e: Exception) {
+            e.printStackTrace()
             kotlinx.coroutines.withContext(Dispatchers.Main) {
                 com.dhanuk.debtbro.util.shareTextToWhatsApp(context, actualMessage)
             }
+        } finally {
+            elapsedJob.cancel()
+            _isExportingImage.value = false
         }
     }
 

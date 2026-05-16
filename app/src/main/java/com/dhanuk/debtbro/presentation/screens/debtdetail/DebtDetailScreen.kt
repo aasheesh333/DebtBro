@@ -71,6 +71,16 @@ fun DebtDetailScreen(onBack: () -> Unit, viewModel: DebtDetailViewModel = hiltVi
 
     BackHandler(onBack = onBack)
 
+    LaunchedEffect(Unit) {
+        viewModel.preloadRewardedAd(context)
+    }
+
+    LaunchedEffect(Unit) {
+        viewModel.toastEvent.collect { message ->
+            Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
+        }
+    }
+
     val d = debt ?: return DebtNotFoundScreen(onBack = onBack)
 
     val remaining = (d.amount - d.amountPaid).coerceAtLeast(0.0)
@@ -382,6 +392,10 @@ fun DebtDetailScreen(onBack: () -> Unit, viewModel: DebtDetailViewModel = hiltVi
             text = { Text(LocalizedString.get("free_regenerations_desc").replace("{count}", MAX_FREE_REGENERATIONS.toString()), color = Color(0xFFCCCCCC)) },
             confirmButton = {
                 TextButton(onClick = {
+                    val activity = context.findActivity()
+                    if (activity != null) {
+                        viewModel.preloadRewardedAd(activity)
+                    }
                     viewModel.dismissRewardAd()
                     viewModel.generateRoast(context.findActivity())
                 }) {
@@ -402,7 +416,16 @@ fun DebtDetailScreen(onBack: () -> Unit, viewModel: DebtDetailViewModel = hiltVi
         AlertDialog(
             onDismissRequest = {},
             title = { Text("Preparing image...", color = Color.White) },
-            text = { Text("${seconds}s elapsed — rendering your card", color = Color(0xFFCCCCCC)) },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                    LinearProgressIndicator(
+                        modifier = Modifier.fillMaxWidth().height(6.dp).clip(RoundedCornerShape(3.dp)),
+                        color = PrimaryGreen,
+                        trackColor = Color(0xFF333333)
+                    )
+                    Text("${seconds}s elapsed — rendering your card", color = Color(0xFFCCCCCC))
+                }
+            },
             confirmButton = {},
             containerColor = Color(0xFF1A1A1A)
         )
