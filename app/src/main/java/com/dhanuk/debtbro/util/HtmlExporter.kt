@@ -79,6 +79,7 @@ object HtmlExporter {
 
         val formattedAmount = "${debt.currency}${(debt.amount - debt.amountPaid).toLong()}"
         val hasDesc = debt.description.isNotBlank()
+        val truncatedMessage = if (aiMessage.length > 100) aiMessage.take(97) + "..." else aiMessage
 
         return htmlContent
             .replace("{{lenderName}}", escapeHtml(lenderName))
@@ -87,7 +88,7 @@ object HtmlExporter {
             .replace("{{currency}}", debt.currency)
             .replace("{{description}}", escapeHtml(debt.description))
             .replace("{{dueDate}}", dueDateStr)
-            .replace("{{debtQuote}}", escapeHtml(aiMessage.ifBlank { "Please repay soon!" }))
+            .replace("{{debtQuote}}", escapeHtml(truncatedMessage.ifBlank { "Please repay soon!" }))
             .replace("{{descriptionDisplay}}", if (hasDesc) "flex" else "none")
             .replace("{{dueDateText}}", if (hasDesc) "- Due" else "")
             .replace("{{quoteText}}", if (hasDesc) "." else "")

@@ -125,7 +125,7 @@ fun DashboardScreen(
                 item {
                     SectionHeader(LocalizedString.get("overdue"), null)
                 }
-                items(state.overdueDebts, key = { it.id }) { debt ->
+                items(state.overdueDebts, key = { "overdue_${it.id}" }) { debt ->
                     DebtCard(debt, state.isSignedIn, { onDebtClick(debt.id) })
                 }
             }
@@ -139,7 +139,7 @@ fun DashboardScreen(
                     EmptyState(LocalizedString.get("no_active"))
                 }
             } else {
-                items(state.recentDebts, key = { it.id }) { debt ->
+                items(state.recentDebts, key = { "recent_${it.id}" }) { debt ->
                     DebtCard(debt, state.isSignedIn, { onDebtClick(debt.id) })
                 }
             }
@@ -148,7 +148,7 @@ fun DashboardScreen(
             item {
                 SectionHeader(LocalizedString.get("leaderboard"), null)
             }
-            items(state.leaderboard, key = { it.id }) { debt ->
+            items(state.leaderboard, key = { "leaderboard_${it.id}" }) { debt ->
                 LeaderboardItem(debt, state.leaderboard.indexOf(debt) + 1)
             }
         }

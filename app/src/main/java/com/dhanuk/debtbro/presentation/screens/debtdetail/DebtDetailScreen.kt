@@ -66,6 +66,8 @@ fun DebtDetailScreen(onBack: () -> Unit, viewModel: DebtDetailViewModel = hiltVi
     val context = LocalContext.current
     val showRewardAd by viewModel.showRewardAd.collectAsStateWithLifecycle()
     val remainingFree by viewModel.remainingFree.collectAsStateWithLifecycle()
+    val isExportingImage by viewModel.isExportingImage.collectAsStateWithLifecycle()
+    val exportElapsed by viewModel.exportElapsed.collectAsStateWithLifecycle()
 
     BackHandler(onBack = onBack)
 
@@ -317,9 +319,9 @@ fun DebtDetailScreen(onBack: () -> Unit, viewModel: DebtDetailViewModel = hiltVi
                 item {
                     Button(
                         onClick = { 
-                            Toast.makeText(context, "Preparing image...", Toast.LENGTH_SHORT).show()
                             viewModel.shareCard(context, d, aiMessage.ifBlank { d.aiRoastGenerated.orEmpty() })
                         },
+                        enabled = !isExportingImage,
                         modifier = Modifier.fillMaxWidth().height(54.dp),
                         colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF1E1E1E)),
                         shape = RoundedCornerShape(12.dp)
@@ -333,9 +335,9 @@ fun DebtDetailScreen(onBack: () -> Unit, viewModel: DebtDetailViewModel = hiltVi
                 item {
                     OutlinedButton(
                         onClick = { 
-                            Toast.makeText(context, "Sharing to WhatsApp...", Toast.LENGTH_SHORT).show()
                             viewModel.shareCardToWhatsApp(context, d, aiMessage.ifBlank { d.aiRoastGenerated.orEmpty() })
                         },
+                        enabled = !isExportingImage,
                         modifier = Modifier.fillMaxWidth().height(54.dp),
                         colors = ButtonDefaults.outlinedButtonColors(
                             contentColor = Color(0xFF25D366)
@@ -391,6 +393,17 @@ fun DebtDetailScreen(onBack: () -> Unit, viewModel: DebtDetailViewModel = hiltVi
                     Text(LocalizedString.get("later"), color = SubtitleGray)
                 }
             },
+            containerColor = Color(0xFF1A1A1A)
+        )
+    }
+
+    if (isExportingImage) {
+        val seconds = exportElapsed / 1000
+        AlertDialog(
+            onDismissRequest = {},
+            title = { Text("Preparing image...", color = Color.White) },
+            text = { Text("${seconds}s elapsed — rendering your card", color = Color(0xFFCCCCCC)) },
+            confirmButton = {},
             containerColor = Color(0xFF1A1A1A)
         )
     }

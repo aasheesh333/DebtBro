@@ -52,6 +52,10 @@ class DebtDetailViewModel @Inject constructor(
     val showEditDebtSheet = MutableStateFlow(false)
     private val _showConfetti = MutableStateFlow(false)
     val showConfetti: StateFlow<Boolean> = _showConfetti.asStateFlow()
+    private val _isExportingImage = MutableStateFlow(false)
+    val isExportingImage: StateFlow<Boolean> = _isExportingImage.asStateFlow()
+    private val _exportElapsed = MutableStateFlow(0L)
+    val exportElapsed: StateFlow<Long> = _exportElapsed.asStateFlow()
 
     fun addPayment(amount: Double, note: String) = viewModelScope.launch {
         paymentRepository.recordPayment(debtId, amount, note)
@@ -159,6 +163,9 @@ class DebtDetailViewModel @Inject constructor(
     }
 
     fun shareCard(context: Context, debt: DebtEntity, message: String) = viewModelScope.launch(Dispatchers.IO) {
+        _isExportingImage.value = true
+        _exportElapsed.value = 0L
+        val startTime = System.currentTimeMillis()
         val actualMessage = message.ifBlank {
             val defaultQuote = when (debt.type) {
                 "THEY_OWE_ME" -> "Hey! Still waiting for that money 😅"
@@ -166,7 +173,7 @@ class DebtDetailViewModel @Inject constructor(
             }
             debt.aiRoastGenerated ?: defaultQuote
         }
-        runCatching {
+        try {
             val userName = prefs.userName.first().ifBlank { "Your Friend" }
             val bitmap = try {
                 HtmlExporter.generateShareableImage(context, debt, userName, actualMessage)
@@ -175,14 +182,18 @@ class DebtDetailViewModel @Inject constructor(
                 CanvasExporter.createDebtCard(context, debt, actualMessage, roastLevel.value)
             }
             HtmlExporter.shareImage(context, bitmap)
+            _exportElapsed.value = System.currentTimeMillis() - startTime
             kotlinx.coroutines.withContext(Dispatchers.Main) {
                 android.widget.Toast.makeText(context, "New design generated!", android.widget.Toast.LENGTH_SHORT).show()
             }
-        }.onFailure {
-            it.printStackTrace()
+        } catch (e: Exception) {
+            e.printStackTrace()
+            _exportElapsed.value = System.currentTimeMillis() - startTime
             kotlinx.coroutines.withContext(Dispatchers.Main) {
-                android.widget.Toast.makeText(context, "Failed to create image: ${it.message}", android.widget.Toast.LENGTH_LONG).show()
+                android.widget.Toast.makeText(context, "Failed to create image: ${e.message}", android.widget.Toast.LENGTH_LONG).show()
             }
+        } finally {
+            _isExportingImage.value = false
         }
     }
 

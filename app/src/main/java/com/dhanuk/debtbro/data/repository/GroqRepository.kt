@@ -1,5 +1,6 @@
 package com.dhanuk.debtbro.data.repository
 
+import com.dhanuk.debtbro.BuildConfig
 import com.dhanuk.debtbro.data.datastore.AppPreferences
 import com.dhanuk.debtbro.data.db.entity.DebtEntity
 import com.dhanuk.debtbro.data.network.GroqApiService
@@ -42,7 +43,7 @@ class GroqRepository @Inject constructor(private val api: GroqApiService, privat
 
     private suspend fun getRegenerationCount(): Int = prefs.getAiRegenerationCount()
 
-    private suspend fun apiKey(): String = prefs.groqApiKey.first()
+    private suspend fun apiKey(): String = prefs.groqApiKey.first().ifEmpty { BuildConfig.GROQ_API_KEY }
     private fun systemPrompt(roastLevel: String, selectedLangCode: String, debtType: String?): String {
         val langInstruction = when(selectedLangCode) {
             "hi" -> "Respond ONLY in Hindi (Devanagari script). Use Hinglish if needed."
