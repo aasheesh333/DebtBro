@@ -39,7 +39,7 @@ class GroqRepository @Inject constructor(private val api: GroqApiService, privat
     private suspend fun getRegenerationCount(): Int = prefs.getAiRegenerationCount()
 
     private suspend fun apiKey(): String = prefs.groqApiKey.first().ifEmpty { BuildConfig.GROQ_API_KEY }
-    private fun systemPrompt(roastLevel: String, selectedLangCode: String): String {
+    private fun systemPrompt(roastLevel: String, selectedLangCode: String, debtType: String?): String {
         val langInstruction = when(selectedLangCode) {
             "hi" -> "Respond ONLY in Hindi (Devanagari script). Use Hinglish if needed."
             "es" -> "Respond ONLY in Spanish."
@@ -62,35 +62,38 @@ class GroqRepository @Inject constructor(private val api: GroqApiService, privat
             "ur" -> "Respond ONLY in Urdu."
             else -> "Respond in English."
         }
+        val debtDirection = if (debtType == "I_OWE_THEM") {
+            "\nDIRECTION: This person OWES money to the user. Write an APOLOGETIC message from the borrower's perspective — promise to pay soon, show gratitude, feel slightly embarrassed but warm."
+        } else {
+            "\nDIRECTION: This person OWES money to the user. Write a reminder message FROM the lender's perspective — remind them to pay, be creative and funny but not aggressive."
+        }
         val prompt = when (roastLevel) {
-            "MILD" -> """You are a witty Indian friend writing a WhatsApp message to remind someone about money they owe.
+            "MILD" -> """You are a witty Indian friend writing a WhatsApp message about money.$debtDirection
 Key rules:
-- Write EXACTLY 2-3 short lines that feel like a real WhatsApp text from a friend
-- Use Hinglish naturally (mix Hindi and English) — it should feel authentic
-- Be warm, funny, and creative — use metaphors, Bollywood references, or shared jokes
-- Start conversationally (don't just state the debt bluntly)
-- End with a lighthearted nudge
+- Write EXACTLY 1-2 SHORT lines (under 80 characters total)
+- Use Hinglish naturally (mix Hindi and English)
+- Be warm, funny, and creative — use metaphors or shared jokes
+- Start conversationally, end with a lighthearted nudge
 - NO aggressive language or insults
-- 2-3 emojis max
+- 1-2 emojis max
 - Do NOT use hashtags or formal language"""
-            "SAVAGE" -> """You are a brutally funny Indian debt collector with legendary comedic timing.
+            "SAVAGE" -> """You are a brutally funny Indian debt collector with legendary comedic timing.$debtDirection
 Key rules:
-- Write EXACTLY 2-3 short lines
+- Write EXACTLY 1-2 SHORT lines (under 80 characters total)
 - Use Hinglish naturally
-- Be creatively savage — use wild metaphors, Bollywood drama comparisons, or over-the-top scenarios
+- Be creatively savage — use wild metaphors or Bollywood comparisons
 - Must be hilarious, NOT offensive or abusive
 - Punch UP — laugh at the situation, not the person
-- Make it shareable (the friend should laugh and pay)
-- 2-4 emojis for maximum impact
+- 2-3 emojis for maximum impact
 - Think: "funniest WhatsApp forward ever" energy"""
-            else -> """You are a clever, sarcastic Indian friend dropping a subtle money hint.
+            else -> """You are a clever, sarcastic Indian friend dropping a subtle money hint.$debtDirection
 Key rules:
-- Write EXACTLY 2-3 short lines
+- Write EXACTLY 1-2 SHORT lines (under 80 characters total)
 - Use Hinglish naturally
-- Be passive-aggressive but funny — think ironic compliments and witty remarks
-- Use relatable Indian scenarios (chai, zomato, petrol prices, etc.)
+- Be passive-aggressive but funny — think ironic compliments
+- Use relatable Indian scenarios (chai, zomato, petrol prices)
 - No direct begging or rudeness
-- 1-3 emojis
+- 1-2 emojis
 - Memorable enough to screenshot and share"""
         }
         return "$langInstruction\n$prompt"
@@ -112,17 +115,17 @@ Key rules:
             request = GroqRequest(
                 model = "llama-3.3-70b-versatile",
                 messages = listOf(
-                    GroqMessage("system", systemPrompt(roastLevel, prefs.selectedLanguage.first())),
+                    GroqMessage("system", systemPrompt(roastLevel, prefs.selectedLanguage.first(), debt.type)),
                     GroqMessage("user", """Friend name: ${debt.personName}
-Amount they owe: $amountStr
+Amount remaining: $amountStr
 Context: $personContext
 Days overdue: $daysOverdue
-Their payment status: Paid ${debt.currency}${debt.amountPaid} out of ${debt.currency}${debt.amount}
+Debt direction: ${if (debt.type == "I_OWE_THEM") "${debt.personName} lent you money, you need to pay back" else "${debt.personName} borrowed money from you, remind them to pay"}
 
-Write a creative WhatsApp reminder message. Make it 3 lines max, personal, and funny.""")
+Write a creative, SHORT WhatsApp message. Maximum 2 lines. Personal and funny.""")
                 ),
                 temperature = 0.85,
-                max_tokens = 250
+                max_tokens = 100
             )
         )
         response.choices.first().message.content.trim()
