@@ -148,8 +148,8 @@ fun DebtListScreen(
             if (debts.isEmpty()) {
                 EmptyStateView(
                     emoji = if (searchQuery.isNotEmpty()) "🔍" else "🏜️",
-                    title = if (searchQuery.isNotEmpty()) "No results found" else "No debts here!",
-                    subtitle = if (searchQuery.isNotEmpty()) "Try a different name or keyword" else "You're either rich or lonely. Add a debt to start."
+                    title = if (searchQuery.isNotEmpty()) LocalizedString.get("no_results") else LocalizedString.get("no_debts"),
+                    subtitle = if (searchQuery.isNotEmpty()) LocalizedString.get("try_different") else LocalizedString.get("empty_owed")
                 )
             } else {
                 LazyColumn(

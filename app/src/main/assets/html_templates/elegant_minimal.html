@@ -23,6 +23,7 @@
             padding: 80px 60px;
             position: relative;
             box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+            overflow: hidden;
         }
         .header {
             text-align: center;
@@ -123,11 +124,15 @@
             margin-bottom: 10px;
         }
         .note-content {
-            font-size: clamp(1rem, 2vw, 1.3rem);
+            font-size: 1.2rem;
             color: #555;
             line-height: 1.6;
             word-wrap: break-word;
             overflow-wrap: anywhere;
+            display: -webkit-box;
+            -webkit-line-clamp: 3;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
         }
         .details {
             display: flex;
@@ -154,18 +159,6 @@
         .detail-icon {
             font-size: 1.3rem;
             flex-shrink: 0;
-        }
-        .note-content {
-            font-size: clamp(1rem, 2vw, 1.3rem);
-            color: #555;
-            line-height: 1.6;
-            word-wrap: break-word;
-            overflow-wrap: anywhere;
-            max-height: 4.8em;
-            display: -webkit-box;
-            -webkit-line-clamp: 3;
-            -webkit-box-orient: vertical;
-            overflow: hidden;
         }
         .footer {
             position: absolute;

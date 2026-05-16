@@ -13,6 +13,7 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
+import androidx.activity.compose.BackHandler
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -66,7 +67,9 @@ fun DebtDetailScreen(onBack: () -> Unit, viewModel: DebtDetailViewModel = hiltVi
     val showRewardAd by viewModel.showRewardAd.collectAsStateWithLifecycle()
     val remainingFree by viewModel.remainingFree.collectAsStateWithLifecycle()
 
-    val d = debt ?: return EmptyStateView("📭", "Debt not found", "It might have been deleted.")
+    BackHandler(onBack = onBack)
+
+    val d = debt ?: return DebtNotFoundScreen(onBack = onBack)
 
     val remaining = (d.amount - d.amountPaid).coerceAtLeast(0.0)
     val progress = if (d.amount > 0) (d.amountPaid / d.amount).toFloat().coerceIn(0f, 1f) else 1f
@@ -288,7 +291,7 @@ fun DebtDetailScreen(onBack: () -> Unit, viewModel: DebtDetailViewModel = hiltVi
                         Text(LocalizedString.get("no_payments"), color = SubtitleGray, modifier = Modifier.padding(vertical = 16.dp))
                     }
                 } else {
-                    items(payments) { payment ->
+                    items(payments, key = { it.id }) { payment ->
                         Row(
                             modifier = Modifier
                                 .fillMaxWidth()
@@ -396,7 +399,7 @@ fun DebtDetailScreen(onBack: () -> Unit, viewModel: DebtDetailViewModel = hiltVi
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AddPaymentDialog(remaining: Double, currency: String, onDismiss: () -> Unit, onSave: (Double, String) -> Unit) {
-    var amount by remember { mutableStateOf(remaining.toString()) }
+    var amount by remember { mutableStateOf("%.2f".format(remaining)) }
     var note by remember { mutableStateOf("") }
 
     ModalBottomSheet(onDismissRequest = onDismiss, containerColor = Color(0xFF1A1A1A)) {
@@ -456,6 +459,32 @@ fun EditDebtDialog(debt: DebtEntity, onDismiss: () -> Unit, onSave: (String, Dou
                 colors = ButtonDefaults.buttonColors(containerColor = PrimaryGreen)
             ) {
                 Text(LocalizedString.get("update_debt"), color = Color.Black, fontWeight = FontWeight.Bold)
+            }
+        }
+    }
+}
+
+@Composable
+private fun DebtNotFoundScreen(onBack: () -> Unit) {
+    Scaffold(
+        topBar = {
+            CenterAlignedTopAppBar(
+                title = { },
+                navigationIcon = {
+                    IconButton(onClick = onBack) {
+                        Icon(Icons.Default.ArrowBack, contentDescription = LocalizedString.get("nav_back"), tint = Color.White)
+                    }
+                }
+            )
+        }
+    ) { padding ->
+        Box(modifier = Modifier.fillMaxSize().padding(padding), contentAlignment = Alignment.Center) {
+            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                Text("📭", fontSize = 48.sp)
+                Spacer(Modifier.height(16.dp))
+                Text("Debt not found", color = Color.White, fontSize = 18.sp, fontWeight = FontWeight.Bold)
+                Spacer(Modifier.height(8.dp))
+                Text("It might have been deleted.", color = SubtitleGray, fontSize = 14.sp)
             }
         }
     }

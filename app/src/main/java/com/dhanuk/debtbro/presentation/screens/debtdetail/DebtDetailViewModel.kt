@@ -113,12 +113,15 @@ class DebtDetailViewModel @Inject constructor(
 
     private suspend fun generateRoastInternal(d: DebtEntity) {
         isGeneratingAi.value = true
-        groqRepository.incrementRegenerationCount()
-        _remainingFree.value = groqRepository.remainingFreeRegenerations()
-        val message = groqRepository.generateRoast(d, roastLevel.value)
-            .getOrElse { "Could not generate roast. Check your API key." }
-        aiMessage.value = message
-        debtRepository.updateRoast(d.id, message, System.currentTimeMillis())
+        val result = groqRepository.generateRoast(d, roastLevel.value)
+        result.onSuccess { message ->
+            groqRepository.incrementRegenerationCount()
+            _remainingFree.value = groqRepository.remainingFreeRegenerations()
+            aiMessage.value = message
+            debtRepository.updateRoast(d.id, message, System.currentTimeMillis())
+        }.onFailure {
+            aiMessage.value = "Could not generate roast. Check your API key."
+        }
         isGeneratingAi.value = false
         syncIfSignedIn()
     }
@@ -203,7 +206,7 @@ class DebtDetailViewModel @Inject constructor(
             }
             kotlinx.coroutines.withContext(Dispatchers.Main) {
                 val intent = android.content.Intent(android.content.Intent.ACTION_SEND).apply {
-                    type = "image/png"
+                    type = "image/jpeg"
                     putExtra(android.content.Intent.EXTRA_STREAM, uri)
                     putExtra(android.content.Intent.EXTRA_TEXT, actualMessage)
                     setPackage("com.whatsapp")
@@ -235,9 +238,6 @@ class DebtDetailViewModel @Inject constructor(
             debt.first()?.let { d ->
                 if (!d.aiRoastGenerated.isNullOrBlank()) {
                     aiMessage.value = d.aiRoastGenerated
-                } else {
-                    // Pre-generate in background on first load
-                    generateRoast()
                 }
             }
         }

@@ -123,8 +123,7 @@ fun AddDebtBottomSheet(
             OutlinedTextField(
                 value = personName,
                 onValueChange = { 
-                    if (it.length <= 30 && it.all { c -> c.isLetter() || c.isWhitespace() }) 
-                        personName = it 
+                    if (it.length <= 30) personName = it.trimStart()
                 },
                 label = { Text("Person Name *") },
                 placeholder = { Text("Rahul, Priya, John...") },
@@ -138,9 +137,9 @@ fun AddDebtBottomSheet(
                 trailingIcon = {
                     Text("${personName.length}/30", color = SubtitleGray, fontSize = 11.sp)
                 },
-                isError = personName.isEmpty() && triedToSave,
+                isError = personName.isBlank() && triedToSave,
                 supportingText = {
-                    if (personName.isEmpty() && triedToSave) {
+                    if (personName.isBlank() && triedToSave) {
                         Text("Name is required", color = MaterialTheme.colorScheme.error)
                     }
                 }

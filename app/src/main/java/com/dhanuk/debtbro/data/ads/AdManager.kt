@@ -14,16 +14,24 @@ import com.google.android.gms.ads.rewarded.RewardedAd
 import com.google.android.gms.ads.rewarded.RewardedAdLoadCallback
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.runBlocking
 import javax.inject.Inject
 import javax.inject.Singleton
 
 @Singleton
 class AdManager @Inject constructor(private val prefs: AppPreferences) {
+    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     private var interstitialAd: InterstitialAd? = null
     private var rewardedAd: RewardedAd? = null
+    @Volatile private var lastInterstitialAt = 0L
+
+    init {
+        scope.launch {
+            prefs.lastInterstitialAt.collect { lastInterstitialAt = it }
+        }
+    }
+
     fun loadInterstitial(context: Context) {
         val id = BuildConfig.ADMOB_INTERSTITIAL_ID.ifEmpty { "ca-app-pub-3940256099942544/1033173712" }
         InterstitialAd.load(context, id, AdRequest.Builder().build(), object : InterstitialAdLoadCallback() {
@@ -32,12 +40,11 @@ class AdManager @Inject constructor(private val prefs: AppPreferences) {
         })
     }
     fun showInterstitialIfReady(activity: Activity, onDismissed: () -> Unit): Boolean {
-        val lastShown = runBlocking { prefs.lastInterstitialAt.first() }
-        if (System.currentTimeMillis() - lastShown < 300000L) return false
+        if (System.currentTimeMillis() - lastInterstitialAt < 300000L) return false
         val ad = interstitialAd ?: return false
         ad.fullScreenContentCallback = object : FullScreenContentCallback() {
             override fun onAdDismissedFullScreenContent() {
-                CoroutineScope(Dispatchers.IO).launch { prefs.setLastInterstitialAt(System.currentTimeMillis()) }
+                scope.launch { prefs.setLastInterstitialAt(System.currentTimeMillis()) }
                 interstitialAd = null
                 loadInterstitial(activity)
                 onDismissed()
@@ -56,7 +63,7 @@ class AdManager @Inject constructor(private val prefs: AppPreferences) {
     fun showRewardedAd(activity: Activity, onRewarded: (RewardItem) -> Unit, onFailed: () -> Unit) {
         val ad = rewardedAd ?: return onFailed()
         ad.show(activity) { reward ->
-            CoroutineScope(Dispatchers.IO).launch { prefs.setRewardTimestamp(System.currentTimeMillis()) }
+            scope.launch { prefs.setRewardTimestamp(System.currentTimeMillis()) }
             rewardedAd = null
             loadRewardedAd(activity)
             onRewarded(reward)

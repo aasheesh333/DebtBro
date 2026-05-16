@@ -1,12 +1,13 @@
 package com.dhanuk.debtbro.data.repository
 
-import com.dhanuk.debtbro.BuildConfig
 import com.dhanuk.debtbro.data.datastore.AppPreferences
 import com.dhanuk.debtbro.data.db.entity.DebtEntity
 import com.dhanuk.debtbro.data.network.GroqApiService
 import com.dhanuk.debtbro.data.network.GroqMessage
 import com.dhanuk.debtbro.data.network.GroqRequest
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -17,15 +18,18 @@ class GroqRepository @Inject constructor(private val api: GroqApiService, privat
         private const val API_COOLDOWN_MS = 1000L
     }
 
+    private val rateLimitMutex = Mutex()
     private var lastApiCallTime = 0L
 
     private suspend fun ensureRateLimit() {
-        val now = System.currentTimeMillis()
-        val elapsed = now - lastApiCallTime
-        if (elapsed < API_COOLDOWN_MS) {
-            kotlinx.coroutines.delay(API_COOLDOWN_MS - elapsed)
+        rateLimitMutex.withLock {
+            val now = System.currentTimeMillis()
+            val elapsed = now - lastApiCallTime
+            if (elapsed < API_COOLDOWN_MS) {
+                kotlinx.coroutines.delay(API_COOLDOWN_MS - elapsed)
+            }
+            lastApiCallTime = System.currentTimeMillis()
         }
-        lastApiCallTime = System.currentTimeMillis()
     }
 
     suspend fun canRegenerate(): Boolean = getRegenerationCount() < MAX_FREE_REGENERATIONS
@@ -38,7 +42,7 @@ class GroqRepository @Inject constructor(private val api: GroqApiService, privat
 
     private suspend fun getRegenerationCount(): Int = prefs.getAiRegenerationCount()
 
-    private suspend fun apiKey(): String = prefs.groqApiKey.first().ifEmpty { BuildConfig.GROQ_API_KEY }
+    private suspend fun apiKey(): String = prefs.groqApiKey.first()
     private fun systemPrompt(roastLevel: String, selectedLangCode: String, debtType: String?): String {
         val langInstruction = when(selectedLangCode) {
             "hi" -> "Respond ONLY in Hindi (Devanagari script). Use Hinglish if needed."
@@ -156,10 +160,14 @@ Write a creative, SHORT WhatsApp message. Maximum 2 lines. Personal and funny.""
         ), model = "llama-3.3-70b-versatile", temperature = 1.0, max_tokens = 100))
         response.choices.first().message.content.trim()
     }
-    suspend fun testConnection(): Boolean = runCatching {
+    suspend fun testConnection(): Boolean = try {
         ensureRateLimit()
         val key = apiKey()
-        if (key.isEmpty()) return@runCatching false
+        if (key.isEmpty()) return false
         api.chat("Bearer $key", GroqRequest(messages = listOf(GroqMessage("user", "Say OK")), max_tokens = 10)).choices.isNotEmpty()
-    }.getOrDefault(false)
+    } catch (e: kotlinx.coroutines.CancellationException) {
+        throw e
+    } catch (_: Exception) {
+        false
+    }
 }

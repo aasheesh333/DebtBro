@@ -13,6 +13,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
@@ -201,7 +202,7 @@ fun SplitScreen(viewModel: SplitViewModel = hiltViewModel()) {
             )
         }
 
-        items(pastSplits) { split ->
+        items(pastSplits, key = { it.id }) { split ->
             SplitItemCard(split, onGetAi = { viewModel.getAiSummary(it) }, onCreateDebts = { viewModel.createDebtsFromSplit(it) })
         }
     }
@@ -242,6 +243,7 @@ fun AddParticipantRow(
                 }
             },
             keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
+            keyboardActions = KeyboardActions(onDone = { onAdd() }),
             colors = OutlinedTextFieldDefaults.colors(
                 focusedBorderColor = PrimaryGreen,
                 unfocusedBorderColor = Color(0xFF333333)

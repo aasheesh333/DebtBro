@@ -107,11 +107,9 @@ object HtmlExporter {
             suspendCancellableCoroutine { continuation ->
                 val webView = WebView(context).apply {
                     settings.apply {
-                        javaScriptEnabled = true
                         loadWithOverviewMode = true
                         useWideViewPort = true
-                        cacheMode = WebSettings.LOAD_NO_CACHE
-                        domStorageEnabled = true
+                        cacheMode = WebSettings.LOAD_CACHE_ELSE_NETWORK
                     }
                     setBackgroundColor(Color.WHITE)
                 }
@@ -130,8 +128,7 @@ object HtmlExporter {
                         super.onPageFinished(view, url)
                         timeoutHandler.removeCallbacks(timeoutRunnable)
 
-                        // Increased delay from 500ms to 1500ms for better rendering
-                        view?.postDelayed({
+                        view?.post {
                             try {
                                 val width = 1080
                                 val height = 1350
@@ -142,31 +139,28 @@ object HtmlExporter {
                                 )
                                 view.layout(0, 0, width, height)
 
-                                // Additional delay for complex CSS to render
-                                view.postDelayed({
-                                    try {
-                                        val bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
-                                        val canvas = Canvas(bitmap)
-                                        canvas.drawColor(Color.WHITE)
-                                        view.draw(canvas)
+                                try {
+                                    val bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.RGB_565)
+                                    val canvas = Canvas(bitmap)
+                                    canvas.drawColor(Color.WHITE)
+                                    view.draw(canvas)
 
-                                        if (continuation.isActive) {
-                                            continuation.resume(bitmap)
-                                        }
-                                    } catch (e: Exception) {
-                                        if (continuation.isActive) {
-                                            continuation.resumeWithException(e)
-                                        }
-                                    } finally {
-                                        try { webView.destroy() } catch (_: Exception) {}
+                                    if (continuation.isActive) {
+                                        continuation.resume(bitmap)
                                     }
-                                }, 800)
+                                } catch (e: Exception) {
+                                    if (continuation.isActive) {
+                                        continuation.resumeWithException(e)
+                                    }
+                                } finally {
+                                    try { webView.destroy() } catch (_: Exception) {}
+                                }
                             } catch (e: Exception) {
                                 if (continuation.isActive) {
                                     continuation.resumeWithException(e)
                                 }
                             }
-                        }, 1500)
+                        }
                     }
 
                     override fun onReceivedError(
@@ -197,9 +191,9 @@ object HtmlExporter {
     fun saveBitmap(context: Context, bitmap: Bitmap): File {
         val cacheDir = File(context.cacheDir, "share_images")
         cacheDir.mkdirs()
-        val file = File(cacheDir, "debtbro-export-${System.currentTimeMillis()}.png")
+        val file = File(cacheDir, "debtbro-export-${System.currentTimeMillis()}.jpg")
         FileOutputStream(file).use { out ->
-            bitmap.compress(Bitmap.CompressFormat.PNG, 100, out)
+            bitmap.compress(Bitmap.CompressFormat.JPEG, 85, out)
         }
         return file
     }
@@ -216,7 +210,7 @@ object HtmlExporter {
     fun shareImage(context: Context, bitmap: Bitmap) {
         val uri = getShareableUri(context, bitmap)
         val intent = android.content.Intent(android.content.Intent.ACTION_SEND).apply {
-            type = "image/png"
+            type = "image/jpeg"
             putExtra(android.content.Intent.EXTRA_STREAM, uri)
             addFlags(android.content.Intent.FLAG_GRANT_READ_URI_PERMISSION)
             addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK)

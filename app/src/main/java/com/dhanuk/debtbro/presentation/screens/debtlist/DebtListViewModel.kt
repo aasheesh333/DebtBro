@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import com.dhanuk.debtbro.data.datastore.AppPreferences
 import com.dhanuk.debtbro.data.db.entity.DebtEntity
 import com.dhanuk.debtbro.data.repository.DebtRepository
+import com.dhanuk.debtbro.data.repository.PaymentRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -15,7 +16,11 @@ import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 @HiltViewModel
-class DebtListViewModel @Inject constructor(private val repository: DebtRepository, prefs: AppPreferences) : ViewModel() {
+class DebtListViewModel @Inject constructor(
+    private val repository: DebtRepository,
+    private val paymentRepository: PaymentRepository,
+    prefs: AppPreferences
+) : ViewModel() {
     val allDebts: StateFlow<List<DebtEntity>> = repository.getAllDebts().stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
     val searchQuery = MutableStateFlow("")
     val selectedTab = MutableStateFlow(0)
@@ -27,5 +32,10 @@ class DebtListViewModel @Inject constructor(private val repository: DebtReposito
             .filter { query.isBlank() || it.personName.contains(query, true) || it.description.contains(query, true) }
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
     fun deleteDebt(debt: DebtEntity) = viewModelScope.launch { repository.deleteDebt(debt) }
-    fun markSettled(debt: DebtEntity) = viewModelScope.launch { repository.updateDebt(debt.copy(amountPaid = debt.amount, status = "SETTLED")) }
+    fun markSettled(debt: DebtEntity) = viewModelScope.launch {
+        val remaining = debt.amount - debt.amountPaid
+        if (remaining > 0) {
+            paymentRepository.recordPayment(debt.id, remaining, "Full settlement")
+        }
+    }
 }

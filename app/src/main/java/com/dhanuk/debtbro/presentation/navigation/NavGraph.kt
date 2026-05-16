@@ -133,6 +133,7 @@ fun DebtBroNavGraph(appPreferences: AppPreferences) {
                                         saveState = false
                                     }
                                     launchSingleTop = true
+                                    restoreState = true
                                 }
                             },
                             icon = {
@@ -163,6 +164,7 @@ fun DebtBroNavGraph(appPreferences: AppPreferences) {
                                         saveState = false
                                     }
                                     launchSingleTop = true
+                                    restoreState = true
                                 }
                             },
                             icon = {
@@ -191,6 +193,7 @@ fun DebtBroNavGraph(appPreferences: AppPreferences) {
                                         saveState = false
                                     }
                                     launchSingleTop = true
+                                    restoreState = true
                                 }
                             },
                             icon = {
@@ -215,9 +218,10 @@ fun DebtBroNavGraph(appPreferences: AppPreferences) {
             }
         }
     ) { paddingValues ->
+        val startDest = startDestination ?: return@Scaffold
         NavHost(
             navController = navController,
-            startDestination = startDestination!!,
+            startDestination = startDest,
             modifier = Modifier.padding(paddingValues)
         ) {
             composable(Screen.Onboarding.route) {

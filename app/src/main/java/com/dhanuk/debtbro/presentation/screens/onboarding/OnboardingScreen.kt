@@ -311,8 +311,8 @@ fun Page5Name(name: String, onNameChange: (String) -> Unit) {
         OutlinedTextField(
             value = name,
             onValueChange = { 
-                if (it.length <= 30 && it.all { c -> c.isLetter() || c.isWhitespace() }) {
-                    onNameChange(it)
+                if (it.length <= 30) {
+                    onNameChange(it.trimStart())
                 }
             },
             label = { Text("Your name") },
