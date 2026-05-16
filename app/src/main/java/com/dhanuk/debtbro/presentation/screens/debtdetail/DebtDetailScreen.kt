@@ -464,6 +464,7 @@ fun EditDebtDialog(debt: DebtEntity, onDismiss: () -> Unit, onSave: (String, Dou
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun DebtNotFoundScreen(onBack: () -> Unit) {
     Scaffold(

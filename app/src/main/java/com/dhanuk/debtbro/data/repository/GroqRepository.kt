@@ -160,14 +160,16 @@ Write a creative, SHORT WhatsApp message. Maximum 2 lines. Personal and funny.""
         ), model = "llama-3.3-70b-versatile", temperature = 1.0, max_tokens = 100))
         response.choices.first().message.content.trim()
     }
-    suspend fun testConnection(): Boolean = try {
-        ensureRateLimit()
-        val key = apiKey()
-        if (key.isEmpty()) return false
-        api.chat("Bearer $key", GroqRequest(messages = listOf(GroqMessage("user", "Say OK")), max_tokens = 10)).choices.isNotEmpty()
-    } catch (e: kotlinx.coroutines.CancellationException) {
-        throw e
-    } catch (_: Exception) {
-        false
+    suspend fun testConnection(): Boolean {
+        try {
+            ensureRateLimit()
+            val key = apiKey()
+            if (key.isEmpty()) return false
+            return api.chat("Bearer $key", GroqRequest(messages = listOf(GroqMessage("user", "Say OK")), max_tokens = 10)).choices.isNotEmpty()
+        } catch (e: kotlinx.coroutines.CancellationException) {
+            throw e
+        } catch (_: Exception) {
+            return false
+        }
     }
 }
