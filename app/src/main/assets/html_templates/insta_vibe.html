@@ -3,103 +3,199 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Insta-Vibe Debt Share</title>
+    <title>Debt Card</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { font-family: 'sans-serif'; background-color: #1a1a1a; display: flex; justify-content: center; align-items: center; min-height: 100vh; }
-        .insta-post { width: 1080px; height: 1350px; background: linear-gradient(45deg, #0f172a, #1e293b); position: relative; overflow: hidden; color: white; padding: 80px; }
-        .text-center { text-align: center; }
-        .mt-20 { margin-top: 5rem; }
-        .mb-6 { margin-bottom: 1.5rem; }
-        .mb-8 { margin-bottom: 2rem; }
-        .mb-10 { margin-bottom: 2.5rem; }
-        .mb-2 { margin-bottom: 0.5rem; }
-        .text-8xl { font-size: 6rem; }
-        .text-6xl { font-size: 4rem; }
-        .text-4xl { font-size: 2.25rem; }
-        .text-2xl { font-size: 1.5rem; }
-        .text-xl { font-size: 1.25rem; }
-        .text-9xl { font-size: 8rem; }
-        .font-black { font-weight: 900; }
-        .font-bold { font-weight: bold; }
-        .italic { font-style: italic; }
-        .leading-tight { line-height: 1.2; }
-        .tracking-widest { letter-spacing: 0.2em; }
-        .tracking-tighter { letter-spacing: -0.05em; }
-        .uppercase { text-transform: uppercase; }
-        .text-sky-400 { color: #38bdf8; }
-        .text-sky-500 { color: #0ea5e9; }
-        .text-gray-400 { color: #9ca3af; }
-        .text-gray-500 { color: #6b7280; }
-        .text-white { color: #fff; }
-        .flex { display: flex; }
-        .justify-center { justify-content: center; }
-        .items-center { align-items: center; }
-        .gap-3 { gap: 0.75rem; }
-        .gap-8 { gap: 2rem; }
-        .gap-12 { gap: 3rem; }
-        .relative { position: relative; }
-        .z-10 { z-index: 10; }
-        .h-full { height: 100%; }
-        .flex-col { flex-direction: column; }
-        .justify-between { justify-content: space-between; }
-        .mx-auto { margin-left: auto; margin-right: auto; }
-        .w-full { width: 100%; }
-        .max-w-3xl { max-width: 768px; }
-        .border-t { border-top: 1px solid; }
-        .pt-8 { padding-top: 2rem; }
-        .glass { background: rgba(255, 255, 255, 0.05); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 40px; }
-        .p-12 { padding: 3rem; }
-        .shadow-2xl { box-shadow: 0 25px 50px -12px rgba(0,0,0,0.5); }
-        .accent-glow { position: absolute; width: 600px; height: 600px; background: radial-gradient(circle, rgba(56, 189, 248, 0.15) 0%, transparent 70%); }
-        .quote-font { font-weight: 700; }
-        .border-white\/10 { border-color: rgba(255,255,255,0.1); }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(180deg, #0f0c29 0%, #302b63 50%, #24243e 100%);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 40px;
+        }
+        .card {
+            width: 1080px;
+            height: 1350px;
+            background: linear-gradient(145deg, rgba(30, 30, 50, 0.9), rgba(20, 20, 35, 0.95));
+            border-radius: 40px;
+            padding: 60px;
+            position: relative;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 25px 60px rgba(0, 0, 0, 0.5);
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 50px;
+        }
+        .header-emoji {
+            font-size: 5rem;
+            margin-bottom: 20px;
+        }
+        .header-title {
+            font-size: 2.5rem;
+            font-weight: 700;
+            color: #fff;
+            margin-bottom: 10px;
+        }
+        .header-subtitle {
+            color: rgba(255, 255, 255, 0.6);
+            font-size: 1.2rem;
+            text-transform: uppercase;
+            letter-spacing: 0.3em;
+        }
+        .content {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 50px;
+        }
+        .quote-box {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 30px;
+            padding: 40px 50px;
+            text-align: center;
+            max-width: 800px;
+        }
+        .quote-text {
+            font-size: clamp(1.5rem, 3vw, 2.2rem);
+            font-weight: 600;
+            color: #fff;
+            line-height: 1.4;
+            word-wrap: break-word;
+            overflow-wrap: anywhere;
+        }
+        .parties {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 40px;
+            flex-wrap: wrap;
+        }
+        .party {
+            background: rgba(255, 255, 255, 0.08);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            border-radius: 25px;
+            padding: 30px 50px;
+            text-align: center;
+        }
+        .party-label {
+            font-size: 1rem;
+            color: rgba(255, 255, 255, 0.5);
+            text-transform: uppercase;
+            letter-spacing: 0.2em;
+            margin-bottom: 10px;
+        }
+        .party-name {
+            font-size: clamp(1.5rem, 3vw, 2.5rem);
+            font-weight: 700;
+            color: #fff;
+            word-wrap: break-word;
+            overflow-wrap: anywhere;
+            max-width: 280px;
+        }
+        .arrow {
+            font-size: 2.5rem;
+            color: #f97316;
+        }
+        .amount-box {
+            background: linear-gradient(135deg, #f97316, #ea580c);
+            border-radius: 30px;
+            padding: 50px 80px;
+            text-align: center;
+            box-shadow: 0 15px 40px rgba(249, 115, 22, 0.3);
+        }
+        .amount-label {
+            font-size: 1.2rem;
+            opacity: 0.9;
+            margin-bottom: 15px;
+            text-transform: uppercase;
+            letter-spacing: 0.15em;
+            color: rgba(255, 255, 255, 0.9);
+        }
+        .amount {
+            font-size: clamp(3.5rem, 12vw, 9rem);
+            font-weight: 800;
+            color: #fff;
+            line-height: 1;
+            word-wrap: break-word;
+            overflow-wrap: anywhere;
+            max-width: 500px;
+        }
+        .details {
+            display: flex;
+            justify-content: center;
+            gap: 50px;
+            flex-wrap: wrap;
+        }
+        .detail-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-size: 1.3rem;
+            color: rgba(255, 255, 255, 0.7);
+        }
+        .detail-icon {
+            font-size: 1.5rem;
+        }
+        .footer {
+            position: absolute;
+            bottom: 40px;
+            left: 0;
+            right: 0;
+            text-align: center;
+            color: rgba(255, 255, 255, 0.4);
+            font-size: 1rem;
+            letter-spacing: 0.2em;
+        }
     </style>
 </head>
 <body>
-    <div class="insta-post">
-        <div class="accent-glow" style="top: -100px; right: -100px;"></div>
-        <div class="accent-glow" style="bottom: -100px; left: -100px;"></div>
+    <div class="card">
+        <div class="header">
+            <div class="header-emoji">&#128179;</div>
+            <div class="header-title">Payment Reminder</div>
+            <div class="header-subtitle">DebtBro</div>
+        </div>
 
-        <div class="relative z-10 h-full flex flex-col justify-between">
-            <div class="text-center mt-20">
-                <div class="text-8xl mb-6">&#x1F4B8;</div>
-                <h1 class="quote-font text-6xl text-sky-400 leading-tight italic">
-                    "{{debtQuote}}"
-                </h1>
+        <div class="content">
+            <div class="quote-box">
+                <div class="quote-text">"{{debtQuote}}"</div>
             </div>
 
-            <div class="glass p-12 text-center mx-auto w-full max-w-3xl" style="box-shadow: 0 25px 50px -12px rgba(0,0,0,0.5);">
-                <div class="flex justify-center items-center gap-8 mb-8">
-                    <div class="text-center">
-                        <p class="text-gray-400 uppercase tracking-widest text-xl">Lender</p>
-                        <p class="text-4xl font-bold">{{lenderName}}</p>
-                    </div>
-                    <div class="text-6xl text-sky-500 font-black">&#x279E;</div>
-                    <div class="text-center">
-                        <p class="text-gray-400 uppercase tracking-widest text-xl">Borrower</p>
-                        <p class="text-4xl font-bold">{{borrowerName}}</p>
-                    </div>
+            <div class="parties">
+                <div class="party">
+                    <div class="party-label">Lender</div>
+                    <div class="party-name">{{lenderName}}</div>
                 </div>
-
-                <div class="text-center mb-8">
-                    <p class="text-gray-400 text-2xl mb-2">Amount Owed</p>
-                    <p class="text-9xl font-black text-white tracking-tighter">{{currency}}{{amount}}</p>
-                </div>
-
-                <div class="flex justify-center gap-12 text-2xl text-gray-300" style="border-top: 1px solid rgba(255,255,255,0.1); padding-top: 2rem;">
-                    <div class="flex items-center gap-3">
-                        <span>&#x1F4C5;</span> <span>{{dueDate}}</span>
-                    </div>
-                    <div class="flex items-center gap-3">
-                        <span>&#x1F4DD;</span> <span>"{{description}}"</span>
-                    </div>
+                <div class="arrow">&#10140;</div>
+                <div class="party">
+                    <div class="party-label">Borrower</div>
+                    <div class="party-name">{{borrowerName}}</div>
                 </div>
             </div>
 
-            <div class="text-center mb-10">
-                <p class="text-gray-500 text-2xl tracking-widest uppercase">Generated by DebtBro</p>
+            <div class="amount-box">
+                <div class="amount-label">Amount Owed</div>
+                <div class="amount">{{currency}}{{amount}}</div>
             </div>
+
+            <div class="details">
+                <div class="detail-item">
+                    <span class="detail-icon">&#128197;</span>
+                    <span>{{dueDate}}</span>
+                </div>
+                <div class="detail-item">
+                    <span class="detail-icon">&#128221;</span>
+                    <span>{{description}}</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="footer">
+            Generated by DebtBro
         </div>
     </div>
 </body>

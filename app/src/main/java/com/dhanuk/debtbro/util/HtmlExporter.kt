@@ -99,7 +99,7 @@ object HtmlExporter {
     }
 
     private suspend fun renderHtmlToBitmap(context: Context, html: String): Bitmap =
-        withTimeout(15000L) {
+        withTimeout(30000L) {
             suspendCancellableCoroutine { continuation ->
                 val webView = WebView(context).apply {
                     settings.apply {
@@ -119,13 +119,14 @@ object HtmlExporter {
                         continuation.resumeWithException(TimeoutException("WebView render timeout"))
                     }
                 }
-                timeoutHandler.postDelayed(timeoutRunnable, 14000)
+                timeoutHandler.postDelayed(timeoutRunnable, 28000)
 
                 webView.webViewClient = object : WebViewClient() {
                     override fun onPageFinished(view: WebView?, url: String?) {
                         super.onPageFinished(view, url)
                         timeoutHandler.removeCallbacks(timeoutRunnable)
 
+                        // Increased delay from 500ms to 1500ms for better rendering
                         view?.postDelayed({
                             try {
                                 val width = 1080
@@ -137,22 +138,31 @@ object HtmlExporter {
                                 )
                                 view.layout(0, 0, width, height)
 
-                                val bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
-                                val canvas = Canvas(bitmap)
-                                canvas.drawColor(Color.WHITE)
-                                view.draw(canvas)
+                                // Additional delay for complex CSS to render
+                                view.postDelayed({
+                                    try {
+                                        val bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
+                                        val canvas = Canvas(bitmap)
+                                        canvas.drawColor(Color.WHITE)
+                                        view.draw(canvas)
 
-                                if (continuation.isActive) {
-                                    continuation.resume(bitmap)
-                                }
+                                        if (continuation.isActive) {
+                                            continuation.resume(bitmap)
+                                        }
+                                    } catch (e: Exception) {
+                                        if (continuation.isActive) {
+                                            continuation.resumeWithException(e)
+                                        }
+                                    } finally {
+                                        try { webView.destroy() } catch (_: Exception) {}
+                                    }
+                                }, 800)
                             } catch (e: Exception) {
                                 if (continuation.isActive) {
                                     continuation.resumeWithException(e)
                                 }
-                            } finally {
-                                try { webView.destroy() } catch (_: Exception) {}
                             }
-                        }, 500)
+                        }, 1500)
                     }
 
                     override fun onReceivedError(
