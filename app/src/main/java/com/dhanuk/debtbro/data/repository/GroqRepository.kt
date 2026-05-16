@@ -136,7 +136,7 @@ Write a creative, SHORT WhatsApp message. Maximum 2 lines. Personal and funny.""
         if (key.isEmpty()) return Result.failure(Exception("NO_API_KEY"))
         val langCode = prefs.selectedLanguage.first()
         val currency = prefs.defaultCurrency.first()
-        val langInstruction = systemPrompt("MILD", langCode).substringBefore("\n")
+        val langInstruction = systemPrompt("MILD", langCode, null).substringBefore("\n")
         val response = api.chat("Bearer $key", GroqRequest(messages = listOf(
             GroqMessage("system", "$langInstruction\nYou are a funny personal finance analyst. Give ONE sharp 2-line insight. No disclaimers."),
             GroqMessage("user", "Total lent: ${currency}$totalLent to friends. Total I owe: ${currency}$totalOwed. Recovery rate: $recoveryRate%. Worst debtor: $worstDebtor. Give ONE sharp, funny, honest 2-line insight. Hinglish welcome.")
@@ -149,7 +149,7 @@ Write a creative, SHORT WhatsApp message. Maximum 2 lines. Personal and funny.""
         if (key.isEmpty()) return Result.failure(Exception("NO_API_KEY"))
         val langCode = prefs.selectedLanguage.first()
         val currency = prefs.defaultCurrency.first()
-        val langInstruction = systemPrompt("MILD", langCode).substringBefore("\n")
+        val langInstruction = systemPrompt("MILD", langCode, null).substringBefore("\n")
         val response = api.chat("Bearer $key", GroqRequest(messages = listOf(
             GroqMessage("system", "$langInstruction\nYou are a funny commentator. One line only. Be creative."),
             GroqMessage("user", "Split: $title, Total: ${currency}$total, $count people, ${currency}$perPerson each. Write ONE funny line about this. Hinglish ok.")
