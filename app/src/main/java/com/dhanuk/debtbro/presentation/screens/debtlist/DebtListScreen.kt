@@ -30,6 +30,7 @@ import com.dhanuk.debtbro.presentation.components.DebtCard
 import com.dhanuk.debtbro.presentation.components.EmptyStateView
 import com.dhanuk.debtbro.presentation.theme.PrimaryGreen
 import com.dhanuk.debtbro.presentation.theme.SubtitleGray
+import com.dhanuk.debtbro.util.LocalizedString
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
@@ -57,7 +58,7 @@ fun DebtListScreen(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
-                    "All Debts",
+                    LocalizedString.get("all_debts"),
                     color = Color.White,
                     fontSize = 28.sp,
                     fontWeight = FontWeight.Bold
@@ -74,7 +75,7 @@ fun DebtListScreen(
             OutlinedTextField(
                 value = searchQuery,
                 onValueChange = { viewModel.searchQuery.value = it },
-                placeholder = { Text("Search by name or reason...") },
+                placeholder = { Text(LocalizedString.get("search_debts")) },
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(horizontal = 16.dp),
@@ -111,12 +112,12 @@ fun DebtListScreen(
                 Tab(
                     selected = selectedTab == 0,
                     onClick = { viewModel.selectedTab.value = 0 },
-                    text = { Text("💰 They Owe Me", fontWeight = if (selectedTab == 0) FontWeight.Bold else FontWeight.Normal) }
+                    text = { Text(LocalizedString.get("they_owe_me"), fontWeight = if (selectedTab == 0) FontWeight.Bold else FontWeight.Normal) }
                 )
                 Tab(
                     selected = selectedTab == 1,
                     onClick = { viewModel.selectedTab.value = 1 },
-                    text = { Text("😅 I Owe Them", fontWeight = if (selectedTab == 1) FontWeight.Bold else FontWeight.Normal) }
+                    text = { Text(LocalizedString.get("i_owe_them"), fontWeight = if (selectedTab == 1) FontWeight.Bold else FontWeight.Normal) }
                 )
             }
 

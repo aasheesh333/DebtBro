@@ -25,6 +25,7 @@ import com.dhanuk.debtbro.presentation.theme.DangerRed
 import com.dhanuk.debtbro.presentation.theme.PrimaryGreen
 import com.dhanuk.debtbro.presentation.theme.SubtitleGray
 import com.dhanuk.debtbro.util.formatCurrency
+import com.dhanuk.debtbro.util.LocalizedString
 import com.patrykandpatrick.vico.compose.cartesian.CartesianChartHost
 import com.patrykandpatrick.vico.compose.cartesian.axis.rememberBottomAxis
 import com.patrykandpatrick.vico.compose.cartesian.axis.rememberStartAxis
@@ -62,7 +63,7 @@ fun AnalyticsScreen(viewModel: AnalyticsViewModel = hiltViewModel()) {
         ) {
             item {
                 Text(
-                    "Financial Insights",
+                    LocalizedString.get("financial_insights"),
                     color = Color.White,
                     fontSize = 28.sp,
                     fontWeight = FontWeight.Bold
@@ -73,14 +74,14 @@ fun AnalyticsScreen(viewModel: AnalyticsViewModel = hiltViewModel()) {
             item {
                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                     AnalyticsStatCard(
-                        title = "Owed to Me",
+                        title = LocalizedString.get("owed_to_me"),
                         amount = state.totalOwedToMe,
                         color = PrimaryGreen,
                         icon = Icons.Default.ArrowDownward,
                         modifier = Modifier.weight(1f)
                     )
                     AnalyticsStatCard(
-                        title = "I Owe",
+                        title = LocalizedString.get("i_owe"),
                         amount = state.totalIOwe,
                         color = DangerRed,
                         icon = Icons.Default.ArrowUpward,
@@ -92,14 +93,14 @@ fun AnalyticsScreen(viewModel: AnalyticsViewModel = hiltViewModel()) {
             item {
                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                     AnalyticsStatCard(
-                        title = "All-time Settled",
+                        title = LocalizedString.get("all_time_settled"),
                         amount = state.totalSettled,
                         color = Color.White,
                         icon = Icons.Default.DoneAll,
                         modifier = Modifier.weight(1f)
                     )
                     AnalyticsStatCard(
-                        title = "Net Balance",
+                        title = LocalizedString.get("net_balance"),
                         amount = state.netBalance,
                         color = if (state.netBalance >= 0) PrimaryGreen else DangerRed,
                         icon = Icons.Default.AccountBalanceWallet,
@@ -119,7 +120,7 @@ fun AnalyticsScreen(viewModel: AnalyticsViewModel = hiltViewModel()) {
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             Icon(Icons.Default.Recycling, null, tint = PrimaryGreen, modifier = Modifier.size(20.dp))
                             Spacer(Modifier.width(8.dp))
-                            Text("Debt Recovery Rate", color = Color.White, fontWeight = FontWeight.Bold)
+                            Text(LocalizedString.get("debt_recovery_rate"), color = Color.White, fontWeight = FontWeight.Bold)
                             Spacer(Modifier.weight(1f))
                             Text("${state.recoveryRate}%", color = PrimaryGreen, fontWeight = FontWeight.Bold)
                         }
@@ -142,7 +143,7 @@ fun AnalyticsScreen(viewModel: AnalyticsViewModel = hiltViewModel()) {
                     shape = RoundedCornerShape(16.dp)
                 ) {
                     Column(Modifier.padding(20.dp)) {
-                        Text("Monthly Lending Trend", color = Color.White, fontWeight = FontWeight.Bold)
+                        Text(LocalizedString.get("monthly_trend"), color = Color.White, fontWeight = FontWeight.Bold)
                         Spacer(Modifier.height(16.dp))
                         
                         CartesianChartHost(
@@ -176,8 +177,8 @@ fun AnalyticsScreen(viewModel: AnalyticsViewModel = hiltViewModel()) {
             // Fun Stats Section
             item {
                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                    FunStatItem("🏅 Most Trusted", state.mostTrustedFriend, Modifier.weight(1f))
-                    FunStatItem("💀 Worst Offender", state.worstOffender, Modifier.weight(1f))
+                    FunStatItem(LocalizedString.get("most_trusted"), state.mostTrustedFriend, Modifier.weight(1f))
+                    FunStatItem(LocalizedString.get("worst_offender"), state.worstOffender, Modifier.weight(1f))
                 }
             }
 
@@ -190,7 +191,7 @@ fun AnalyticsScreen(viewModel: AnalyticsViewModel = hiltViewModel()) {
                 ) {
                     Column(Modifier.padding(20.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
                         Row(verticalAlignment = Alignment.CenterVertically) {
-                            Text("🤖 AI Financial Take", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 18.sp)
+                            Text(LocalizedString.get("ai_take"), color = Color.White, fontWeight = FontWeight.Bold, fontSize = 18.sp)
                             Spacer(Modifier.weight(1f))
                             IconButton(onClick = { viewModel.loadAiInsight() }) {
                                 Icon(Icons.Default.Refresh, null, tint = PrimaryGreen)
@@ -208,7 +209,7 @@ fun AnalyticsScreen(viewModel: AnalyticsViewModel = hiltViewModel()) {
                                 LoadingDotsIndicator(color = PrimaryGreen)
                             } else {
                                 Text(
-                                    insight.ifBlank { "Tap refresh to get a brutally honest analysis of your finances." },
+                                    insight.ifBlank { LocalizedString.get("tap_refresh") },
                                     color = Color.White,
                                     fontSize = 14.sp
                                 )

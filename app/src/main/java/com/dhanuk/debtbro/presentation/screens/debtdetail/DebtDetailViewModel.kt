@@ -228,4 +228,18 @@ class DebtDetailViewModel @Inject constructor(
             runCatching { syncManager.mergePendingUnsynced(uid) }
         }
     }
+
+    // Preload cached AI message on init
+    init {
+        viewModelScope.launch {
+            debt.first()?.let { d ->
+                if (!d.aiRoastGenerated.isNullOrBlank()) {
+                    aiMessage.value = d.aiRoastGenerated
+                } else {
+                    // Pre-generate in background on first load
+                    generateRoast()
+                }
+            }
+        }
+    }
 }

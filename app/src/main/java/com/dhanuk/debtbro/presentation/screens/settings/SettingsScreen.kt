@@ -29,6 +29,7 @@ import com.dhanuk.debtbro.presentation.components.LanguageSelectorGrid
 import com.dhanuk.debtbro.presentation.components.SUPPORTED_LANGUAGES
 import com.dhanuk.debtbro.presentation.theme.PrimaryGreen
 import com.dhanuk.debtbro.presentation.theme.SubtitleGray
+import com.dhanuk.debtbro.util.LocalizedString
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -45,7 +46,7 @@ fun SettingsScreen(viewModel: SettingsViewModel = hiltViewModel()) {
         ) {
             item {
                 Text(
-                    "Settings",
+                    LocalizedString.get("settings"),
                     color = Color.White,
                     fontSize = 28.sp,
                     fontWeight = FontWeight.Bold,
@@ -54,7 +55,7 @@ fun SettingsScreen(viewModel: SettingsViewModel = hiltViewModel()) {
             }
 
             // ACCOUNT SECTION
-            item { SectionHeader("Account", Icons.Default.AccountCircle) }
+            item { SectionHeader(LocalizedString.get("account"), Icons.Default.AccountCircle) }
             item {
                 GoogleSignInCard(
                     isSignedIn = state.isSignedIn,
@@ -70,7 +71,7 @@ fun SettingsScreen(viewModel: SettingsViewModel = hiltViewModel()) {
             }
 
             // PREFERENCES SECTION
-            item { SectionHeader("Preferences", Icons.Default.Tune) }
+            item { SectionHeader(LocalizedString.get("preferences"), Icons.Default.Tune) }
             item {
                 Card(
                     colors = CardDefaults.cardColors(containerColor = Color(0xFF1E1E1E)),
@@ -80,7 +81,7 @@ fun SettingsScreen(viewModel: SettingsViewModel = hiltViewModel()) {
                         OutlinedTextField(
                             value = state.userName,
                             onValueChange = viewModel::saveUserName,
-                            label = { Text("Your Display Name") },
+                            label = { Text(LocalizedString.get("display_name")) },
                             modifier = Modifier.fillMaxWidth(),
                             colors = OutlinedTextFieldDefaults.colors(
                                 focusedBorderColor = PrimaryGreen,
@@ -88,7 +89,7 @@ fun SettingsScreen(viewModel: SettingsViewModel = hiltViewModel()) {
                             )
                         )
                         
-                        Text("Default Currency", color = SubtitleGray, fontSize = 13.sp)
+                        Text(LocalizedString.get("default_currency"), color = SubtitleGray, fontSize = 13.sp)
                         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                             listOf("₹", "$", "€", "£", "¥").forEach { c ->
                                 FilterChip(
@@ -103,7 +104,7 @@ fun SettingsScreen(viewModel: SettingsViewModel = hiltViewModel()) {
                             }
                         }
 
-                        Text("Nudge Roast Level", color = SubtitleGray, fontSize = 13.sp)
+                        Text(LocalizedString.get("nudge_roast_level"), color = SubtitleGray, fontSize = 13.sp)
                         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                             listOf("MILD", "MEDIUM", "SAVAGE").forEach { r ->
                                 FilterChip(
@@ -140,7 +141,7 @@ fun SettingsScreen(viewModel: SettingsViewModel = hiltViewModel()) {
                             Icon(Icons.Default.Language, null, tint = PrimaryGreen)
                         }
                         Column(modifier = Modifier.weight(1f)) {
-                            Text("Language", color = Color.White, fontWeight = FontWeight.Bold)
+                            Text(LocalizedString.get("language"), color = Color.White, fontWeight = FontWeight.Bold)
                             val currentLang = SUPPORTED_LANGUAGES.find { it.code == state.selectedLanguage }
                             Text(
                                 currentLang?.nativeName ?: "English",
@@ -154,7 +155,7 @@ fun SettingsScreen(viewModel: SettingsViewModel = hiltViewModel()) {
             }
 
             // DATA SECTION
-            item { SectionHeader("Data & Export", Icons.Default.Storage) }
+            item { SectionHeader(LocalizedString.get("data_export"), Icons.Default.Storage) }
             item {
                 Card(
                     colors = CardDefaults.cardColors(containerColor = Color(0xFF1E1E1E)),
@@ -162,8 +163,8 @@ fun SettingsScreen(viewModel: SettingsViewModel = hiltViewModel()) {
                 ) {
                     Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
                         SettingsActionItem(
-                            title = "Export to CSV",
-                            subtitle = "Download all debts as a spreadsheet",
+                            title = LocalizedString.get("export_csv"),
+                            subtitle = LocalizedString.get("export_csv_subtitle"),
                             icon = Icons.Default.FileUpload,
                             onClick = { viewModel.exportCsv(context) }
                         )
@@ -171,8 +172,8 @@ fun SettingsScreen(viewModel: SettingsViewModel = hiltViewModel()) {
                         var showClearConfirm by remember { mutableStateOf(false) }
 
                         SettingsActionItem(
-                            title = "Clear Settled Debts",
-                            subtitle = "Permanently delete fully paid debts",
+                            title = LocalizedString.get("clear_settled"),
+                            subtitle = LocalizedString.get("clear_settled_subtitle"),
                             icon = Icons.Default.DeleteSweep,
                             color = Color(0xFFFF4757),
                             onClick = { showClearConfirm = true }
@@ -182,19 +183,19 @@ fun SettingsScreen(viewModel: SettingsViewModel = hiltViewModel()) {
                             AlertDialog(
                                 onDismissRequest = { showClearConfirm = false },
                                 containerColor = Color(0xFF1A1A1A),
-                                title = { Text("Clear Settled Debts?", color = Color.White) },
-                                text = { Text("This will permanently delete all settled debts. This cannot be undone.", color = Color(0xFFCCCCCC)) },
+                                title = { Text(LocalizedString.get("clear_settled_dialog"), color = Color.White) },
+                                text = { Text(LocalizedString.get("clear_settled_dialog_desc"), color = Color(0xFFCCCCCC)) },
                                 confirmButton = {
                                     TextButton(onClick = {
                                         viewModel.clearSettledDebts()
                                         showClearConfirm = false
                                     }) {
-                                        Text("Delete All", color = Color(0xFFFF4757))
+                                        Text(LocalizedString.get("delete_all"), color = Color(0xFFFF4757))
                                     }
                                 },
                                 dismissButton = {
                                     TextButton(onClick = { showClearConfirm = false }) {
-                                        Text("Cancel", color = SubtitleGray)
+                                        Text(LocalizedString.get("cancel"), color = SubtitleGray)
                                     }
                                 }
                             )
@@ -220,7 +221,7 @@ fun SettingsScreen(viewModel: SettingsViewModel = hiltViewModel()) {
         AlertDialog(
             onDismissRequest = { showLanguageDialog = false },
             containerColor = Color(0xFF1A1A1A),
-            title = { Text("Select Language", color = Color.White) },
+            title = { Text(LocalizedString.get("select_language"), color = Color.White) },
             text = {
                 LanguageSelectorGrid(
                     selectedCode = state.selectedLanguage,

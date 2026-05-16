@@ -78,15 +78,19 @@ object HtmlExporter {
         val dueDateStr = debt.dueDate?.let { dateFormat.format(Date(it)) } ?: "No due date"
 
         val formattedAmount = "${debt.currency}${(debt.amount - debt.amountPaid).toLong()}"
+        val hasDesc = debt.description.isNotBlank()
 
         return htmlContent
             .replace("{{lenderName}}", escapeHtml(lenderName))
             .replace("{{borrowerName}}", escapeHtml(debt.personName))
             .replace("{{amount}}", formattedAmount)
             .replace("{{currency}}", debt.currency)
-            .replace("{{description}}", escapeHtml(debt.description.ifBlank { "Personal Loan" }))
+            .replace("{{description}}", escapeHtml(debt.description))
             .replace("{{dueDate}}", dueDateStr)
             .replace("{{debtQuote}}", escapeHtml(aiMessage.ifBlank { "Please repay soon!" }))
+            .replace("{{descriptionDisplay}}", if (hasDesc) "flex" else "none")
+            .replace("{{dueDateText}}", if (hasDesc) "- Due" else "")
+            .replace("{{quoteText}}", if (hasDesc) "." else "")
     }
 
     private fun escapeHtml(text: String): String {

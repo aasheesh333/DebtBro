@@ -30,6 +30,7 @@ import com.dhanuk.debtbro.presentation.theme.DangerRed
 import com.dhanuk.debtbro.presentation.theme.PrimaryGreen
 import com.dhanuk.debtbro.presentation.theme.SubtitleGray
 import com.dhanuk.debtbro.util.formatCurrency
+import com.dhanuk.debtbro.util.LocalizedString
 import kotlinx.coroutines.delay
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -67,13 +68,13 @@ fun DashboardScreen(
                 ) {
                     Column {
                         Text(
-                            "Hey ${state.userName}! 👋",
+                            "${LocalizedString.get("greeting")} ${state.userName}! 👋",
                             color = Color.White,
                             fontSize = 24.sp,
                             fontWeight = FontWeight.Bold
                         )
                         Text(
-                            "Your money memory is sharp today",
+                            LocalizedString.get("money_memory_subtitle"),
                             color = SubtitleGray,
                             fontSize = 13.sp
                         )
@@ -103,17 +104,17 @@ fun DashboardScreen(
                     horizontalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
                     ActionButton(
-                        "Add Debt", 
-                        Icons.Default.Add, 
-                        PrimaryGreen, 
-                        Modifier.weight(1f), 
+                        LocalizedString.get("add_debt"),
+                        Icons.Default.Add,
+                        PrimaryGreen,
+                        Modifier.weight(1f),
                         onAddDebtClick
                     )
                     ActionButton(
-                        "Split Bill", 
-                        Icons.Default.CallSplit, 
-                        Color.White, 
-                        Modifier.weight(1f), 
+                        LocalizedString.get("split_bill"),
+                        Icons.Default.CallSplit,
+                        Color.White,
+                        Modifier.weight(1f),
                         onSplitClick
                     )
                 }
@@ -122,7 +123,7 @@ fun DashboardScreen(
             // Overdue Section
             if (state.overdueDebts.isNotEmpty()) {
                 item {
-                    SectionHeader("Overdue 🔥", null)
+                    SectionHeader(LocalizedString.get("overdue"), null)
                 }
                 items(state.overdueDebts) { debt ->
                     DebtCard(debt, state.isSignedIn, { onDebtClick(debt.id) })
@@ -131,11 +132,11 @@ fun DashboardScreen(
 
             // Recent Debts
             item {
-                SectionHeader("Recent Debts 🕒", "See All") { onSeeAllClick() }
+                SectionHeader(LocalizedString.get("recent_debts"), LocalizedString.get("see_all")) { onSeeAllClick() }
             }
             if (state.recentDebts.isEmpty()) {
                 item {
-                    EmptyState("No active debts. Peaceful wallet!")
+                    EmptyState(LocalizedString.get("no_active"))
                 }
             } else {
                 items(state.recentDebts) { debt ->
@@ -145,7 +146,7 @@ fun DashboardScreen(
 
             // Leaderboard
             item {
-                SectionHeader("Debt Leaderboard 🏆", null)
+                SectionHeader(LocalizedString.get("leaderboard"), null)
             }
             items(state.leaderboard) { debt ->
                 LeaderboardItem(debt, state.leaderboard.indexOf(debt) + 1)
@@ -166,14 +167,14 @@ fun DashboardScreen(
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
-                Text("☁️ Cloud Sync", fontSize = 24.sp, fontWeight = FontWeight.Bold, color = Color.White)
+                Text(LocalizedString.get("cloud_sync"), fontSize = 24.sp, fontWeight = FontWeight.Bold, color = Color.White)
                 Text(
-                    "Sign in with Google to keep your data safe. Even if you change phones, your broke friends can't hide.",
+                    LocalizedString.get("cloud_sync_desc"),
                     color = SubtitleGray,
                     textAlign = TextAlign.Center
                 )
                 Button(
-                    onClick = { 
+                    onClick = {
                         showPrompt = false
                         viewModel.dismissPrompt()
                         onSettingsClick()
@@ -181,13 +182,13 @@ fun DashboardScreen(
                     modifier = Modifier.fillMaxWidth().height(54.dp),
                     colors = ButtonDefaults.buttonColors(containerColor = PrimaryGreen)
                 ) {
-                    Text("Go to Settings", color = Color.Black, fontWeight = FontWeight.Bold)
+                    Text(LocalizedString.get("go_to_settings"), color = Color.Black, fontWeight = FontWeight.Bold)
                 }
-                TextButton(onClick = { 
+                TextButton(onClick = {
                     showPrompt = false
                     viewModel.dismissPrompt()
                 }) {
-                    Text("Maybe later", color = SubtitleGray)
+                    Text(LocalizedString.get("maybe_later"), color = SubtitleGray)
                 }
             }
         }
@@ -207,7 +208,7 @@ fun StatsCard(totalOwedToMe: Double, totalIOwe: Double, recoveryRate: Int) {
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
                 Column {
-                    Text("Total Owed to Me", color = SubtitleGray, fontSize = 13.sp)
+                    Text(LocalizedString.get("total_owed_to_me"), color = SubtitleGray, fontSize = 13.sp)
                     Text(
                         formatCurrency(totalOwedToMe),
                         color = PrimaryGreen,
@@ -234,7 +235,7 @@ fun StatsCard(totalOwedToMe: Double, totalIOwe: Double, recoveryRate: Int) {
             
             Row(modifier = Modifier.fillMaxWidth()) {
                 Column(Modifier.weight(1f)) {
-                    Text("I Owe", color = SubtitleGray, fontSize = 12.sp)
+                    Text(LocalizedString.get("i_owe"), color = SubtitleGray, fontSize = 12.sp)
                     Text(
                         formatCurrency(totalIOwe),
                         color = DangerRed,
@@ -243,7 +244,7 @@ fun StatsCard(totalOwedToMe: Double, totalIOwe: Double, recoveryRate: Int) {
                     )
                 }
                 Column(Modifier.weight(1f), horizontalAlignment = Alignment.End) {
-                    Text("Recovery Rate", color = SubtitleGray, fontSize = 12.sp)
+                    Text(LocalizedString.get("recovery_rate"), color = SubtitleGray, fontSize = 12.sp)
                     Text(
                         "$recoveryRate%",
                         color = Color.White,

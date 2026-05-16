@@ -40,6 +40,7 @@ import com.dhanuk.debtbro.presentation.theme.SubtitleGray
 import com.dhanuk.debtbro.util.copyToClipboard
 import com.dhanuk.debtbro.util.formatCurrency
 import com.dhanuk.debtbro.util.toReadableDate
+import com.dhanuk.debtbro.util.LocalizedString
 
 fun android.content.Context.findActivity(): Activity? {
     var ctx = this
@@ -93,20 +94,20 @@ fun DebtDetailScreen(onBack: () -> Unit, viewModel: DebtDetailViewModel = hiltVi
                         AlertDialog(
                             onDismissRequest = { showDeleteConfirm = false },
                             containerColor = Color(0xFF1A1A1A),
-                            title = { Text("Delete Debt?", color = Color.White) },
-                            text = { Text("This will permanently delete this debt and all its payments. This cannot be undone.", color = Color(0xFFCCCCCC)) },
+                            title = { Text(LocalizedString.get("delete_debt"), color = Color.White) },
+                            text = { Text(LocalizedString.get("delete_confirm"), color = Color(0xFFCCCCCC)) },
                             confirmButton = {
                                 TextButton(onClick = {
                                     viewModel.deleteDebt()
                                     showDeleteConfirm = false
                                     onBack()
                                 }) {
-                                    Text("Delete", color = Color(0xFFFF4757))
+                                    Text(LocalizedString.get("delete"), color = Color(0xFFFF4757))
                                 }
                             },
                             dismissButton = {
                                 TextButton(onClick = { showDeleteConfirm = false }) {
-                                    Text("Cancel", color = SubtitleGray)
+                                    Text(LocalizedString.get("cancel"), color = SubtitleGray)
                                 }
                             }
                         )
@@ -143,7 +144,7 @@ fun DebtDetailScreen(onBack: () -> Unit, viewModel: DebtDetailViewModel = hiltVi
                         }
                         Spacer(Modifier.height(16.dp))
                         Text(
-                            if (remaining > 0) "Remaining Balance" else "Debt Settled",
+                            if (remaining > 0) LocalizedString.get("remaining_balance") else LocalizedString.get("debt_settled"),
                             color = SubtitleGray,
                             fontSize = 14.sp
                         )
@@ -167,8 +168,8 @@ fun DebtDetailScreen(onBack: () -> Unit, viewModel: DebtDetailViewModel = hiltVi
                             modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
                             horizontalArrangement = Arrangement.SpaceBetween
                         ) {
-                            Text("Paid: ${formatCurrency(d.amountPaid, d.currency)}", color = SubtitleGray, fontSize = 12.sp)
-                            Text("Total: ${formatCurrency(d.amount, d.currency)}", color = SubtitleGray, fontSize = 12.sp)
+                            Text("${LocalizedString.get("paid")}: ${formatCurrency(d.amountPaid, d.currency)}", color = SubtitleGray, fontSize = 12.sp)
+                            Text("${LocalizedString.get("total")}: ${formatCurrency(d.amount, d.currency)}", color = SubtitleGray, fontSize = 12.sp)
                         }
                     }
                 }
@@ -185,7 +186,7 @@ fun DebtDetailScreen(onBack: () -> Unit, viewModel: DebtDetailViewModel = hiltVi
                         ) {
                             Icon(Icons.Default.Add, null, tint = Color.Black)
                             Spacer(Modifier.width(8.dp))
-                            Text("Add Payment", color = Color.Black, fontWeight = FontWeight.Bold)
+                            Text(LocalizedString.get("add_payment"), color = Color.Black, fontWeight = FontWeight.Bold)
                         }
                         
                         OutlinedButton(
@@ -195,7 +196,7 @@ fun DebtDetailScreen(onBack: () -> Unit, viewModel: DebtDetailViewModel = hiltVi
                             border = BorderStroke(1.dp, if (remaining > 0) PrimaryGreen else Color(0xFF333333)),
                             enabled = remaining > 0
                         ) {
-                            Text("Settle All", color = if (remaining > 0) PrimaryGreen else SubtitleGray)
+                            Text(LocalizedString.get("settle_all"), color = if (remaining > 0) PrimaryGreen else SubtitleGray)
                         }
                     }
                 }
@@ -209,7 +210,7 @@ fun DebtDetailScreen(onBack: () -> Unit, viewModel: DebtDetailViewModel = hiltVi
                     ) {
                         Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
                             Row(verticalAlignment = Alignment.CenterVertically) {
-                                Text("🤖 BroBot Nudge", fontWeight = FontWeight.Bold, color = Color.White)
+                                Text(LocalizedString.get("nudge"), fontWeight = FontWeight.Bold, color = Color.White)
                                 Spacer(Modifier.weight(1f))
                                 Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
                                     listOf("MILD", "MEDIUM", "SAVAGE").forEach { level ->
@@ -236,8 +237,9 @@ fun DebtDetailScreen(onBack: () -> Unit, viewModel: DebtDetailViewModel = hiltVi
                                 if (isGenerating) {
                                     LoadingDotsIndicator(color = PrimaryGreen)
                                 } else {
+                                    val msg = aiMessage.ifBlank { d.aiRoastGenerated ?: LocalizedString.get("tap_refresh") }
                                     Text(
-                                        aiMessage.ifBlank { d.aiRoastGenerated ?: "Time to remind them about the money? Generate a roast!" },
+                                        msg,
                                         color = Color.White,
                                         fontSize = 14.sp
                                     )
@@ -254,9 +256,9 @@ fun DebtDetailScreen(onBack: () -> Unit, viewModel: DebtDetailViewModel = hiltVi
                                     modifier = Modifier.weight(1f)
                                 ) {
                                     if (remainingFree > 0) {
-                                        Text("Regenerate ($remainingFree)")
+                                        Text("${LocalizedString.get("regenerate")} ($remainingFree)")
                                     } else {
-                                        Text("🎯 Regenerate")
+                                        Text("🎯 ${LocalizedString.get("regenerate")}")
                                     }
                                 }
                                 Button(
@@ -278,12 +280,12 @@ fun DebtDetailScreen(onBack: () -> Unit, viewModel: DebtDetailViewModel = hiltVi
 
                 // Payment History Section
                 item {
-                    Text("Payment History", fontWeight = FontWeight.Bold, color = Color.White, fontSize = 18.sp)
+                    Text(LocalizedString.get("payment_history"), fontWeight = FontWeight.Bold, color = Color.White, fontSize = 18.sp)
                 }
                 
                 if (payments.isEmpty()) {
                     item {
-                        Text("No payments recorded yet.", color = SubtitleGray, modifier = Modifier.padding(vertical = 16.dp))
+                        Text(LocalizedString.get("no_payments"), color = SubtitleGray, modifier = Modifier.padding(vertical = 16.dp))
                     }
                 } else {
                     items(payments) { payment ->
@@ -321,7 +323,7 @@ fun DebtDetailScreen(onBack: () -> Unit, viewModel: DebtDetailViewModel = hiltVi
                     ) {
                         Icon(Icons.Default.Image, null, tint = Color.White)
                         Spacer(Modifier.width(8.dp))
-                        Text("Export as Image Card", color = Color.White)
+                        Text(LocalizedString.get("export_image"), color = Color.White)
                     }
                 }
                 
@@ -340,7 +342,7 @@ fun DebtDetailScreen(onBack: () -> Unit, viewModel: DebtDetailViewModel = hiltVi
                     ) {
                         Icon(androidx.compose.material.icons.Icons.Filled.Send, null, tint = Color(0xFF25D366))
                         Spacer(Modifier.width(8.dp))
-                        Text("Share to WhatsApp", color = Color(0xFF25D366))
+                        Text(LocalizedString.get("share_whatsapp"), color = Color(0xFF25D366))
                     }
                 }
             }
@@ -371,19 +373,19 @@ fun DebtDetailScreen(onBack: () -> Unit, viewModel: DebtDetailViewModel = hiltVi
     if (showRewardAd) {
         AlertDialog(
             onDismissRequest = { viewModel.dismissRewardAd() },
-            title = { Text("🎯 Free Regenerations Used!", color = Color.White) },
-            text = { Text("You've used all $MAX_FREE_REGENERATIONS free regenerations. Watch a short ad to earn more!", color = Color(0xFFCCCCCC)) },
+            title = { Text(LocalizedString.get("free_regenerations_used"), color = Color.White) },
+            text = { Text(LocalizedString.get("free_regenerations_desc").replace("{count}", MAX_FREE_REGENERATIONS.toString()), color = Color(0xFFCCCCCC)) },
             confirmButton = {
                 TextButton(onClick = {
                     viewModel.dismissRewardAd()
                     viewModel.generateRoast(context.findActivity())
                 }) {
-                    Text("Watch Ad", color = PrimaryGreen)
+                    Text(LocalizedString.get("watch_ad"), color = PrimaryGreen)
                 }
             },
             dismissButton = {
                 TextButton(onClick = { viewModel.dismissRewardAd() }) {
-                    Text("Later", color = SubtitleGray)
+                    Text(LocalizedString.get("later"), color = SubtitleGray)
                 }
             },
             containerColor = Color(0xFF1A1A1A)
@@ -399,11 +401,11 @@ fun AddPaymentDialog(remaining: Double, currency: String, onDismiss: () -> Unit,
 
     ModalBottomSheet(onDismissRequest = onDismiss, containerColor = Color(0xFF1A1A1A)) {
         Column(Modifier.padding(24.dp).padding(bottom = 32.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
-            Text("Add Payment", fontSize = 20.sp, fontWeight = FontWeight.Bold, color = Color.White)
+            Text(LocalizedString.get("add_payment"), fontSize = 20.sp, fontWeight = FontWeight.Bold, color = Color.White)
             OutlinedTextField(
                 value = amount,
                 onValueChange = { if (it.all { c -> c.isDigit() || c == '.' }) amount = it },
-                label = { Text("Amount ($currency)") },
+                label = { Text("${LocalizedString.get("amount")} ($currency)") },
                 modifier = Modifier.fillMaxWidth(),
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
                 colors = OutlinedTextFieldDefaults.colors(focusedBorderColor = PrimaryGreen)
@@ -411,19 +413,19 @@ fun AddPaymentDialog(remaining: Double, currency: String, onDismiss: () -> Unit,
             OutlinedTextField(
                 value = note,
                 onValueChange = { note = it },
-                label = { Text("Note (optional)") },
+                label = { Text(LocalizedString.get("note_optional")) },
                 modifier = Modifier.fillMaxWidth(),
                 colors = OutlinedTextFieldDefaults.colors(focusedBorderColor = PrimaryGreen)
             )
             Button(
-                onClick = { 
+                onClick = {
                     val amt = amount.toDoubleOrNull() ?: 0.0
-                    if (amt > 0) onSave(amt, note) 
+                    if (amt > 0) onSave(amt, note)
                 },
                 modifier = Modifier.fillMaxWidth().height(54.dp),
                 colors = ButtonDefaults.buttonColors(containerColor = PrimaryGreen)
             ) {
-                Text("Save Payment", color = Color.Black, fontWeight = FontWeight.Bold)
+                Text(LocalizedString.get("save_payment"), color = Color.Black, fontWeight = FontWeight.Bold)
             }
         }
     }
@@ -439,21 +441,21 @@ fun EditDebtDialog(debt: DebtEntity, onDismiss: () -> Unit, onSave: (String, Dou
 
     ModalBottomSheet(onDismissRequest = onDismiss, containerColor = Color(0xFF1A1A1A)) {
         Column(Modifier.padding(24.dp).padding(bottom = 32.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
-            Text("Edit Debt", fontSize = 20.sp, fontWeight = FontWeight.Bold, color = Color.White)
-            OutlinedTextField(value = name, onValueChange = { name = it }, label = { Text("Person Name") }, modifier = Modifier.fillMaxWidth())
-            OutlinedTextField(value = amount, onValueChange = { amount = it }, label = { Text("Total Amount") }, modifier = Modifier.fillMaxWidth(), keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal))
-            OutlinedTextField(value = desc, onValueChange = { desc = it }, label = { Text("Description") }, modifier = Modifier.fillMaxWidth())
-            OutlinedTextField(value = emoji, onValueChange = { emoji = it }, label = { Text("Emoji") }, modifier = Modifier.fillMaxWidth())
-            
+            Text(LocalizedString.get("edit_debt"), fontSize = 20.sp, fontWeight = FontWeight.Bold, color = Color.White)
+            OutlinedTextField(value = name, onValueChange = { name = it }, label = { Text(LocalizedString.get("person_name")) }, modifier = Modifier.fillMaxWidth())
+            OutlinedTextField(value = amount, onValueChange = { amount = it }, label = { Text(LocalizedString.get("total_amount")) }, modifier = Modifier.fillMaxWidth(), keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal))
+            OutlinedTextField(value = desc, onValueChange = { desc = it }, label = { Text(LocalizedString.get("description")) }, modifier = Modifier.fillMaxWidth())
+            OutlinedTextField(value = emoji, onValueChange = { emoji = it }, label = { Text(LocalizedString.get("emoji")) }, modifier = Modifier.fillMaxWidth())
+
             Button(
-                onClick = { 
+                onClick = {
                     val amt = amount.toDoubleOrNull() ?: debt.amount
-                    onSave(name, amt, desc, emoji) 
+                    onSave(name, amt, desc, emoji)
                 },
                 modifier = Modifier.fillMaxWidth().height(54.dp),
                 colors = ButtonDefaults.buttonColors(containerColor = PrimaryGreen)
             ) {
-                Text("Update Debt", color = Color.Black, fontWeight = FontWeight.Bold)
+                Text(LocalizedString.get("update_debt"), color = Color.Black, fontWeight = FontWeight.Bold)
             }
         }
     }

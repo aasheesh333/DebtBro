@@ -34,6 +34,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.dhanuk.debtbro.presentation.theme.PrimaryGreen
 import com.dhanuk.debtbro.presentation.theme.SubtitleGray
 import com.dhanuk.debtbro.util.formatCurrency
+import com.dhanuk.debtbro.util.LocalizedString
 import com.google.accompanist.permissions.ExperimentalPermissionsApi
 import com.google.accompanist.permissions.isGranted
 import com.google.accompanist.permissions.rememberPermissionState
@@ -53,7 +54,7 @@ fun SplitScreen(viewModel: SplitViewModel = hiltViewModel()) {
     ) {
         item {
             Text(
-                "Split Bill",
+                LocalizedString.get("split_bill"),
                 color = Color.White,
                 fontSize = 28.sp,
                 fontWeight = FontWeight.Bold
@@ -73,8 +74,8 @@ fun SplitScreen(viewModel: SplitViewModel = hiltViewModel()) {
                     OutlinedTextField(
                         value = state.title,
                         onValueChange = { viewModel.updateTitle(it) },
-                        label = { Text("What's this for?") },
-                        placeholder = { Text("e.g. Goa Trip, Pizza Party") },
+                        label = { Text(LocalizedString.get("whats_this_for")) },
+                        placeholder = { Text(LocalizedString.get("goa_trip_placeholder")) },
                         modifier = Modifier.fillMaxWidth(),
                         colors = OutlinedTextFieldDefaults.colors(
                             focusedBorderColor = PrimaryGreen,
@@ -85,7 +86,7 @@ fun SplitScreen(viewModel: SplitViewModel = hiltViewModel()) {
                     OutlinedTextField(
                         value = state.totalAmount,
                         onValueChange = { if (it.all { c -> c.isDigit() || c == '.' }) viewModel.updateTotal(it) },
-                        label = { Text("Total Amount") },
+                        label = { Text(LocalizedString.get("total_amount")) },
                         placeholder = { Text("0.00") },
                         prefix = { Text("₹", color = PrimaryGreen, fontWeight = FontWeight.Bold) },
                         modifier = Modifier.fillMaxWidth(),
@@ -144,7 +145,7 @@ fun SplitScreen(viewModel: SplitViewModel = hiltViewModel()) {
                             modifier = Modifier.padding(16.dp),
                             horizontalAlignment = Alignment.CenterHorizontally
                         ) {
-                            Text("Split Share", color = SubtitleGray, fontSize = 12.sp)
+                            Text(LocalizedString.get("per_person"), color = SubtitleGray, fontSize = 12.sp)
                             Text(
                                 formatCurrency(state.perPerson),
                                 color = PrimaryGreen,
@@ -152,7 +153,7 @@ fun SplitScreen(viewModel: SplitViewModel = hiltViewModel()) {
                                 fontWeight = FontWeight.ExtraBold
                             )
                             Text(
-                                "among ${state.participants.size} people",
+                                LocalizedString.get("among_people").replace("{count}", state.participants.size.toString()),
                                 color = SubtitleGray,
                                 fontSize = 12.sp
                             )
@@ -171,7 +172,7 @@ fun SplitScreen(viewModel: SplitViewModel = hiltViewModel()) {
                         if (state.isLoading) {
                             CircularProgressIndicator(color = Color.Black, modifier = Modifier.size(24.dp))
                         } else {
-                            Text("Create Split", color = Color.Black, fontWeight = FontWeight.Bold)
+                            Text(LocalizedString.get("create_split"), color = Color.Black, fontWeight = FontWeight.Bold)
                         }
                     }
 
@@ -192,7 +193,7 @@ fun SplitScreen(viewModel: SplitViewModel = hiltViewModel()) {
 
         item {
             Text(
-                "Past Splits",
+                LocalizedString.get("past_splits"),
                 color = Color.White,
                 fontSize = 20.sp,
                 fontWeight = FontWeight.Bold,
@@ -231,8 +232,8 @@ fun AddParticipantRow(
         OutlinedTextField(
             value = value,
             onValueChange = onValueChange,
-            label = { Text("Add Person") },
-            placeholder = { Text("Name") },
+            label = { Text(LocalizedString.get("add_person")) },
+            placeholder = { Text(LocalizedString.get("name_placeholder")) },
             modifier = Modifier.weight(1f),
             singleLine = true,
             trailingIcon = {
@@ -295,16 +296,16 @@ fun SplitItemCard(split: com.dhanuk.debtbro.data.db.entity.SplitEntity, onGetAi:
                 ) {
                     Icon(Icons.Default.AutoAwesome, null, modifier = Modifier.size(16.dp))
                     Spacer(Modifier.width(4.dp))
-                    Text("AI Take", fontSize = 12.sp)
+                    Text(LocalizedString.get("ai_take_short"), fontSize = 12.sp)
                 }
-                
+
                 TextButton(
                     onClick = { onCreateDebts(split) },
                     colors = ButtonDefaults.textButtonColors(contentColor = PrimaryGreen)
                 ) {
                     Icon(Icons.Default.LibraryAdd, null, modifier = Modifier.size(16.dp))
                     Spacer(Modifier.width(4.dp))
-                    Text("Create Debts", fontSize = 12.sp)
+                    Text(LocalizedString.get("create_debts"), fontSize = 12.sp)
                 }
             }
         }
@@ -358,7 +359,7 @@ fun ContactPickerBottomSheet(
                 .heightIn(max = 400.dp)
         ) {
             Text(
-                "Select Contact",
+                LocalizedString.get("select_contact"),
                 color = Color.White,
                 fontSize = 20.sp,
                 fontWeight = FontWeight.Bold,
@@ -369,7 +370,7 @@ fun ContactPickerBottomSheet(
                 OutlinedTextField(
                     value = searchQuery,
                     onValueChange = { searchQuery = it },
-                    placeholder = { Text("Search contacts...") },
+                    placeholder = { Text(LocalizedString.get("search_contacts")) },
                     modifier = Modifier.fillMaxWidth(),
                     leadingIcon = { Icon(Icons.Default.Search, null) },
                     colors = OutlinedTextFieldDefaults.colors(
@@ -414,7 +415,7 @@ fun ContactPickerBottomSheet(
                     Icon(Icons.Default.Contacts, null, modifier = Modifier.size(48.dp), tint = SubtitleGray)
                     Spacer(Modifier.height(16.dp))
                     Text(
-                        "Contact permission is needed to pick from your contacts list.",
+                        LocalizedString.get("contact_permission_msg"),
                         color = SubtitleGray,
                         textAlign = TextAlign.Center
                     )
@@ -423,7 +424,7 @@ fun ContactPickerBottomSheet(
                         onClick = { permissionState.launchPermissionRequest() },
                         colors = ButtonDefaults.buttonColors(containerColor = PrimaryGreen)
                     ) {
-                        Text("Grant Permission", color = Color.Black)
+                        Text(LocalizedString.get("grant_permission"), color = Color.Black)
                     }
                 }
             }

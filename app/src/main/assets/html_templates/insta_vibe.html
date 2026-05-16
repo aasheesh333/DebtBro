@@ -136,9 +136,19 @@
             gap: 12px;
             font-size: 1.3rem;
             color: rgba(255, 255, 255, 0.7);
+            max-width: 45%;
+            overflow-wrap: break-word;
+            word-break: break-word;
+        }
+        .detail-item .text-content {
+            font-size: 1.3rem;
+            color: rgba(255, 255, 255, 0.7);
+            line-height: 1.4;
+            max-width: 280px;
         }
         .detail-icon {
             font-size: 1.5rem;
+            flex-shrink: 0;
         }
         .footer {
             position: absolute;
@@ -185,11 +195,11 @@
             <div class="details">
                 <div class="detail-item">
                     <span class="detail-icon">&#128197;</span>
-                    <span>{{dueDate}}</span>
+                    <span class="text-content">{{dueDate}}</span>
                 </div>
-                <div class="detail-item">
+                <div class="detail-item" style="display: {{descriptionDisplay}}">
                     <span class="detail-icon">&#128221;</span>
-                    <span>{{description}}</span>
+                    <span class="text-content">{{description}}</span>
                 </div>
             </div>
         </div>

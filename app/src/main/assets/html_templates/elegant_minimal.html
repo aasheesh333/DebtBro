@@ -140,9 +140,27 @@
             gap: 10px;
             font-size: 1.1rem;
             color: #777;
+            max-width: 45%;
+            overflow-wrap: break-word;
+            word-break: break-word;
+        }
+        .detail-item .text-content {
+            font-size: 1.1rem;
+            color: #777;
+            line-height: 1.4;
+            max-width: 280px;
         }
         .detail-icon {
             font-size: 1.3rem;
+            flex-shrink: 0;
+        }
+        .note-content {
+            font-size: clamp(1rem, 2vw, 1.3rem);
+            color: #555;
+            line-height: 1.6;
+            word-wrap: break-word;
+            overflow-wrap: anywhere;
+            max-height: 5em;
         }
         .footer {
             position: absolute;
@@ -186,17 +204,17 @@
 
             <div class="note">
                 <div class="note-label">Note</div>
-                <div class="note-content">{{description}} - Due {{dueDate}}. {{debtQuote}}</div>
+                <div class="note-content">{{description}}{{dueDateText}} {{dueDate}}{{quoteText}} {{debtQuote}}</div>
             </div>
 
             <div class="details">
                 <div class="detail-item">
                     <span class="detail-icon">&#128197;</span>
-                    <span>{{dueDate}}</span>
+                    <span class="text-content">{{dueDate}}</span>
                 </div>
-                <div class="detail-item">
+                <div class="detail-item" style="display: {{descriptionDisplay}}">
                     <span class="detail-icon">&#128221;</span>
-                    <span>{{description}}</span>
+                    <span class="text-content">{{description}}</span>
                 </div>
             </div>
         </div>

@@ -48,7 +48,7 @@ fun AddDebtBottomSheet(
     val hapticFeedback = LocalHapticFeedback.current
     val context = LocalContext.current
     val isLoading by viewModel.isLoading.collectAsStateWithLifecycle()
-    
+
     var personName by remember { mutableStateOf("") }
     var amount by remember { mutableStateOf("") }
     var debtType by remember { mutableStateOf("THEY_OWE_ME") }
@@ -56,18 +56,30 @@ fun AddDebtBottomSheet(
     var description by remember { mutableStateOf("") }
     var notes by remember { mutableStateOf("") }
     var selectedDate by remember { mutableStateOf<Long?>(null) }
-    
+
     var triedToSave by remember { mutableStateOf(false) }
     var showEmojiPicker by remember { mutableStateOf(false) }
     var showDatePicker by remember { mutableStateOf(false) }
     var customEmoji by remember { mutableStateOf("") }
-    
-    val DEBT_EMOJIS = listOf(
+
+    // Different emojis for each debt type
+    val THEY_OWE_EMOJIS = listOf(
         "😊","😎","🤝","🍕","🚕","☕","🏠","💼","🎁","🎮",
         "📚","✈️","🏖️","🎬","🍔","💪","🎉","🏋️","🚗","💊",
         "🎵","⚽","🍺","🎓","💻","🛒","🍱","🤑","😈","👑"
     )
-    var selectedEmoji by remember { mutableStateOf(DEBT_EMOJIS[0]) }
+    val I_OWE_EMOJIS = listOf(
+        "😅","🙏","🤗","💳","😰","🫡","😬","🥺","😤","😇",
+        "💸","📝","🫶","😶","🙈","😳","🤦","😌","🫠","🤞",
+        "😔","🙇","🥹","🍽️","☕","🚗","🏠","📱","💼","🎯"
+    )
+    val currentEmojis = if (debtType == "THEY_OWE_ME") THEY_OWE_EMOJIS else I_OWE_EMOJIS
+    var selectedEmoji by remember { mutableStateOf("") }
+
+    // Reset selected emoji when debt type changes
+    LaunchedEffect(debtType) {
+        selectedEmoji = currentEmojis[0]
+    }
 
     LaunchedEffect(Unit) {
         selectedCurrency = viewModel.getDefaultCurrency()
@@ -216,7 +228,7 @@ fun AddDebtBottomSheet(
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
                     contentPadding = PaddingValues(vertical = 8.dp)
                 ) {
-                    items(DEBT_EMOJIS) { emoji ->
+                    items(currentEmojis) { emoji ->
                         val isSelected = emoji == selectedEmoji
                         Box(
                             modifier = Modifier

@@ -122,9 +122,19 @@
             gap: 10px;
             font-size: 1.2rem;
             color: rgba(255, 255, 255, 0.6);
+            max-width: 45%;
+            overflow-wrap: break-word;
+            word-break: break-word;
+        }
+        .detail-item .text-content {
+            font-size: 1.2rem;
+            color: rgba(255, 255, 255, 0.6);
+            line-height: 1.4;
+            max-width: 260px;
         }
         .detail-icon {
             font-size: 1.4rem;
+            flex-shrink: 0;
         }
         .quote-box {
             background: rgba(255, 255, 255, 0.03);
@@ -183,11 +193,11 @@
             <div class="details-row">
                 <div class="detail-item">
                     <span class="detail-icon">&#128197;</span>
-                    <span>{{dueDate}}</span>
+                    <span class="text-content">{{dueDate}}</span>
                 </div>
-                <div class="detail-item">
+                <div class="detail-item" style="display: {{descriptionDisplay}}">
                     <span class="detail-icon">&#128221;</span>
-                    <span>{{description}}</span>
+                    <span class="text-content">{{description}}</span>
                 </div>
             </div>
 

@@ -29,6 +29,7 @@ import com.dhanuk.debtbro.presentation.screens.settings.SettingsScreen
 import com.dhanuk.debtbro.presentation.screens.split.SplitScreen
 import com.dhanuk.debtbro.presentation.theme.PrimaryGreen
 import com.dhanuk.debtbro.presentation.theme.SubtitleGray
+import com.dhanuk.debtbro.util.LocalizedString
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.ui.Alignment
@@ -41,9 +42,21 @@ import kotlinx.coroutines.flow.first
 fun DebtBroNavGraph(appPreferences: AppPreferences) {
     val navController = rememberNavController()
     var showAddDebt by remember { mutableStateOf(false) }
-    
+
     var startDestination by remember { mutableStateOf<String?>(null) }
-    
+    var selectedLanguage by remember { mutableStateOf("en") }
+
+    LaunchedEffect(Unit) {
+        // Read and set language
+        selectedLanguage = appPreferences.selectedLanguage.first()
+        LocalizedString.setLanguage(selectedLanguage)
+        // Listen for language changes
+        appPreferences.selectedLanguage.collect { code ->
+            selectedLanguage = code
+            LocalizedString.setLanguage(code)
+        }
+    }
+
     LaunchedEffect(Unit) {
         startDestination = if (appPreferences.hasCompletedOnboarding.first()) {
             Screen.Dashboard.route
@@ -92,15 +105,15 @@ fun DebtBroNavGraph(appPreferences: AppPreferences) {
                                     restoreState = true
                                 }
                             },
-                            icon = { 
+                            icon = {
                                 Icon(
-                                    if (currentRoute == Screen.Dashboard.route) 
-                                        Icons.Filled.Home 
+                                    if (currentRoute == Screen.Dashboard.route)
+                                        Icons.Filled.Home
                                     else Icons.Outlined.Home,
-                                    contentDescription = "Home"
+                                    contentDescription = LocalizedString.get("nav_home")
                                 )
                             },
-                            label = { Text("Home") },
+                            label = { Text(LocalizedString.get("nav_home")) },
                             colors = NavigationBarItemDefaults.colors(
                                 selectedIconColor = PrimaryGreen,
                                 selectedTextColor = PrimaryGreen,
@@ -122,15 +135,15 @@ fun DebtBroNavGraph(appPreferences: AppPreferences) {
                                     launchSingleTop = true
                                 }
                             },
-                            icon = { 
+                            icon = {
                                 Icon(
-                                    if (currentRoute == Screen.DebtList.route) 
-                                        Icons.Filled.AccountBalanceWallet 
+                                    if (currentRoute == Screen.DebtList.route)
+                                        Icons.Filled.AccountBalanceWallet
                                     else Icons.Outlined.AccountBalanceWallet,
-                                    contentDescription = "Debts"
+                                    contentDescription = LocalizedString.get("nav_debts")
                                 )
                             },
-                            label = { Text("Debts") },
+                            label = { Text(LocalizedString.get("nav_debts")) },
                             colors = NavigationBarItemDefaults.colors(
                                 selectedIconColor = PrimaryGreen,
                                 selectedTextColor = PrimaryGreen,
@@ -152,13 +165,13 @@ fun DebtBroNavGraph(appPreferences: AppPreferences) {
                                     launchSingleTop = true
                                 }
                             },
-                            icon = { 
+                            icon = {
                                 Icon(
                                     Icons.Default.CallSplit,
-                                    contentDescription = "Split"
+                                    contentDescription = LocalizedString.get("nav_split")
                                 )
                             },
-                            label = { Text("Split") },
+                            label = { Text(LocalizedString.get("nav_split")) },
                             colors = NavigationBarItemDefaults.colors(
                                 selectedIconColor = PrimaryGreen,
                                 selectedTextColor = PrimaryGreen,
@@ -180,15 +193,15 @@ fun DebtBroNavGraph(appPreferences: AppPreferences) {
                                     launchSingleTop = true
                                 }
                             },
-                            icon = { 
+                            icon = {
                                 Icon(
-                                    if (currentRoute == Screen.Analytics.route) 
-                                        Icons.Filled.BarChart 
+                                    if (currentRoute == Screen.Analytics.route)
+                                        Icons.Filled.BarChart
                                     else Icons.Outlined.BarChart,
-                                    contentDescription = "Stats"
+                                    contentDescription = LocalizedString.get("nav_stats")
                                 )
                             },
-                            label = { Text("Stats") },
+                            label = { Text(LocalizedString.get("nav_stats")) },
                             colors = NavigationBarItemDefaults.colors(
                                 selectedIconColor = PrimaryGreen,
                                 selectedTextColor = PrimaryGreen,

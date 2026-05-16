@@ -33,6 +33,10 @@ class AnalyticsViewModel @Inject constructor(private val repo: DebtRepository, p
     val aiInsight = MutableStateFlow("")
     val isLoadingInsight = MutableStateFlow(false)
     val state: StateFlow<AnalyticsUiState> = repo.getAllDebts().combine(aiInsight) { debts, _ -> compute(debts) }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), AnalyticsUiState())
+
+    init {
+        loadAiInsight()
+    }
     private fun compute(debts: List<DebtEntity>): AnalyticsUiState {
         val totalOwed = debts.filter { it.type == "THEY_OWE_ME" && it.status != "SETTLED" }.sumOf { it.amount - it.amountPaid }
         val totalIOwe = debts.filter { it.type == "I_OWE_THEM" && it.status != "SETTLED" }.sumOf { it.amount - it.amountPaid }
