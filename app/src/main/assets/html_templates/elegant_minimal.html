@@ -12,8 +12,9 @@
             display: flex;
             justify-content: center;
             align-items: center;
-            min-height: 100vh;
-            padding: 40px;
+            width: 1080px;
+            height: 1350px;
+            overflow: hidden;
         }
         .card {
             width: 1080px;
@@ -24,6 +25,8 @@
             position: relative;
             box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
             overflow: hidden;
+            display: flex;
+            flex-direction: column;
         }
         .header {
             text-align: center;
@@ -51,7 +54,8 @@
             align-items: center;
             gap: 50px;
             max-width: 700px;
-            max-height: 1100px;
+            flex: 1;
+            min-width: 0;
             overflow: hidden;
             margin: 0 auto;
         }
@@ -120,6 +124,8 @@
             text-align: center;
             overflow: hidden;
             position: relative;
+            min-width: 0;
+            box-sizing: border-box;
         }
         .note-content {
             font-size: 1.2rem;
@@ -134,6 +140,8 @@
             display: -webkit-box;
             -webkit-line-clamp: 3;
             -webkit-box-orient: vertical;
+            width: 100%;
+            box-sizing: border-box;
         }
         .note-label {
             font-size: 0.8rem;
