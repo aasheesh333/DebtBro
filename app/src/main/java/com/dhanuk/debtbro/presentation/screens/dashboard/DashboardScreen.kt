@@ -1,6 +1,8 @@
 package com.dhanuk.debtbro.presentation.screens.dashboard
 
-import androidx.compose.material3.pulltorefresh.PullToRefreshBox
+import androidx.compose.material.pullrefresh.PullRefreshIndicator
+import androidx.compose.material.pullrefresh.pullRefresh
+import androidx.compose.material.pullrefresh.rememberPullRefreshState
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.animation.AnimatedVisibility
@@ -48,6 +50,14 @@ fun DashboardScreen(
     var showPrompt by remember { mutableStateOf(false) }
     var isRefreshing by remember { mutableStateOf(false) }
 
+    val pullRefreshState = rememberPullRefreshState(
+        refreshing = isRefreshing,
+        onRefresh = {
+            isRefreshing = true
+            viewModel.refresh()
+        }
+    )
+
     LaunchedEffect(isRefreshing) {
         if (isRefreshing) {
             delay(2000)
@@ -63,14 +73,7 @@ fun DashboardScreen(
     }
 
     Box(modifier = Modifier.fillMaxSize().background(Color(0xFF0D0D0D))) {
-        PullToRefreshBox(
-            isRefreshing = isRefreshing,
-            onRefresh = {
-                isRefreshing = true
-                viewModel.refresh()
-            },
-            modifier = Modifier.fillMaxSize()
-        ) {
+        Box(modifier = Modifier.fillMaxSize().pullRefresh(pullRefreshState)) {
         LazyColumn(
             modifier = Modifier.fillMaxSize().padding(horizontal = 16.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp),
@@ -169,7 +172,14 @@ fun DashboardScreen(
                 LeaderboardItem(debt, state.leaderboard.indexOf(debt) + 1)
             }
         }
-        } // PullToRefreshBox
+        } // pullRefresh Box
+        PullRefreshIndicator(
+            refreshing = isRefreshing,
+            state = pullRefreshState,
+            modifier = Modifier.align(Alignment.TopCenter),
+            backgroundColor = Color(0xFF1E1E1E),
+            contentColor = PrimaryGreen
+        )
     }
 
     if (showPrompt) {
