@@ -61,7 +61,7 @@ class RealTimeSyncManager @Inject constructor(
             if (cloudDebt.firebaseId.isNullOrBlank()) continue
             val existingLocal = debtDao.getDebtByFirebaseId(cloudDebt.firebaseId)
             if (existingLocal == null) {
-                debtDao.insertDebt(cloudDebt.copy(id = 0, isSynced = true))
+                debtDao.insertDebtIgnore(cloudDebt.copy(id = 0, isSynced = true))
             } else if (cloudDebt.updatedAt > existingLocal.updatedAt) {
                 debtDao.updateDebt(existingLocal.copy(
                     personName = cloudDebt.personName,

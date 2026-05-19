@@ -90,7 +90,7 @@ class SyncManager @Inject constructor(
             val existingLocal = debtDao.getDebtByFirebaseId(cloudDebt.firebaseId)
             if (existingLocal == null) {
                 // New debt from cloud — insert with fresh local id
-                val newLocalId = debtDao.insertDebt(cloudDebt.copy(id = 0, isSynced = true)).toInt()
+                val newLocalId = debtDao.insertDebtIgnore(cloudDebt.copy(id = 0, isSynced = true)).toInt()
                 // Pull payments for this debt and fix debtId mapping
                 pullPaymentsForDebt(userId, cloudDebt.firebaseId, newLocalId)
             } else {

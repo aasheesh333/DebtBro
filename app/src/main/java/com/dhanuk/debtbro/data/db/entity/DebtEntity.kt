@@ -2,9 +2,13 @@ package com.dhanuk.debtbro.data.db.entity
 
 import androidx.annotation.Keep
 import androidx.room.Entity
+import androidx.room.Index
 import androidx.room.PrimaryKey
 
-@Entity(tableName = "debts")
+@Entity(
+    tableName = "debts",
+    indices = [Index(value = ["firebaseId"], unique = true)]
+)
 data class DebtEntity(
     @PrimaryKey(autoGenerate = true) val id: Int = 0,
     val firebaseId: String? = null,
