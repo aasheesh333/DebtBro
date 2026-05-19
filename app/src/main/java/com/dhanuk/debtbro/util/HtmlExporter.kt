@@ -79,7 +79,11 @@ object HtmlExporter {
 
         val formattedAmount = "${debt.currency}${(debt.amount - debt.amountPaid).toLong()}"
         val hasDesc = debt.description.isNotBlank()
-        val truncatedMessage = if (aiMessage.length > 100) aiMessage.take(97) + "..." else aiMessage
+        val truncatedMessage = aiMessage
+            .take(80)
+            .let { if (it.length == 80 && aiMessage.length > 80) it.dropLast(3) + "..." else it }
+            .replace("\n", " ")
+            .replace("\r", " ")
 
         return htmlContent
             .replace("{{lenderName}}", escapeHtml(lenderName))
