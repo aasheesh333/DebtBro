@@ -9,6 +9,7 @@ import com.dhanuk.debtbro.data.firebase.RealTimeSyncManager
 import com.dhanuk.debtbro.data.firebase.SyncManager
 import com.dhanuk.debtbro.data.repository.DebtRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
@@ -86,4 +87,11 @@ class DashboardViewModel @Inject constructor(
     }
 
     fun dismissPrompt() = viewModelScope.launch { prefs.setHasShownSignInPrompt(true) }
+
+    fun refresh() = viewModelScope.launch {
+        val user = authManager.authStateFlow().first()
+        if (user != null) {
+            runCatching { syncManager.fullSync(user.uid) }
+        }
+    }
 }

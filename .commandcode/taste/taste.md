@@ -3,5 +3,5 @@
 - Do not build APK locally — push changes to GitHub and let CI (GitHub Actions) handle the build. Confidence: 0.75
 
 # AI-Prompts
-- AI-generated roast quotes should be moderate length — not too short (under 80 chars is too cramped) and not too long (over ~120 chars gets rambly). Aim for ~100-120 char limit. Confidence: 0.65
+- AI-generated roast quotes should be 140-180 characters. User repeatedly says shorter quotes feel too small/insufficient. Push for longer, more substantial roasts. Confidence: 0.75
 

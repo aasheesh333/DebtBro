@@ -15,6 +15,10 @@ import com.dhanuk.debtbro.data.repository.GroqRepository
 import com.dhanuk.debtbro.data.repository.PaymentRepository
 import com.dhanuk.debtbro.util.CanvasExporter
 import com.dhanuk.debtbro.util.HtmlExporter
+import com.dhanuk.debtbro.util.shareTextToWhatsApp
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -244,6 +248,33 @@ class DebtDetailViewModel @Inject constructor(
         } finally {
             elapsedJob.cancel()
             _isExportingImage.value = false
+        }
+    }
+
+    fun shareTextOnlyToWhatsApp(context: Context, debt: DebtEntity) = viewModelScope.launch(Dispatchers.IO) {
+        val currency = prefs.defaultCurrency.first()
+        val remaining = debt.amount - debt.amountPaid
+        val dueDate = debt.dueDate?.let { 
+            SimpleDateFormat("dd MMM yyyy", Locale.getDefault()).format(Date(it)) 
+        } ?: "No due date"
+
+        val textMessage = when (debt.type) {
+            "THEY_OWE_ME" -> buildString {
+                append("💰 Reminder: ${debt.personName}, you owe ${debt.currency}${remaining.toLong()}")
+                if (debt.description.isNotBlank()) append(" for ${debt.description}")
+                append(". Due: $dueDate.")
+                append("\n\n— Sent via DebtBro")
+            }
+            else -> buildString {
+                append("🙏 Hey! I owe you ${debt.currency}${remaining.toLong()}")
+                if (debt.description.isNotBlank()) append(" for ${debt.description}")
+                append(". Will pay by $dueDate.")
+                append("\n\n— Sent via DebtBro")
+            }
+        }
+
+        withContext(Dispatchers.Main) {
+            shareTextToWhatsApp(context, textMessage)
         }
     }
 

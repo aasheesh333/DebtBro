@@ -1,5 +1,6 @@
 package com.dhanuk.debtbro.presentation.screens.dashboard
 
+import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.animation.AnimatedVisibility
@@ -45,6 +46,14 @@ fun DashboardScreen(
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
     var showPrompt by remember { mutableStateOf(false) }
+    var isRefreshing by remember { mutableStateOf(false) }
+
+    LaunchedEffect(isRefreshing) {
+        if (isRefreshing) {
+            delay(2000)
+            isRefreshing = false
+        }
+    }
     
     LaunchedEffect(state.hasShownSignInPrompt, state.isSignedIn) {
         if (!state.hasShownSignInPrompt && !state.isSignedIn) {
@@ -54,6 +63,14 @@ fun DashboardScreen(
     }
 
     Box(modifier = Modifier.fillMaxSize().background(Color(0xFF0D0D0D))) {
+        PullToRefreshBox(
+            isRefreshing = isRefreshing,
+            onRefresh = {
+                isRefreshing = true
+                viewModel.refresh()
+            },
+            modifier = Modifier.fillMaxSize()
+        ) {
         LazyColumn(
             modifier = Modifier.fillMaxSize().padding(horizontal = 16.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp),
@@ -152,6 +169,7 @@ fun DashboardScreen(
                 LeaderboardItem(debt, state.leaderboard.indexOf(debt) + 1)
             }
         }
+        } // PullToRefreshBox
     }
 
     if (showPrompt) {

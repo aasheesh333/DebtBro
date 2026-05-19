@@ -353,7 +353,7 @@ fun DebtDetailScreen(onBack: () -> Unit, viewModel: DebtDetailViewModel = hiltVi
                 item {
                     OutlinedButton(
                         onClick = { 
-                            viewModel.shareCardToWhatsApp(context, d, aiMessage.ifBlank { d.aiRoastGenerated.orEmpty() })
+                            viewModel.shareTextOnlyToWhatsApp(context, d)
                         },
                         enabled = !isExportingImage,
                         modifier = Modifier.fillMaxWidth().height(54.dp),
