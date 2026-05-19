@@ -207,7 +207,12 @@ class DebtDetailViewModel @Inject constructor(
     }
 
     fun deleteDebt() = viewModelScope.launch {
-        debt.value?.let { debtRepository.deleteDebt(it) }
+        val d = debt.value ?: return@launch
+        debtRepository.deleteDebt(d)
+        syncIfSignedIn()
+        authManager.getCurrentUser()?.uid?.let { uid ->
+            runCatching { syncManager.deleteDebtFromCloud(uid, d) }
+        }
     }
 
     fun shareCard(context: Context, debt: DebtEntity, message: String) = viewModelScope.launch(Dispatchers.IO) {

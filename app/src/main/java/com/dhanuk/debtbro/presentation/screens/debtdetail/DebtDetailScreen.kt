@@ -56,6 +56,7 @@ fun android.content.Context.findActivity(): Activity? {
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun DebtDetailScreen(onBack: () -> Unit, viewModel: DebtDetailViewModel = hiltViewModel()) {
+    var showDeleteConfirm by remember { mutableStateOf(false) }
     val debt by viewModel.debt.collectAsStateWithLifecycle()
     val payments by viewModel.payments.collectAsStateWithLifecycle()
     val aiMessage by viewModel.aiMessage.collectAsStateWithLifecycle()
@@ -100,33 +101,9 @@ fun DebtDetailScreen(onBack: () -> Unit, viewModel: DebtDetailViewModel = hiltVi
                     IconButton(onClick = { viewModel.showEditDebtSheet.value = true }) {
                         Icon(Icons.Default.Edit, null, tint = Color.White)
                     }
-                    var showDeleteConfirm by remember { mutableStateOf(false) }
 
                     IconButton(onClick = { showDeleteConfirm = true }) {
                         Icon(Icons.Default.Delete, null, tint = Color(0xFFFF4757))
-                    }
-
-                    if (showDeleteConfirm) {
-                        AlertDialog(
-                            onDismissRequest = { showDeleteConfirm = false },
-                            containerColor = Color(0xFF1A1A1A),
-                            title = { Text(LocalizedString.get("delete_debt"), color = Color.White) },
-                            text = { Text(LocalizedString.get("delete_confirm"), color = Color(0xFFCCCCCC)) },
-                            confirmButton = {
-                                TextButton(onClick = {
-                                    viewModel.deleteDebt()
-                                    showDeleteConfirm = false
-                                    onBack()
-                                }) {
-                                    Text(LocalizedString.get("delete"), color = Color(0xFFFF4757))
-                                }
-                            },
-                            dismissButton = {
-                                TextButton(onClick = { showDeleteConfirm = false }) {
-                                    Text(LocalizedString.get("cancel"), color = SubtitleGray)
-                                }
-                            }
-                        )
                     }
                 },
                 colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
@@ -382,6 +359,29 @@ fun DebtDetailScreen(onBack: () -> Unit, viewModel: DebtDetailViewModel = hiltVi
             currency = d.currency,
             onDismiss = { viewModel.showAddPaymentSheet.value = false },
             onSave = { amount, note -> viewModel.addPayment(amount, note) }
+        )
+    }
+
+    if (showDeleteConfirm) {
+        AlertDialog(
+            onDismissRequest = { showDeleteConfirm = false },
+            containerColor = Color(0xFF1A1A1A),
+            title = { Text(LocalizedString.get("delete_debt"), color = Color.White) },
+            text = { Text(LocalizedString.get("delete_confirm"), color = Color(0xFFCCCCCC)) },
+            confirmButton = {
+                TextButton(onClick = {
+                    viewModel.deleteDebt()
+                    showDeleteConfirm = false
+                    onBack()
+                }) {
+                    Text(LocalizedString.get("delete"), color = Color(0xFFFF4757))
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showDeleteConfirm = false }) {
+                    Text(LocalizedString.get("cancel"), color = SubtitleGray)
+                }
+            }
         )
     }
 
