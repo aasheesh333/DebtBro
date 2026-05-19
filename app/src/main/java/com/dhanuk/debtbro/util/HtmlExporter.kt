@@ -79,11 +79,7 @@ object HtmlExporter {
 
         val formattedAmount = "${debt.currency}${(debt.amount - debt.amountPaid).toLong()}"
         val hasDesc = debt.description.isNotBlank()
-        val truncatedMessage = aiMessage
-            .take(80)
-            .let { if (it.length == 80 && aiMessage.length > 80) it.dropLast(3) + "..." else it }
-            .replace("\n", " ")
-            .replace("\r", " ")
+        val truncatedMessage = aiMessage.replace("\n", " ").replace("\r", " ")
 
         return htmlContent
             .replace("{{lenderName}}", escapeHtml(lenderName))
@@ -110,15 +106,24 @@ object HtmlExporter {
     private suspend fun renderHtmlToBitmap(context: Context, html: String): Bitmap =
         withTimeout(30000L) {
             suspendCancellableCoroutine { continuation ->
+                val width = 1080
+                val height = 1350
+
                 val webView = WebView(context).apply {
+                    layoutParams = android.widget.FrameLayout.LayoutParams(width, height)
                     settings.apply {
                         loadWithOverviewMode = false
                         useWideViewPort = false
                         cacheMode = WebSettings.LOAD_CACHE_ELSE_NETWORK
                         defaultTextEncodingName = "UTF-8"
+                        builtInZoomControls = false
+                        displayZoomControls = false
                     }
                     setInitialScale(100)
                     setBackgroundColor(Color.WHITE)
+                    isHorizontalScrollBarEnabled = false
+                    isVerticalScrollBarEnabled = false
+                    isScrollbarFadingEnabled = false
                 }
 
                 val timeoutHandler = android.os.Handler(android.os.Looper.getMainLooper())
@@ -137,17 +142,15 @@ object HtmlExporter {
 
                         view?.post {
                             try {
-                                val width = 1080
-                                val height = 1350
-
                                 view.measure(
                                     android.view.View.MeasureSpec.makeMeasureSpec(width, android.view.View.MeasureSpec.EXACTLY),
                                     android.view.View.MeasureSpec.makeMeasureSpec(height, android.view.View.MeasureSpec.EXACTLY)
                                 )
                                 view.layout(0, 0, width, height)
+                                view.forceLayout()
 
                                 try {
-                                    val bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.RGB_565)
+                                    val bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
                                     val canvas = Canvas(bitmap)
                                     canvas.drawColor(Color.WHITE)
                                     view.draw(canvas)
