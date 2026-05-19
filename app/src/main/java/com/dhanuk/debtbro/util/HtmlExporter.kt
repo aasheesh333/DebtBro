@@ -108,10 +108,12 @@ object HtmlExporter {
             suspendCancellableCoroutine { continuation ->
                 val webView = WebView(context).apply {
                     settings.apply {
-                        loadWithOverviewMode = true
-                        useWideViewPort = true
+                        loadWithOverviewMode = false
+                        useWideViewPort = false
                         cacheMode = WebSettings.LOAD_CACHE_ELSE_NETWORK
+                        defaultTextEncodingName = "UTF-8"
                     }
+                    setInitialScale(100)
                     setBackgroundColor(Color.WHITE)
                 }
 
