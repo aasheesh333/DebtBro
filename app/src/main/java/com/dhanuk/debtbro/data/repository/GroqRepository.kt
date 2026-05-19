@@ -84,7 +84,9 @@ Key rules:
 - Start conversationally, end with a lighthearted nudge
 - NO aggressive language or insults
 - 1-2 emojis max
-- Do NOT use hashtags or formal language"""
+- Do NOT use hashtags or formal language
+- Do NOT wrap your response in quotation marks
+- Every response must be COMPLETELY DIFFERENT from previous ones — vary phrases, metaphors, and tone"""
             "SAVAGE" -> """You are a brutally funny Indian debt collector with legendary comedic timing.$debtDirection
 Key rules:
 - Write 1-2 lines (120-160 characters total, not too short not too long)
@@ -93,7 +95,9 @@ Key rules:
 - Must be hilarious, NOT offensive or abusive
 - Punch UP — laugh at the situation, not the person
 - 2-3 emojis for maximum impact
-- Think: "funniest WhatsApp forward ever" energy"""
+- Think: "funniest WhatsApp forward ever" energy
+- Do NOT wrap your response in quotation marks
+- Every response must be COMPLETELY DIFFERENT from previous ones — vary phrases, metaphors, and tone"""
             else -> """You are a clever, sarcastic Indian friend dropping a subtle money hint.$debtDirection
 Key rules:
 - Write 1-2 lines (120-160 characters total, not too short not too long)
@@ -102,7 +106,9 @@ Key rules:
 - Use relatable Indian scenarios (chai, zomato, petrol prices)
 - No direct begging or rudeness
 - 1-2 emojis
-- Memorable enough to screenshot and share"""
+- Memorable enough to screenshot and share
+- Do NOT wrap your response in quotation marks
+- Every response must be COMPLETELY DIFFERENT from previous ones — vary phrases, metaphors, and tone"""
         }
         return "$langInstruction\n$prompt"
     }
@@ -126,7 +132,7 @@ Key rules:
 - Days overdue: $daysOverdue
 - Type: ${if (debt.type == "I_OWE_THEM") "${debt.personName} lent you money, you owe them" else "You lent ${debt.personName} money, they owe you"}
 
-Generate a WhatsApp-style payment reminder. The message MUST reference the actual debt context above — mention what the money was for, the amount, and the person. Be personal. Do NOT make up random scenarios. Keep it 1-2 lines, 120-160 characters."""
+Generate a WhatsApp-style payment reminder. The message MUST reference the actual debt context above — mention what the money was for, the amount, and the person. Be personal. Do NOT make up random scenarios. Keep it 1-2 lines, 120-160 characters. Do NOT use quotation marks. Make it creative and different each time — never repeat the same phrasing."""
 
         val response = api.chat(
             auth = "Bearer $key",
@@ -136,11 +142,16 @@ Generate a WhatsApp-style payment reminder. The message MUST reference the actua
                     GroqMessage("system", systemPrompt(roastLevel, prefs.selectedLanguage.first(), debt.type)),
                     GroqMessage("user", userMessage)
                 ),
-                temperature = 0.85,
-                max_tokens = 100
+                temperature = 0.95,
+                max_tokens = 150
             )
         )
-        response.choices.first().message.content.trim()
+        response.choices.first().message.content
+            .trim()
+            .removeSurrounding("\"")
+            .removeSurrounding("\u201C", "\u201D")  // curly quotes
+            .removeSurrounding("\u2018", "\u2019")  // single curly quotes
+            .trim()
     }
     suspend fun analyzeDebts(totalLent: Double, totalOwed: Double, recoveryRate: Int, worstDebtor: String): Result<String> = runCatching {
         ensureRateLimit()

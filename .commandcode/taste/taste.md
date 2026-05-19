@@ -4,4 +4,5 @@
 
 # AI-Prompts
 - AI-generated roast quotes should be 140-180 characters. User repeatedly says shorter quotes feel too small/insufficient. Push for longer, more substantial roasts. Confidence: 0.75
+- AI-generated roasts must produce different/varied responses each time — user explicitly wants fresh, non-repeating output per call. Ensure prompt design or generation parameters (temperature, seed variation) produce unique results. Confidence: 0.70
 
