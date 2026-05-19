@@ -5,6 +5,7 @@ import java.util.Date
 import java.util.Locale
 
 fun Long.toReadableDate(): String = SimpleDateFormat("dd MMM yyyy", Locale.getDefault()).format(Date(this))
+fun Long.toReadableDateTime(): String = SimpleDateFormat("dd MMM yyyy, hh:mm a", Locale.getDefault()).format(Date(this))
 fun Long.daysAgo(): Int = ((System.currentTimeMillis() - this) / 86400000).toInt()
 fun Long.daysUntil(): Int = ((this - System.currentTimeMillis()) / 86400000).toInt()
 fun Long.toTimeAgo(): String {

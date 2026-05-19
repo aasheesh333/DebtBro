@@ -97,6 +97,20 @@ class DebtDetailViewModel @Inject constructor(
         val d = debt.value ?: return@launch
 
         if (!groqRepository.canRegenerate()) {
+            // If offline, skip ad — show cached message instead
+            val cached = d.aiRoastGenerated
+            val connectivityManager = activity?.getSystemService(android.content.Context.CONNECTIVITY_SERVICE) as? android.net.ConnectivityManager
+            val isOffline = connectivityManager?.activeNetwork == null
+
+            if (isOffline) {
+                if (!cached.isNullOrBlank()) {
+                    aiMessage.value = cached
+                } else {
+                    _toastEvent.emit("No internet connection")
+                }
+                return@launch
+            }
+
             if (activity != null) {
                 adManager.showRewardedAd(activity, onRewarded = {
                     viewModelScope.launch {
@@ -136,8 +150,24 @@ class DebtDetailViewModel @Inject constructor(
             _remainingFree.value = groqRepository.remainingFreeRegenerations()
             aiMessage.value = message
             debtRepository.updateRoast(d.id, message, System.currentTimeMillis())
-        }.onFailure {
-            aiMessage.value = "Could not generate roast. Check your API key."
+        }.onFailure { error ->
+            val cached = d.aiRoastGenerated
+            val isNetworkError = error is java.net.UnknownHostException ||
+                    error is java.net.ConnectException ||
+                    error is java.net.SocketTimeoutException ||
+                    error.message?.contains("Unable to resolve host", ignoreCase = true) == true ||
+                    error.message?.contains("Network is unreachable", ignoreCase = true) == true ||
+                    error.message?.contains("timeout", ignoreCase = true) == true
+
+            if (isNetworkError) {
+                if (!cached.isNullOrBlank()) {
+                    aiMessage.value = cached
+                } else {
+                    aiMessage.value = "No internet connection. Tap refresh when online."
+                }
+            } else {
+                aiMessage.value = "Could not generate roast. ${error.message ?: "Try again."}"
+            }
         }
         isGeneratingAi.value = false
         syncIfSignedIn()

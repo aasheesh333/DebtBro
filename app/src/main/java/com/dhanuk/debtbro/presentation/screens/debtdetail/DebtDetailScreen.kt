@@ -41,6 +41,7 @@ import com.dhanuk.debtbro.presentation.theme.SubtitleGray
 import com.dhanuk.debtbro.util.copyToClipboard
 import com.dhanuk.debtbro.util.formatCurrency
 import com.dhanuk.debtbro.util.toReadableDate
+import com.dhanuk.debtbro.util.toReadableDateTime
 import com.dhanuk.debtbro.util.LocalizedString
 
 fun android.content.Context.findActivity(): Activity? {
@@ -186,6 +187,13 @@ fun DebtDetailScreen(onBack: () -> Unit, viewModel: DebtDetailViewModel = hiltVi
                             Text("${LocalizedString.get("paid")}: ${formatCurrency(d.amountPaid, d.currency)}", color = SubtitleGray, fontSize = 12.sp)
                             Text("${LocalizedString.get("total")}: ${formatCurrency(d.amount, d.currency)}", color = SubtitleGray, fontSize = 12.sp)
                         }
+
+                        Spacer(Modifier.height(4.dp))
+                        Text(
+                            "${LocalizedString.get("created")}: ${d.createdAt.toReadableDateTime()}",
+                            color = SubtitleGray,
+                            fontSize = 11.sp
+                        )
                     }
                 }
 
@@ -267,7 +275,7 @@ fun DebtDetailScreen(onBack: () -> Unit, viewModel: DebtDetailViewModel = hiltVi
                                         val activity = context.findActivity()
                                         viewModel.generateRoast(activity)
                                     },
-                                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF333333)),
+                                    colors = ButtonDefaults.buttonColors(containerColor = PrimaryGreen),
                                     modifier = Modifier.weight(1f)
                                 ) {
                                     if (remainingFree > 0) {
