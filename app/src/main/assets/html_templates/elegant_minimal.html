@@ -114,17 +114,21 @@
             background: #fafafa;
             border-left: 3px solid #333;
             padding: 25px 35px;
+            width: 100%;
             max-width: 600px;
             max-height: 120px;
             text-align: center;
             overflow: hidden;
+            position: relative;
         }
         .note-content {
             font-size: 1.2rem;
             color: #555;
             line-height: 1.6;
+            white-space: normal;
             word-wrap: break-word;
-            overflow-wrap: anywhere;
+            overflow-wrap: break-word;
+            word-break: break-word;
             max-height: 80px;
             overflow: hidden;
             display: -webkit-box;
