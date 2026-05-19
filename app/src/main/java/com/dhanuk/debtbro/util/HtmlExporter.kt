@@ -72,7 +72,7 @@ object HtmlExporter {
         aiMessage: String
     ): String {
         val inputStream = context.assets.open("html_templates/$templateName")
-        val htmlContent = inputStream.bufferedReader().use { it.readText() }
+        var htmlContent = inputStream.bufferedReader().use { it.readText() }
 
         val dateFormat = SimpleDateFormat("dd MMM yyyy", Locale.getDefault())
         val dueDateStr = debt.dueDate?.let { dateFormat.format(Date(it)) } ?: "No due date"
@@ -81,7 +81,7 @@ object HtmlExporter {
         val hasDesc = debt.description.isNotBlank()
         val truncatedMessage = aiMessage.replace("\n", " ").replace("\r", " ")
 
-        return htmlContent
+        htmlContent = htmlContent
             .replace("{{lenderName}}", escapeHtml(lenderName))
             .replace("{{borrowerName}}", escapeHtml(debt.personName))
             .replace("{{amount}}", formattedAmount)
@@ -92,6 +92,18 @@ object HtmlExporter {
             .replace("{{descriptionDisplay}}", if (hasDesc) "flex" else "none")
             .replace("{{dueDateText}}", if (hasDesc) "- Due" else "")
             .replace("{{quoteText}}", if (hasDesc) "." else "")
+
+        val enforceStyles = """
+        <style>
+            * { box-sizing: border-box !important; }
+            body { width: 1080px !important; height: 1350px !important; overflow: hidden !important; margin: 0 !important; padding: 0 !important; }
+            .card { width: 1080px !important; height: 1350px !important; overflow: hidden !important; box-sizing: border-box !important; }
+            .quote-text, .note-content { max-width: 600px !important; word-break: break-word !important; overflow-wrap: break-word !important; white-space: normal !important; overflow: hidden !important; }
+            .quote-box, .note, .quote { max-width: 700px !important; overflow: hidden !important; }
+        </style>
+        """.trimIndent()
+
+        return htmlContent.replace("</head>", "$enforceStyles</head>")
     }
 
     private fun escapeHtml(text: String): String {
