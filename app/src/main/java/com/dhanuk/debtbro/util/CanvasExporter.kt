@@ -34,13 +34,26 @@ object CanvasExporter {
     private fun drawWrappedText(
         canvas: Canvas,
         text: String,
-        paint: TextPaint,
+        basePaint: TextPaint,
         x: Float,
         y: Float,
         maxWidth: Int,
         maxHeight: Int
     ) {
         val truncated = if (text.length > 150) text.take(147) + "..." else text
+
+        // Auto-scale font: short text = bigger, long text = smaller
+        val scaledSize = when {
+            truncated.length <= 40 -> basePaint.textSize * 1.5f
+            truncated.length <= 80 -> basePaint.textSize * 1.2f
+            truncated.length <= 110 -> basePaint.textSize
+            else -> basePaint.textSize * 0.85f
+        }
+
+        val paint = TextPaint(basePaint).apply {
+            textSize = scaledSize
+        }
+
         val layout = StaticLayout.Builder.obtain(
             truncated, 0, truncated.length, paint, maxWidth
         )

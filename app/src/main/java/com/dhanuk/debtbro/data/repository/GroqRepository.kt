@@ -75,7 +75,7 @@ class GroqRepository @Inject constructor(private val api: GroqApiService, privat
         val prompt = when (roastLevel) {
             "MILD" -> """You are a witty Indian friend writing a WhatsApp message about money.$debtDirection
 Key rules:
-- Write EXACTLY 1-2 SHORT lines (under 80 characters total)
+- Write 2-3 lines (under 150 characters total)
 - Use Hinglish naturally (mix Hindi and English)
 - Be warm, funny, and creative — use metaphors or shared jokes
 - Start conversationally, end with a lighthearted nudge
@@ -84,7 +84,7 @@ Key rules:
 - Do NOT use hashtags or formal language"""
             "SAVAGE" -> """You are a brutally funny Indian debt collector with legendary comedic timing.$debtDirection
 Key rules:
-- Write EXACTLY 1-2 SHORT lines (under 80 characters total)
+- Write 2-3 lines (under 150 characters total)
 - Use Hinglish naturally
 - Be creatively savage — use wild metaphors or Bollywood comparisons
 - Must be hilarious, NOT offensive or abusive
@@ -93,7 +93,7 @@ Key rules:
 - Think: "funniest WhatsApp forward ever" energy"""
             else -> """You are a clever, sarcastic Indian friend dropping a subtle money hint.$debtDirection
 Key rules:
-- Write EXACTLY 1-2 SHORT lines (under 80 characters total)
+- Write 2-3 lines (under 150 characters total)
 - Use Hinglish naturally
 - Be passive-aggressive but funny — think ironic compliments
 - Use relatable Indian scenarios (chai, zomato, petrol prices)
@@ -112,22 +112,26 @@ Key rules:
         val currency = prefs.defaultCurrency.first()
         val amountStr = "${currency}${debt.amount - debt.amountPaid}"
         val personContext = when {
-            debt.description.isNotBlank() -> "$debt.description (${currency}${debt.amount} total)"
-            else -> "a debt of ${currency}${debt.amount}"
+            debt.description.isNotBlank() -> debt.description
+            else -> "payment"
         }
+        val userMessage = """Debt details:
+- Person: ${debt.personName}
+- Amount: ${debt.currency}${debt.amount} (remaining: $amountStr)
+- What it's for: $personContext
+- Due date: ${debt.dueDate?.let { SimpleDateFormat("dd MMM", Locale.getDefault()).format(Date(it)) } ?: "No due date"}
+- Days overdue: $daysOverdue
+- Type: ${if (debt.type == "I_OWE_THEM") "${debt.personName} lent you money, you owe them" else "You lent ${debt.personName} money, they owe you"}
+
+Generate a WhatsApp-style payment reminder. The message MUST reference the actual debt context above — mention what the money was for, the amount, and the person. Be personal. Do NOT make up random scenarios. 2-3 lines max."""
+
         val response = api.chat(
             auth = "Bearer $key",
             request = GroqRequest(
                 model = "llama-3.3-70b-versatile",
                 messages = listOf(
                     GroqMessage("system", systemPrompt(roastLevel, prefs.selectedLanguage.first(), debt.type)),
-                    GroqMessage("user", """Friend name: ${debt.personName}
-Amount remaining: $amountStr
-Context: $personContext
-Days overdue: $daysOverdue
-Debt direction: ${if (debt.type == "I_OWE_THEM") "${debt.personName} lent you money, you need to pay back" else "${debt.personName} borrowed money from you, remind them to pay"}
-
-Write a creative, SHORT WhatsApp message. Maximum 2 lines. Personal and funny.""")
+                    GroqMessage("user", userMessage)
                 ),
                 temperature = 0.85,
                 max_tokens = 100
