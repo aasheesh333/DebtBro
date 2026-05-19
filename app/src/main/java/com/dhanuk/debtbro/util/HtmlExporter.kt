@@ -79,7 +79,12 @@ object HtmlExporter {
 
         val formattedAmount = "${debt.currency}${(debt.amount - debt.amountPaid).toLong()}"
         val hasDesc = debt.description.isNotBlank()
-        val truncatedMessage = aiMessage.replace("\n", " ").replace("\r", " ")
+        val truncatedMessage = aiMessage
+            .replace("\n", " ")
+            .replace("\r", " ")
+            .let { msg ->
+                if (msg.length > 150) msg.take(147) + "..." else msg
+            }
 
         htmlContent = htmlContent
             .replace("{{lenderName}}", escapeHtml(lenderName))
@@ -98,8 +103,8 @@ object HtmlExporter {
             * { box-sizing: border-box !important; }
             body { width: 1080px !important; height: 1350px !important; overflow: hidden !important; margin: 0 !important; padding: 0 !important; }
             .card { width: 1080px !important; height: 1350px !important; overflow: hidden !important; box-sizing: border-box !important; }
-            .quote-text, .note-content { max-width: 600px !important; word-break: break-word !important; overflow-wrap: break-word !important; white-space: normal !important; overflow: hidden !important; }
-            .quote-box, .note, .quote { max-width: 700px !important; overflow: hidden !important; }
+            .quote-text, .note-content { max-width: 600px !important; max-height: 90px !important; word-break: break-word !important; overflow-wrap: break-word !important; white-space: normal !important; overflow: hidden !important; text-overflow: ellipsis !important; display: -webkit-box !important; -webkit-line-clamp: 3 !important; -webkit-box-orient: vertical !important; }
+            .quote-box, .note, .quote { max-width: 700px !important; max-height: 150px !important; overflow: hidden !important; }
         </style>
         """.trimIndent()
 
