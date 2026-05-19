@@ -10,6 +10,9 @@ import android.graphics.Paint
 import android.graphics.RectF
 import android.graphics.Shader
 import android.net.Uri
+import android.text.Layout
+import android.text.StaticLayout
+import android.text.TextPaint
 import androidx.core.content.FileProvider
 import com.dhanuk.debtbro.data.db.entity.DebtEntity
 import java.io.File
@@ -26,6 +29,31 @@ object CanvasExporter {
         do { s = (0..3).random() } while (s == lastStyle)
         lastStyle = s
         return s
+    }
+
+    private fun drawWrappedText(
+        canvas: Canvas,
+        text: String,
+        paint: TextPaint,
+        x: Float,
+        y: Float,
+        maxWidth: Int,
+        maxHeight: Int
+    ) {
+        val truncated = if (text.length > 150) text.take(147) + "..." else text
+        val layout = StaticLayout.Builder.obtain(
+            truncated, 0, truncated.length, paint, maxWidth
+        )
+            .setAlignment(Layout.Alignment.ALIGN_NORMAL)
+            .setLineSpacing(0f, 1.1f)
+            .setIncludePad(false)
+            .build()
+
+        val saveCount = canvas.save()
+        canvas.clipRect(x.toInt(), y.toInt(), x.toInt() + maxWidth, y.toInt() + maxHeight)
+        canvas.translate(x, y)
+        layout.draw(canvas)
+        canvas.restoreToCount(saveCount)
     }
 
     fun createDebtCard(context: Context, debt: DebtEntity, aiMessage: String, roastLevel: String = "MEDIUM"): Bitmap {
@@ -86,10 +114,12 @@ object CanvasExporter {
 
         val box = RectF(80f, 720f, (W - 80).toFloat(), 1050f)
         canvas.drawRoundRect(box, 20f, 20f, Paint().apply { color = Color.argb(100, 0, 0, 0) })
-        paint.color = Color.WHITE
-        paint.textSize = 30f
-        paint.textAlign = Paint.Align.LEFT
-        canvas.drawText(message, 120f, 790f, paint)
+
+        val textPaint = TextPaint(Paint.ANTI_ALIAS_FLAG).apply {
+            color = Color.WHITE
+            textSize = 30f
+        }
+        drawWrappedText(canvas, message, textPaint, 120f, 790f, W - 240, 290)
 
         paint.textAlign = Paint.Align.CENTER
         paint.textSize = 24f
@@ -135,10 +165,12 @@ object CanvasExporter {
 
         val quoteBox = RectF(80f, 720f, (W - 80).toFloat(), 1000f)
         canvas.drawRoundRect(quoteBox, 20f, 20f, Paint().apply { color = Color.argb(60, 100, 200, 255) })
-        paint.textSize = 30f
-        paint.color = Color.WHITE
-        paint.textAlign = Paint.Align.LEFT
-        canvas.drawText(message, 120f, 790f, paint)
+
+        val textPaint = TextPaint(Paint.ANTI_ALIAS_FLAG).apply {
+            color = Color.WHITE
+            textSize = 30f
+        }
+        drawWrappedText(canvas, message, textPaint, 120f, 790f, W - 240, 240)
 
         paint.textAlign = Paint.Align.CENTER
         paint.textSize = 22f
@@ -181,10 +213,11 @@ object CanvasExporter {
         paint.color = Color.rgb(220, 210, 200)
         canvas.drawLine(100f, 580f, (W - 100).toFloat(), 580f, paint)
 
-        paint.textSize = 30f
-        paint.color = Color.rgb(80, 80, 80)
-        paint.textAlign = Paint.Align.LEFT
-        canvas.drawText(message, 100f, 650f, paint)
+        val textPaint = TextPaint(Paint.ANTI_ALIAS_FLAG).apply {
+            color = Color.rgb(80, 80, 80)
+            textSize = 30f
+        }
+        drawWrappedText(canvas, message, textPaint, 100f, 650f, W - 200, 300)
 
         paint.textAlign = Paint.Align.CENTER
         paint.textSize = 24f
@@ -239,10 +272,11 @@ object CanvasExporter {
         canvas.drawRect(box, Paint().apply { color = Color.argb(40, 0, 255, 255) })
         canvas.drawRect(box, Paint().apply { color = cyan; style = Paint.Style.STROKE; strokeWidth = 2f })
 
-        paint.textSize = 28f
-        paint.color = Color.WHITE
-        paint.textAlign = Paint.Align.LEFT
-        canvas.drawText(message, 100f, 730f, paint)
+        val textPaint = TextPaint(Paint.ANTI_ALIAS_FLAG).apply {
+            color = Color.WHITE
+            textSize = 28f
+        }
+        drawWrappedText(canvas, message, textPaint, 100f, 730f, W - 200, 300)
 
         paint.textAlign = Paint.Align.CENTER
         paint.textSize = 20f
