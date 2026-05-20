@@ -148,81 +148,25 @@ object HtmlExporter {
                     isScrollbarFadingEnabled = false
                 }
 
-                var pageFinished = false
-                val fallbackHandler = android.os.Handler(android.os.Looper.getMainLooper())
-                val fallbackRunnable = Runnable {
-                    if (continuation.isActive && !pageFinished) {
-                        try {
-                            webView.measure(
-                                android.view.View.MeasureSpec.makeMeasureSpec(width, android.view.View.MeasureSpec.EXACTLY),
-                                android.view.View.MeasureSpec.makeMeasureSpec(height, android.view.View.MeasureSpec.EXACTLY)
-                            )
-                            webView.layout(0, 0, width, height)
-                            webView.forceLayout()
-                            val bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
-                            val canvas = Canvas(bitmap)
-                            canvas.drawColor(Color.WHITE)
-                            webView.draw(canvas)
-                            continuation.resume(bitmap)
-                        } catch (e: Exception) {
-                            continuation.resumeWithException(e)
-                        } finally {
-                            try { webView.destroy() } catch (_: Exception) {}
-                        }
-                    }
-                }
-
-                webView.webViewClient = object : WebViewClient() {
-                    override fun onPageFinished(view: WebView?, url: String?) {
-                        super.onPageFinished(view, url)
-                        pageFinished = true
-                        fallbackHandler.removeCallbacks(fallbackRunnable)
-
-                        view?.post {
-                            try {
-                                view.measure(
-                                    android.view.View.MeasureSpec.makeMeasureSpec(width, android.view.View.MeasureSpec.EXACTLY),
-                                    android.view.View.MeasureSpec.makeMeasureSpec(height, android.view.View.MeasureSpec.EXACTLY)
-                                )
-                                view.layout(0, 0, width, height)
-                                view.forceLayout()
-
-                                try {
-                                    val bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
-                                    val canvas = Canvas(bitmap)
-                                    canvas.drawColor(Color.WHITE)
-                                    view.draw(canvas)
-
-                                    if (continuation.isActive) {
-                                        continuation.resume(bitmap)
-                                    }
-                                } catch (e: Exception) {
-                                    if (continuation.isActive) {
-                                        continuation.resumeWithException(e)
-                                    }
-                                } finally {
-                                    try { webView.destroy() } catch (_: Exception) {}
-                                }
-                            } catch (e: Exception) {
-                                if (continuation.isActive) {
-                                    continuation.resumeWithException(e)
-                                }
-                            }
-                        }
-                    }
-
-                    override fun onReceivedError(
-                        view: WebView?,
-                        errorCode: Int,
-                        description: String?,
-                        failingUrl: String?
-                    ) {
-                        android.util.Log.e("HtmlExporter", "WebView error: $description (code: $errorCode)")
-                        pageFinished = true
-                        fallbackHandler.removeCallbacks(fallbackRunnable)
-                        if (continuation.isActive) {
-                            continuation.resumeWithException(Exception("WebView error: $description"))
-                        }
+                val captureHandler = android.os.Handler(android.os.Looper.getMainLooper())
+                val captureRunnable = Runnable {
+                    if (!continuation.isActive) return@Runnable
+                    try {
+                        webView.measure(
+                            android.view.View.MeasureSpec.makeMeasureSpec(width, android.view.View.MeasureSpec.EXACTLY),
+                            android.view.View.MeasureSpec.makeMeasureSpec(height, android.view.View.MeasureSpec.EXACTLY)
+                        )
+                        webView.layout(0, 0, width, height)
+                        webView.forceLayout()
+                        val bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
+                        val canvas = Canvas(bitmap)
+                        canvas.drawColor(Color.WHITE)
+                        webView.draw(canvas)
+                        continuation.resume(bitmap)
+                    } catch (e: Exception) {
+                        continuation.resumeWithException(e)
+                    } finally {
+                        try { webView.destroy() } catch (_: Exception) {}
                     }
                 }
 
@@ -234,10 +178,10 @@ object HtmlExporter {
                     null
                 )
 
-                fallbackHandler.postDelayed(fallbackRunnable, 5000)
+                captureHandler.postDelayed(captureRunnable, 2000)
 
                 continuation.invokeOnCancellation {
-                    fallbackHandler.removeCallbacks(fallbackRunnable)
+                    captureHandler.removeCallbacks(captureRunnable)
                     try { webView.destroy() } catch (_: Exception) {}
                 }
             }
