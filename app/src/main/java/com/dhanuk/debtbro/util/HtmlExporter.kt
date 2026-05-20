@@ -11,6 +11,7 @@ import com.dhanuk.debtbro.data.db.entity.DebtEntity
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.withContext
+import kotlinx.coroutines.withTimeout
 import java.io.File
 import java.io.FileOutputStream
 import java.text.SimpleDateFormat
@@ -125,30 +126,57 @@ object HtmlExporter {
     }
 
     private suspend fun renderHtmlToBitmap(context: Context, html: String): Bitmap =
-        suspendCancellableCoroutine { continuation ->
-            val width = 1080
-            val height = 1350
+        withTimeout(60000L) {
+            suspendCancellableCoroutine { continuation ->
+                val width = 1080
+                val height = 1350
 
-            val webView = WebView(context).apply {
-                layoutParams = android.widget.FrameLayout.LayoutParams(width, height)
-                settings.apply {
-                    loadWithOverviewMode = false
-                    useWideViewPort = false
-                    cacheMode = WebSettings.LOAD_CACHE_ELSE_NETWORK
-                    defaultTextEncodingName = "UTF-8"
-                    builtInZoomControls = false
-                    displayZoomControls = false
+                val webView = WebView(context).apply {
+                    layoutParams = android.widget.FrameLayout.LayoutParams(width, height)
+                    settings.apply {
+                        loadWithOverviewMode = false
+                        useWideViewPort = false
+                        cacheMode = WebSettings.LOAD_CACHE_ELSE_NETWORK
+                        defaultTextEncodingName = "UTF-8"
+                        builtInZoomControls = false
+                        displayZoomControls = false
+                    }
+                    setInitialScale(100)
+                    setBackgroundColor(Color.WHITE)
+                    isHorizontalScrollBarEnabled = false
+                    isVerticalScrollBarEnabled = false
+                    isScrollbarFadingEnabled = false
                 }
-                setInitialScale(100)
-                setBackgroundColor(Color.WHITE)
-                isHorizontalScrollBarEnabled = false
-                isVerticalScrollBarEnabled = false
-                isScrollbarFadingEnabled = false
-            }
 
-            webView.webViewClient = object : WebViewClient() {
+                var pageFinished = false
+                val fallbackHandler = android.os.Handler(android.os.Looper.getMainLooper())
+                val fallbackRunnable = Runnable {
+                    if (continuation.isActive && !pageFinished) {
+                        try {
+                            webView.measure(
+                                android.view.View.MeasureSpec.makeMeasureSpec(width, android.view.View.MeasureSpec.EXACTLY),
+                                android.view.View.MeasureSpec.makeMeasureSpec(height, android.view.View.MeasureSpec.EXACTLY)
+                            )
+                            webView.layout(0, 0, width, height)
+                            webView.forceLayout()
+                            val bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
+                            val canvas = Canvas(bitmap)
+                            canvas.drawColor(Color.WHITE)
+                            webView.draw(canvas)
+                            continuation.resume(bitmap)
+                        } catch (e: Exception) {
+                            continuation.resumeWithException(e)
+                        } finally {
+                            try { webView.destroy() } catch (_: Exception) {}
+                        }
+                    }
+                }
+
+                webView.webViewClient = object : WebViewClient() {
                     override fun onPageFinished(view: WebView?, url: String?) {
                         super.onPageFinished(view, url)
+                        pageFinished = true
+                        fallbackHandler.removeCallbacks(fallbackRunnable)
 
                         view?.post {
                             try {
@@ -190,6 +218,11 @@ object HtmlExporter {
                         failingUrl: String?
                     ) {
                         android.util.Log.e("HtmlExporter", "WebView error: $description (code: $errorCode)")
+                        pageFinished = true
+                        fallbackHandler.removeCallbacks(fallbackRunnable)
+                        if (continuation.isActive) {
+                            continuation.resumeWithException(Exception("WebView error: $description"))
+                        }
                     }
                 }
 
@@ -201,10 +234,14 @@ object HtmlExporter {
                     null
                 )
 
+                fallbackHandler.postDelayed(fallbackRunnable, 5000)
+
                 continuation.invokeOnCancellation {
+                    fallbackHandler.removeCallbacks(fallbackRunnable)
                     try { webView.destroy() } catch (_: Exception) {}
                 }
             }
+        }
 
     fun saveBitmap(context: Context, bitmap: Bitmap): File {
         val cacheDir = File(context.cacheDir, "share_images")
