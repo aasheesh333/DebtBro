@@ -52,9 +52,28 @@ class AppPreferences(@ApplicationContext private val context: Context) {
     val rewardTimestamp: Flow<Long> = context.dataStore.data.map { it[Keys.REWARD_TIMESTAMP] ?: 0L }
     val lastInterstitialAt: Flow<Long> = context.dataStore.data.map { it[Keys.LAST_INTERSTITIAL_AT] ?: 0L }
     val themeMode: Flow<String> = context.dataStore.data.map { it[Keys.THEME_MODE] ?: "SYSTEM" }
-val selectedLanguage: Flow<String> = context.dataStore.data.map { it[Keys.SELECTED_LANGUAGE] ?: "en" }
+    val selectedLanguage: Flow<String> = context.dataStore.data.map { it[Keys.SELECTED_LANGUAGE] ?: "en" }
     val exportTemplate: Flow<String> = context.dataStore.data.map { it[Keys.EXPORT_TEMPLATE] ?: "random" }
 
+    suspend fun setOnboardingComplete(name: String) = context.dataStore.edit {
+        it[Keys.HAS_COMPLETED_ONBOARDING] = true
+        it[Keys.USER_NAME] = name.ifBlank { "Bro" }
+    }
+    suspend fun saveUserName(name: String) = context.dataStore.edit { it[Keys.USER_NAME] = name.ifBlank { "Bro" } }
+    suspend fun saveGroqKey(key: String) = context.dataStore.edit { it[Keys.GROQ_API_KEY] = key.trim() }
+    suspend fun setRoastLevel(level: String) = context.dataStore.edit { it[Keys.ROAST_LEVEL] = level }
+    suspend fun setCurrency(c: String) = context.dataStore.edit { it[Keys.DEFAULT_CURRENCY] = c }
+    suspend fun setGoogleSignedIn(value: Boolean, name: String = "", email: String = "", photo: String = "") = context.dataStore.edit {
+        it[Keys.IS_GOOGLE_SIGNED_IN] = value
+        it[Keys.GOOGLE_USER_NAME] = name
+        it[Keys.GOOGLE_USER_EMAIL] = email
+        it[Keys.GOOGLE_USER_PHOTO] = photo
+    }
+    suspend fun setLastSyncedAt(ts: Long) = context.dataStore.edit { it[Keys.LAST_SYNCED_AT] = ts }
+    suspend fun setRewardTimestamp(ts: Long) = context.dataStore.edit { it[Keys.REWARD_TIMESTAMP] = ts }
+    suspend fun setLastInterstitialAt(ts: Long) = context.dataStore.edit { it[Keys.LAST_INTERSTITIAL_AT] = ts }
+    suspend fun setHasShownSignInPrompt(value: Boolean) = context.dataStore.edit { it[Keys.HAS_SHOWN_SIGNIN_PROMPT] = value }
+    suspend fun setThemeMode(mode: String) = context.dataStore.edit { it[Keys.THEME_MODE] = mode }
     suspend fun setLanguage(code: String) = context.dataStore.edit { it[Keys.SELECTED_LANGUAGE] = code }
     suspend fun setExportTemplate(template: String) = context.dataStore.edit { it[Keys.EXPORT_TEMPLATE] = template }
 

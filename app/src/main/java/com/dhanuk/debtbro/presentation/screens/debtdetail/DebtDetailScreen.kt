@@ -280,9 +280,9 @@ Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                                      colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF1E1E1E)),
                                      modifier = Modifier.weight(1f)
                                  ) {
-                                     Icon(Icons.Default.Format_Paint, null, modifier = Modifier.size(16.dp))
-                                     Spacer(Modifier.width(8.dp))
-                                     Text("Template")
+                                      Icon(Icons.Default.Brush, null, modifier = Modifier.size(16.dp))
+                                      Spacer(Modifier.width(8.dp))
+                                      Text("Template")
                                  }
                              }
 }
@@ -483,7 +483,7 @@ if (isExportingImage) {
                              verticalAlignment = Alignment.CenterVertically
                          ) {
                              Icon(
-                                 imageVector = Icons.Default.Format_Paint,
+                                  imageVector = Icons.Default.Brush,
                                  contentDescription = null,
                                   tint = if (selectedTemplate == templateKey) PrimaryGreen else Color.White
                              )
@@ -496,7 +496,7 @@ if (isExportingImage) {
                              Spacer(Modifier.weight(1f))
                               if (selectedTemplate == templateKey) {
                                  Icon(
-                                     imageVector = Icons.Default.Check_Circle,
+                                      imageVector = Icons.Default.CheckCircle,
                                      contentDescription = null,
                                      tint = PrimaryGreen
                                  )
