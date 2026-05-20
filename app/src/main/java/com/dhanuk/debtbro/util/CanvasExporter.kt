@@ -40,13 +40,13 @@ object CanvasExporter {
         maxWidth: Int,
         maxHeight: Int
     ) {
-        val truncated = if (text.length > 150) text.take(147) + "..." else text
+        val truncated = if (text.length > 200) text.take(197) + "..." else text
 
         // Auto-scale font: short text = bigger, long text = smaller
         val scaledSize = when {
-            truncated.length <= 40 -> basePaint.textSize * 1.5f
-            truncated.length <= 80 -> basePaint.textSize * 1.2f
-            truncated.length <= 110 -> basePaint.textSize
+            truncated.length <= 50 -> basePaint.textSize * 1.5f
+            truncated.length <= 100 -> basePaint.textSize * 1.2f
+            truncated.length <= 150 -> basePaint.textSize
             else -> basePaint.textSize * 0.85f
         }
 
@@ -123,7 +123,14 @@ object CanvasExporter {
         canvas.drawText("Due: $dueDate", (W / 2).toFloat(), 600f, paint)
 
         paint.textSize = 28f
-        canvas.drawText("For: ${debt.description}", (W / 2).toFloat(), 660f, paint)
+        paint.textAlign = Paint.Align.LEFT
+        val descTextPaint = TextPaint(Paint.ANTI_ALIAS_FLAG).apply {
+            color = Color.BLACK
+            textSize = 28f
+        }
+        val descText = "For: ${debt.description}"
+        drawWrappedText(canvas, descText, descTextPaint, 80f, 630f, W - 160, 80)
+        paint.textAlign = Paint.Align.CENTER
 
         val box = RectF(80f, 720f, (W - 80).toFloat(), 1050f)
         canvas.drawRoundRect(box, 20f, 20f, Paint().apply { color = Color.argb(100, 0, 0, 0) })
@@ -174,9 +181,16 @@ object CanvasExporter {
         paint.color = Color.WHITE
         paint.isFakeBoldText = false
         canvas.drawText("Due: $dueDate", (W / 2).toFloat(), 600f, paint)
-        canvas.drawText("For: ${debt.description}", (W / 2).toFloat(), 650f, paint)
 
-        val quoteBox = RectF(80f, 720f, (W - 80).toFloat(), 1000f)
+        paint.textAlign = Paint.Align.LEFT
+        val descTextPaint2 = TextPaint(Paint.ANTI_ALIAS_FLAG).apply {
+            color = Color.WHITE
+            textSize = 28f
+        }
+        drawWrappedText(canvas, "For: ${debt.description}", descTextPaint2, 80f, 630f, W - 160, 70)
+        paint.textAlign = Paint.Align.CENTER
+
+        val quoteBox = RectF(80f, 710f, (W - 80).toFloat(), 1000f)
         canvas.drawRoundRect(quoteBox, 20f, 20f, Paint().apply { color = Color.argb(60, 100, 200, 255) })
 
         val textPaint = TextPaint(Paint.ANTI_ALIAS_FLAG).apply {
@@ -221,7 +235,14 @@ object CanvasExporter {
         paint.textSize = 28f
         paint.color = Color.rgb(120, 120, 120)
         canvas.drawText("Due: $dueDate", (W / 2).toFloat(), 490f, paint)
-        canvas.drawText("For: ${debt.description}", (W / 2).toFloat(), 540f, paint)
+
+        paint.textAlign = Paint.Align.LEFT
+        val descTextPaint3 = TextPaint(Paint.ANTI_ALIAS_FLAG).apply {
+            color = Color.rgb(120, 120, 120)
+            textSize = 28f
+        }
+        drawWrappedText(canvas, "For: ${debt.description}", descTextPaint3, 100f, 520f, W - 200, 50)
+        paint.textAlign = Paint.Align.CENTER
 
         paint.color = Color.rgb(220, 210, 200)
         canvas.drawLine(100f, 580f, (W - 100).toFloat(), 580f, paint)
@@ -279,7 +300,14 @@ object CanvasExporter {
         paint.textSize = 28f
         paint.color = Color.WHITE
         canvas.drawText("DUE: $dueDate", (W / 2).toFloat(), 560f, paint)
-        canvas.drawText("REASON: ${debt.description}", (W / 2).toFloat(), 610f, paint)
+
+        paint.textAlign = Paint.Align.LEFT
+        val descTextPaint4 = TextPaint(Paint.ANTI_ALIAS_FLAG).apply {
+            color = Color.WHITE
+            textSize = 28f
+        }
+        drawWrappedText(canvas, "REASON: ${debt.description}", descTextPaint4, 60f, 590f, W - 120, 60)
+        paint.textAlign = Paint.Align.CENTER
 
         val box = RectF(60f, 660f, (W - 60).toFloat(), 1000f)
         canvas.drawRect(box, Paint().apply { color = Color.argb(40, 0, 255, 255) })

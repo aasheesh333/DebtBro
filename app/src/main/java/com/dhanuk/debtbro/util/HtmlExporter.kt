@@ -9,10 +9,8 @@ import android.webkit.WebView
 import android.webkit.WebViewClient
 import com.dhanuk.debtbro.data.db.entity.DebtEntity
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.TimeoutCancellationException
 import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.withContext
-import kotlinx.coroutines.withTimeout
 import java.io.File
 import java.io.FileOutputStream
 import java.text.SimpleDateFormat
@@ -85,13 +83,17 @@ object HtmlExporter {
             .let { msg ->
                 if (msg.length > 120) msg.take(117) + "..." else msg
             }
+        val truncatedDesc = debt.description
+            .let { d ->
+                if (d.length > 200) d.take(197) + "..." else d
+            }
 
         htmlContent = htmlContent
             .replace("{{lenderName}}", escapeHtml(lenderName))
             .replace("{{borrowerName}}", escapeHtml(debt.personName))
             .replace("{{amount}}", formattedAmount)
             .replace("{{currency}}", debt.currency)
-            .replace("{{description}}", escapeHtml(debt.description))
+            .replace("{{description}}", escapeHtml(truncatedDesc))
             .replace("{{dueDate}}", dueDateStr)
             .replace("{{debtQuote}}", escapeHtml(truncatedMessage.ifBlank { "Please repay soon!" }))
             .replace("{{descriptionDisplay}}", if (hasDesc) "flex" else "none")
@@ -106,6 +108,7 @@ object HtmlExporter {
             .content { overflow: hidden !important; }
             .quote-box, .note, .quote { width: 680px !important; max-width: 680px !important; max-height: 140px !important; overflow: hidden !important; }
             .quote-text, .note-content { width: 580px !important; max-width: 580px !important; max-height: 80px !important; word-break: break-all !important; overflow-wrap: anywhere !important; word-wrap: break-word !important; white-space: normal !important; overflow: hidden !important; display: block !important; }
+            .detail-item .text-content { max-height: 60px !important; overflow: hidden !important; word-break: break-word !important; overflow-wrap: anywhere !important; display: block !important; }
         </style>
         """.trimIndent()
 
@@ -122,41 +125,30 @@ object HtmlExporter {
     }
 
     private suspend fun renderHtmlToBitmap(context: Context, html: String): Bitmap =
-        withTimeout(30000L) {
-            suspendCancellableCoroutine { continuation ->
-                val width = 1080
-                val height = 1350
+        suspendCancellableCoroutine { continuation ->
+            val width = 1080
+            val height = 1350
 
-                val webView = WebView(context).apply {
-                    layoutParams = android.widget.FrameLayout.LayoutParams(width, height)
-                    settings.apply {
-                        loadWithOverviewMode = false
-                        useWideViewPort = false
-                        cacheMode = WebSettings.LOAD_CACHE_ELSE_NETWORK
-                        defaultTextEncodingName = "UTF-8"
-                        builtInZoomControls = false
-                        displayZoomControls = false
-                    }
-                    setInitialScale(100)
-                    setBackgroundColor(Color.WHITE)
-                    isHorizontalScrollBarEnabled = false
-                    isVerticalScrollBarEnabled = false
-                    isScrollbarFadingEnabled = false
+            val webView = WebView(context).apply {
+                layoutParams = android.widget.FrameLayout.LayoutParams(width, height)
+                settings.apply {
+                    loadWithOverviewMode = false
+                    useWideViewPort = false
+                    cacheMode = WebSettings.LOAD_CACHE_ELSE_NETWORK
+                    defaultTextEncodingName = "UTF-8"
+                    builtInZoomControls = false
+                    displayZoomControls = false
                 }
+                setInitialScale(100)
+                setBackgroundColor(Color.WHITE)
+                isHorizontalScrollBarEnabled = false
+                isVerticalScrollBarEnabled = false
+                isScrollbarFadingEnabled = false
+            }
 
-                val timeoutHandler = android.os.Handler(android.os.Looper.getMainLooper())
-                val timeoutRunnable = Runnable {
-                    if (continuation.isActive) {
-                        try { webView.destroy() } catch (_: Exception) {}
-                        continuation.resumeWithException(TimeoutException("WebView render timeout"))
-                    }
-                }
-                timeoutHandler.postDelayed(timeoutRunnable, 28000)
-
-                webView.webViewClient = object : WebViewClient() {
+            webView.webViewClient = object : WebViewClient() {
                     override fun onPageFinished(view: WebView?, url: String?) {
                         super.onPageFinished(view, url)
-                        timeoutHandler.removeCallbacks(timeoutRunnable)
 
                         view?.post {
                             try {
@@ -210,7 +202,6 @@ object HtmlExporter {
                 )
 
                 continuation.invokeOnCancellation {
-                    timeoutHandler.removeCallbacks(timeoutRunnable)
                     try { webView.destroy() } catch (_: Exception) {}
                 }
             }
@@ -248,5 +239,3 @@ object HtmlExporter {
         })
     }
 }
-
-class TimeoutException(message: String) : Exception(message)
