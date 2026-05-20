@@ -107,9 +107,9 @@ object HtmlExporter {
             body { width: 1080px !important; height: 1350px !important; overflow: hidden !important; margin: 0 !important; padding: 0 !important; }
             .card { width: 1080px !important; height: 1350px !important; overflow: hidden !important; box-sizing: border-box !important; }
             .content { overflow: hidden !important; }
-            .quote-box, .note, .quote { width: 680px !important; max-width: 680px !important; max-height: 140px !important; overflow: hidden !important; }
-            .quote-text, .note-content { width: 580px !important; max-width: 580px !important; max-height: 80px !important; word-break: break-all !important; overflow-wrap: anywhere !important; word-wrap: break-word !important; white-space: normal !important; overflow: hidden !important; display: block !important; }
-            .detail-item .text-content { max-height: 60px !important; overflow: hidden !important; word-break: break-word !important; overflow-wrap: anywhere !important; display: block !important; }
+            .quote-box, .note, .quote { width: 680px !important; max-width: 680px !important; max-height: 160px !important; overflow: hidden !important; }
+            .quote-text, .note-content { width: 580px !important; max-width: 580px !important; max-height: 120px !important; word-break: break-word !important; overflow-wrap: break-word !important; word-wrap: break-word !important; white-space: normal !important; overflow: hidden !important; display: block !important; }
+            .detail-item .text-content { max-height: 56px !important; overflow: hidden !important; word-break: break-word !important; overflow-wrap: break-word !important; display: block !important; }
         </style>
         """.trimIndent()
 
