@@ -35,7 +35,6 @@ class AppPreferences(@ApplicationContext private val context: Context) {
         val SELECTED_LANGUAGE = stringPreferencesKey("selected_language")
         val AI_REGENERATION_COUNT = intPreferencesKey("ai_regeneration_count")
         val AI_REGENERATION_DATE = stringPreferencesKey("ai_regeneration_date")
-        val EXPORT_TEMPLATE = stringPreferencesKey("export_template")
     }
 
     val hasCompletedOnboarding: Flow<Boolean> = context.dataStore.data.map { it[Keys.HAS_COMPLETED_ONBOARDING] ?: false }
@@ -53,7 +52,6 @@ class AppPreferences(@ApplicationContext private val context: Context) {
     val lastInterstitialAt: Flow<Long> = context.dataStore.data.map { it[Keys.LAST_INTERSTITIAL_AT] ?: 0L }
     val themeMode: Flow<String> = context.dataStore.data.map { it[Keys.THEME_MODE] ?: "SYSTEM" }
     val selectedLanguage: Flow<String> = context.dataStore.data.map { it[Keys.SELECTED_LANGUAGE] ?: "en" }
-    val exportTemplate: Flow<String> = context.dataStore.data.map { it[Keys.EXPORT_TEMPLATE] ?: "random" }
 
     suspend fun setOnboardingComplete(name: String) = context.dataStore.edit {
         it[Keys.HAS_COMPLETED_ONBOARDING] = true
@@ -75,7 +73,6 @@ class AppPreferences(@ApplicationContext private val context: Context) {
     suspend fun setHasShownSignInPrompt(value: Boolean) = context.dataStore.edit { it[Keys.HAS_SHOWN_SIGNIN_PROMPT] = value }
     suspend fun setThemeMode(mode: String) = context.dataStore.edit { it[Keys.THEME_MODE] = mode }
     suspend fun setLanguage(code: String) = context.dataStore.edit { it[Keys.SELECTED_LANGUAGE] = code }
-    suspend fun setExportTemplate(template: String) = context.dataStore.edit { it[Keys.EXPORT_TEMPLATE] = template }
 
     suspend fun saveAiRegenerationCount(count: Int) {
         val today = java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.getDefault()).format(java.util.Date())

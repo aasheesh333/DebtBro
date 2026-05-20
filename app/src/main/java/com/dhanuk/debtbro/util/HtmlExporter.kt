@@ -48,17 +48,12 @@ object HtmlExporter {
         context: Context,
         debt: DebtEntity,
         lenderName: String,
-        aiMessage: String,
-        templateName: String? = null
+        aiMessage: String
     ): Bitmap = withContext(Dispatchers.Main) {
         try {
-            val templateFile = if (templateName != null && templateName != "random" && templates.contains("$templateName.html")) {
-                "$templateName.html"
-            } else {
-                val templateIndex = getRandomTemplateIndex()
-                templates[templateIndex]
-            }
-            android.util.Log.d("HtmlExporter", "Using template: $templateFile")
+            val templateIndex = getRandomTemplateIndex()
+            val templateFile = templates[templateIndex]
+            android.util.Log.d("HtmlExporter", "Using template: $templateFile (index: $templateIndex)")
             val htmlContent = loadAndFillTemplate(context, templateFile, debt, lenderName, aiMessage)
             renderHtmlToBitmap(context, htmlContent)
         } catch (e: Exception) {
@@ -132,21 +127,21 @@ object HtmlExporter {
             body { width: 1080px !important; height: 1350px !important; overflow: hidden !important; margin: 0 !important; padding: 0 !important; }
             .card { width: 1080px !important; height: 1350px !important; overflow: hidden !important; box-sizing: border-box !important; }
             .content { overflow: hidden !important; }
-            .quote-box, .note, .quote { width: 680px !important; max-width: 680px !important; max-height: 160px !important; overflow: hidden !important; }
+            .quote-box, .note, .quote, .quote-hero { width: 90% !important; max-width: 900px !important; min-height: 100px !important; max-height: 300px !important; overflow: hidden !important; }
             .quote-text, .note-content { 
-                width: 580px !important; 
-                max-width: 580px !important; 
-                max-height: 300px !important; 
+                width: 100% !important; 
+                max-width: 800px !important; 
+                max-height: 280px !important; 
                 word-break: break-word !important; 
                 overflow-wrap: break-word !important; 
                 word-wrap: break-word !important; 
                 white-space: normal !important; 
-                overflow: visible !important; 
+                overflow: hidden !important; 
                 display: block !important;
-                font-size: var(--quote-font-size) !important;
+                font-size: var(--quote-font-size, 1.4rem) !important;
                 line-height: 1.4 !important;
             }
-            .detail-item .text-content { max-height: 56px !important; overflow: hidden !important; word-break: break-word !important; overflow-wrap: break-word !important; display: block !important; }
+            .detail-item .text-content { max-width: 400px !important; display: -webkit-box !important; -webkit-line-clamp: 4 !important; -webkit-box-orient: vertical !important; overflow: hidden !important; word-break: break-word !important; overflow-wrap: break-word !important; }
         </style>
         """.trimIndent()
 

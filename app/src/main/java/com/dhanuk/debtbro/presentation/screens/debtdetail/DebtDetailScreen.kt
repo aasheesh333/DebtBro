@@ -62,11 +62,9 @@ fun DebtDetailScreen(onBack: () -> Unit, viewModel: DebtDetailViewModel = hiltVi
     val aiMessage by viewModel.aiMessage.collectAsStateWithLifecycle()
     val isGenerating by viewModel.isGeneratingAi.collectAsStateWithLifecycle()
     val roastLevel by viewModel.roastLevel.collectAsStateWithLifecycle()
-    val selectedTemplate by viewModel.selectedTemplate.collectAsStateWithLifecycle()
     val showPaymentSheet by viewModel.showAddPaymentSheet.collectAsStateWithLifecycle()
     val showEditSheet by viewModel.showEditDebtSheet.collectAsStateWithLifecycle()
     val showConfetti by viewModel.showConfetti.collectAsStateWithLifecycle()
-    val showTemplatePicker by viewModel.showTemplatePicker.collectAsStateWithLifecycle()
     val context = LocalContext.current
     val showRewardAd by viewModel.showRewardAd.collectAsStateWithLifecycle()
     val remainingFree by viewModel.remainingFree.collectAsStateWithLifecycle()
@@ -249,42 +247,33 @@ fun DebtDetailScreen(onBack: () -> Unit, viewModel: DebtDetailViewModel = hiltVi
                             }
 
 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                                 Button(
-                                     onClick = {
-                                         val activity = context.findActivity()
-                                         viewModel.generateRoast(activity)
-                                     },
-                                     colors = ButtonDefaults.buttonColors(containerColor = PrimaryGreen),
-                                     modifier = Modifier.weight(1f)
-                                 ) {
-                                     if (remainingFree > 0) {
-                                         Text("${LocalizedString.get("regenerate")} ($remainingFree)")
-                                     } else {
-                                         Text("🎯 ${LocalizedString.get("regenerate")}")
-                                     }
-                                 }
-                                 Button(
-                                     onClick = { 
-                                         Toast.makeText(context, "Generating image...", Toast.LENGTH_SHORT).show()
-                                         viewModel.shareCardToWhatsApp(context, d, aiMessage.ifBlank { d.aiRoastGenerated.orEmpty() })
-                                     },
-                                     colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF25D366)),
-                                     modifier = Modifier.weight(1f)
-                                 ) {
-                                     Icon(Icons.Default.Image, null, modifier = Modifier.size(16.dp))
-                                     Spacer(Modifier.width(8.dp))
-                                     Text("WhatsApp")
-                                 }
-                                 Button(
-                                     onClick = { viewModel.showTemplatePicker.value = true },
-                                     colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF1E1E1E)),
-                                     modifier = Modifier.weight(1f)
-                                 ) {
-                                      Icon(Icons.Default.Brush, null, modifier = Modifier.size(16.dp))
+                                  Button(
+                                      onClick = {
+                                          val activity = context.findActivity()
+                                          viewModel.generateRoast(activity)
+                                      },
+                                      colors = ButtonDefaults.buttonColors(containerColor = PrimaryGreen),
+                                      modifier = Modifier.weight(1f)
+                                  ) {
+                                      if (remainingFree > 0) {
+                                          Text("${LocalizedString.get("regenerate")} ($remainingFree)")
+                                      } else {
+                                          Text("🎯 ${LocalizedString.get("regenerate")}")
+                                      }
+                                  }
+                                  Button(
+                                      onClick = { 
+                                          Toast.makeText(context, "Generating image...", Toast.LENGTH_SHORT).show()
+                                          viewModel.shareCardToWhatsApp(context, d, aiMessage.ifBlank { d.aiRoastGenerated.orEmpty() })
+                                      },
+                                      colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF25D366)),
+                                      modifier = Modifier.weight(1f)
+                                  ) {
+                                      Icon(Icons.Default.Image, null, modifier = Modifier.size(16.dp))
                                       Spacer(Modifier.width(8.dp))
-                                      Text("Template")
-                                 }
-                             }
+                                      Text("WhatsApp")
+                                  }
+                              }
 }
                     }
                 }
@@ -446,68 +435,10 @@ if (isExportingImage) {
                  }
              },
              confirmButton = {},
-             containerColor = Color(0xFF1A1A1A)
-         )
-     }
-
-     if (showTemplatePicker) {
-         ModalBottomSheet(
-             onDismissRequest = { viewModel.showTemplatePicker.value = false },
-             containerColor = Color(0xFF1A1A1A)
-         ) {
-             Column(Modifier.padding(24.dp)) {
-                 Text(
-                     text = LocalizedString.get("choose_template"),
-                     color = Color.White,
-                     fontSize = 20.sp,
-                     fontWeight = FontWeight.Bold
-                 )
-                 Spacer(Modifier.height(16.dp))
-                 Column(
-                     modifier = Modifier.fillMaxWidth(),
-                     verticalArrangement = Arrangement.spacedBy(12.dp)
-                 ) {
-                     val templates = listOf(
-                         Pair("random", LocalizedString.get("random")),
-                         Pair("wall_of_shame", LocalizedString.get("wall_of_shame")),
-                         Pair("insta_vibe", LocalizedString.get("insta_vibe")),
-                         Pair("elegant_minimal", LocalizedString.get("elegant_minimal")),
-                         Pair("cyberpunk_debt", LocalizedString.get("cyberpunk_debt"))
-                     )
-                     templates.forEach { (templateKey, templateName) ->
-                         Row(
-                             modifier = Modifier
-                                 .fillMaxWidth()
-                                 .clickable { viewModel.selectTemplate(templateKey) }
-                                 .padding(vertical = 8.dp),
-                             verticalAlignment = Alignment.CenterVertically
-                         ) {
-                             Icon(
-                                  imageVector = Icons.Default.Brush,
-                                 contentDescription = null,
-                                  tint = if (selectedTemplate == templateKey) PrimaryGreen else Color.White
-                             )
-                             Spacer(Modifier.width(12.dp))
-                             Text(
-                                 text = templateName,
-                                  color = if (selectedTemplate == templateKey) PrimaryGreen else Color.White,
-                                 fontSize = 16.sp
-                             )
-                             Spacer(Modifier.weight(1f))
-                              if (selectedTemplate == templateKey) {
-                                 Icon(
-                                      imageVector = Icons.Default.CheckCircle,
-                                     contentDescription = null,
-                                     tint = PrimaryGreen
-                                 )
-                             }
-                         }
-                     }
-                 }
-             }
-         }
-     }
- }
+      containerColor = Color(0xFF1A1A1A)
+          )
+      }
+  }
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable

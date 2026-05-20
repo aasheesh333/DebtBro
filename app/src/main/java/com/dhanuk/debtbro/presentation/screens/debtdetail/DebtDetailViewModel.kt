@@ -24,8 +24,6 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.*
-import kotlinx.coroutines.flow.SharingStarted
-import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import javax.inject.Inject
@@ -56,17 +54,9 @@ class DebtDetailViewModel @Inject constructor(
     val isGeneratingAi = MutableStateFlow(false)
     val roastLevel: StateFlow<String> = prefs.roastLevel
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), "MEDIUM")
-    val selectedTemplate: StateFlow<String> = prefs.exportTemplate
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), "random")
 
     val showAddPaymentSheet = MutableStateFlow(false)
     val showEditDebtSheet = MutableStateFlow(false)
-    val showTemplatePicker = MutableStateFlow(false)
-
-    fun selectTemplate(template: String) = viewModelScope.launch {
-        prefs.setExportTemplate(template)
-        showTemplatePicker.value = false
-    }
     private val _showConfetti = MutableStateFlow(false)
     val showConfetti: StateFlow<Boolean> = _showConfetti.asStateFlow()
     private val _isExportingImage = MutableStateFlow(false)
@@ -247,8 +237,7 @@ class DebtDetailViewModel @Inject constructor(
         try {
             val userName = prefs.userName.first().ifBlank { "Your Friend" }
             val bitmap = try {
-                val template = selectedTemplate.value
-                HtmlExporter.generateShareableImage(context, debt, userName, actualMessage, template)
+                HtmlExporter.generateShareableImage(context, debt, userName, actualMessage)
             } catch (e: Exception) {
                 android.util.Log.e("DebtDetailVM", "HTML export failed, falling back to Canvas: ${e.message}")
                 CanvasExporter.createDebtCard(context, debt, actualMessage, roastLevel.value)
@@ -317,8 +306,7 @@ class DebtDetailViewModel @Inject constructor(
         try {
             val userName = prefs.userName.first().ifBlank { "Your Friend" }
             val (bitmap, uri) = try {
-                val template = selectedTemplate.value
-                val bmp = HtmlExporter.generateShareableImage(context, debt, userName, actualMessage, template)
+                val bmp = HtmlExporter.generateShareableImage(context, debt, userName, actualMessage)
                 Pair(bmp, HtmlExporter.getShareableUri(context, bmp))
             } catch (e: Exception) {
                 android.util.Log.e("DebtDetailVM", "HTML export failed, falling back to Canvas: ${e.message}")
