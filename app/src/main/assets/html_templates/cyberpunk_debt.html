@@ -34,8 +34,8 @@
         }
         .header {
             text-align: center;
-            margin-bottom: 50px;
-            padding-bottom: 30px;
+            margin-bottom: 30px;
+            padding-bottom: 20px;
             border-bottom: 1px solid rgba(201, 169, 106, 0.2);
         }
         .brand {
@@ -56,11 +56,89 @@
             display: flex;
             flex-direction: column;
             align-items: center;
-            gap: 45px;
+            gap: 25px;
             flex: 1;
             min-width: 0;
             overflow: hidden;
         }
+        /* AI Quote Hero Section */
+        .quote-hero {
+            position: relative;
+            width: 100%;
+            max-width: 900px;
+            min-height: 100px;
+            max-height: 300px;
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(201, 169, 106, 0.15);
+            border-radius: 20px;
+            padding: 40px 30px;
+            text-align: center;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+        .quote-hero::before {
+            content: '"';
+            position: absolute;
+            top: -20px;
+            left: 20px;
+            font-size: 12rem;
+            color: rgba(201, 169, 106, 0.08);
+            pointer-events: none;
+            font-family: serif;
+        }
+        .quote-hero::after {
+            content: '"';
+            position: absolute;
+            bottom: -20px;
+            right: 20px;
+            font-size: 12rem;
+            color: rgba(201, 169, 106, 0.08);
+            pointer-events: none;
+            font-family: serif;
+        }
+        .ai-badge {
+            background: rgba(201, 169, 106, 0.2);
+            color: #c9a96a;
+            font-size: 0.8rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.2em;
+            padding: 4px 12px;
+            border-radius: 15px;
+            margin-bottom: 15px;
+            display: inline-block;
+        }
+        .quote-text {
+            font-size: var(--quote-font-size, 1.6rem);
+            line-height: 1.4;
+            color: rgba(255, 255, 255, 0.9);
+            font-style: italic;
+            margin: 0;
+            width: 100%;
+            display: -webkit-box;
+            -webkit-line-clamp: 6;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            position: relative;
+            z-index: 2;
+        }
+        /* Gradient fade effect for quote overflow */
+        .quote-hero::after-gradient {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 60px;
+            background: linear-gradient(to top, rgba(30, 30, 50, 0.8), transparent);
+            pointer-events: none;
+            z-index: 1;
+        }
+        /* Parties Section */
         .parties {
             display: flex;
             justify-content: center;
@@ -98,6 +176,7 @@
             font-size: 2rem;
             color: #c9a96a;
         }
+        /* Amount Section */
         .amount-box {
             background: linear-gradient(135deg, #c9a96a, #a8864a);
             border-radius: 25px;
@@ -122,6 +201,7 @@
             overflow-wrap: anywhere;
             max-width: 500px;
         }
+        /* Details Section */
         .details-row {
             display: flex;
             justify-content: center;
@@ -142,41 +222,17 @@
             font-size: 1.2rem;
             color: rgba(255, 255, 255, 0.6);
             line-height: 1.4;
-            max-width: 260px;
+            max-width: 400px;
+            display: -webkit-box;
+            -webkit-line-clamp: 4;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
         }
         .detail-icon {
             font-size: 1.4rem;
             flex-shrink: 0;
         }
-        .quote-box {
-            background: rgba(255, 255, 255, 0.03);
-            border: 1px solid rgba(201, 169, 106, 0.15);
-            border-radius: 20px;
-            padding: 30px 45px;
-            text-align: center;
-            width: 100%;
-            max-width: 700px;
-            max-height: 150px;
-            overflow: hidden;
-            position: relative;
-            min-width: 0;
-            box-sizing: border-box;
-        }
-        .quote-text {
-            font-size: 1.4rem;
-            color: rgba(255, 255, 255, 0.7);
-            font-style: italic;
-            line-height: 1.5;
-            white-space: normal;
-            word-wrap: break-word;
-            overflow-wrap: break-word;
-            word-break: break-word;
-            max-height: 90px;
-            overflow: hidden;
-            display: block;
-            width: 100%;
-            box-sizing: border-box;
-        }
+        /* Footer */
         .footer {
             position: absolute;
             bottom: 40px;
@@ -198,6 +254,11 @@
         </div>
 
         <div class="content">
+            <div class="quote-hero">
+                <div class="ai-badge">AI Roast</div>
+                <p class="quote-text">{{debtQuote}}</p>
+            </div>
+
             <div class="parties">
                 <div class="party">
                     <div class="party-label">From</div>
@@ -224,10 +285,6 @@
                     <span class="detail-icon">&#128221;</span>
                     <span class="text-content">{{description}}</span>
                 </div>
-            </div>
-
-            <div class="quote-box">
-                <div class="quote-text">{{debtQuote}}</div>
             </div>
         </div>
 

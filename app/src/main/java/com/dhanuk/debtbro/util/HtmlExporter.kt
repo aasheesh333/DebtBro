@@ -48,12 +48,17 @@ object HtmlExporter {
         context: Context,
         debt: DebtEntity,
         lenderName: String,
-        aiMessage: String
+        aiMessage: String,
+        templateName: String? = null
     ): Bitmap = withContext(Dispatchers.Main) {
         try {
-            val templateIndex = getRandomTemplateIndex()
-            val templateFile = templates[templateIndex]
-            android.util.Log.d("HtmlExporter", "Using template: $templateFile (index: $templateIndex)")
+            val templateFile = if (templateName != null && templateName != "random" && templates.contains("$templateName.html")) {
+                "$templateName.html"
+            } else {
+                val templateIndex = getRandomTemplateIndex()
+                templates[templateIndex]
+            }
+            android.util.Log.d("HtmlExporter", "Using template: $templateFile")
             val htmlContent = loadAndFillTemplate(context, templateFile, debt, lenderName, aiMessage)
             renderHtmlToBitmap(context, htmlContent)
         } catch (e: Exception) {
@@ -78,28 +83,48 @@ object HtmlExporter {
 
         val formattedAmount = "${debt.currency}${(debt.amount - debt.amountPaid).toLong()}"
         val hasDesc = debt.description.isNotBlank()
-        val truncatedMessage = aiMessage
+        
+        // Process AI message - remove truncation, preserve full message
+        val processedMessage = aiMessage
             .replace("\n", " ")
             .replace("\r", " ")
-            .let { msg ->
-                if (msg.length > 120) msg.take(117) + "..." else msg
-            }
-        val truncatedDesc = debt.description
-            .let { d ->
-                if (d.length > 200) d.take(197) + "..." else d
-            }
+        
+        // Process description - remove truncation, preserve full description
+        val processedDesc = debt.description
+        
+        // Calculate CSS custom properties for dynamic font sizing
+        val quoteCharCount = processedMessage.length
+        val descCharCount = processedDesc.length
+        
+        val quoteFontSize = when {
+            quoteCharCount <= 50 -> "2.2rem"
+            quoteCharCount <= 100 -> "1.8rem"
+            quoteCharCount <= 200 -> "1.4rem"
+            quoteCharCount <= 350 -> "1.1rem"
+            else -> "0.95rem"
+        }
 
         htmlContent = htmlContent
             .replace("{{lenderName}}", escapeHtml(lenderName))
             .replace("{{borrowerName}}", escapeHtml(debt.personName))
             .replace("{{amount}}", formattedAmount)
             .replace("{{currency}}", debt.currency)
-            .replace("{{description}}", escapeHtml(truncatedDesc))
+            .replace("{{description}}", escapeHtml(processedDesc))
             .replace("{{dueDate}}", dueDateStr)
-            .replace("{{debtQuote}}", escapeHtml(truncatedMessage.ifBlank { "Please repay soon!" }))
+            .replace("{{debtQuote}}", escapeHtml(processedMessage.ifBlank { "Please repay soon!" }))
             .replace("{{descriptionDisplay}}", if (hasDesc) "flex" else "none")
             .replace("{{dueDateText}}", if (hasDesc) "- Due" else "")
             .replace("{{quoteText}}", if (hasDesc) "." else "")
+
+        val cssVariables = """
+        <style>
+            :root {
+                --quote-char-count: $quoteCharCount;
+                --desc-char-count: $descCharCount;
+                --quote-font-size: $quoteFontSize;
+            }
+        </style>
+        """.trimIndent()
 
         val enforceStyles = """
         <style>
@@ -108,12 +133,24 @@ object HtmlExporter {
             .card { width: 1080px !important; height: 1350px !important; overflow: hidden !important; box-sizing: border-box !important; }
             .content { overflow: hidden !important; }
             .quote-box, .note, .quote { width: 680px !important; max-width: 680px !important; max-height: 160px !important; overflow: hidden !important; }
-            .quote-text, .note-content { width: 580px !important; max-width: 580px !important; max-height: 120px !important; word-break: break-word !important; overflow-wrap: break-word !important; word-wrap: break-word !important; white-space: normal !important; overflow: hidden !important; display: block !important; }
+            .quote-text, .note-content { 
+                width: 580px !important; 
+                max-width: 580px !important; 
+                max-height: 300px !important; 
+                word-break: break-word !important; 
+                overflow-wrap: break-word !important; 
+                word-wrap: break-word !important; 
+                white-space: normal !important; 
+                overflow: visible !important; 
+                display: block !important;
+                font-size: var(--quote-font-size) !important;
+                line-height: 1.4 !important;
+            }
             .detail-item .text-content { max-height: 56px !important; overflow: hidden !important; word-break: break-word !important; overflow-wrap: break-word !important; display: block !important; }
         </style>
         """.trimIndent()
 
-        return htmlContent.replace("</head>", "$enforceStyles</head>")
+        return htmlContent.replace("</head>", "$cssVariables$enforceStyles</head>")
     }
 
     private fun escapeHtml(text: String): String {

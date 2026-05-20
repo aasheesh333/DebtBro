@@ -61,34 +61,87 @@
             min-width: 0;
             overflow: hidden;
         }
-        .quote-box {
-            background: rgba(255, 255, 255, 0.05);
+        /* Enhanced Quote Hero Section */
+        .quote-hero {
+            position: relative;
+            background: rgba(255, 255, 255, 0.03);
             border: 1px solid rgba(255, 255, 255, 0.1);
             border-radius: 30px;
             padding: 40px 50px;
             text-align: center;
             width: 100%;
-            max-width: 800px;
-            max-height: 150px;
+            max-width: 900px;
+            min-height: 120px;
+            max-height: 320px;
             overflow: hidden;
-            position: relative;
-            min-width: 0;
             box-sizing: border-box;
+            /* Gradient border effect */
+            background-image: linear-gradient(rgba(30, 30, 50, 0.9), rgba(20, 20, 35, 0.95)), 
+                            linear-gradient(135deg, #f97316, #ea580c);
+            background-origin: border-box;
+            background-clip: content-box, border-box;
+        }
+        .quote-hero::before {
+            content: '"';
+            position: absolute;
+            top: -20px;
+            left: 20px;
+            font-size: 12rem;
+            color: rgba(255, 255, 255, 0.1);
+            font-family: serif;
+            line-height: 1;
+            pointer-events: none;
+        }
+        .quote-hero::after {
+            content: '"';
+            position: absolute;
+            bottom: -20px;
+            right: 20px;
+            font-size: 12rem;
+            color: rgba(255, 255, 255, 0.1);
+            font-family: serif;
+            line-height: 1;
+            pointer-events: none;
+        }
+        .ai-roast-badge {
+            display: inline-flex;
+            align-items: center;
+            background: rgba(249, 115, 22, 0.2);
+            border: 1px solid rgba(249, 115, 22, 0.3);
+            border-radius: 20px;
+            padding: 4px 12px;
+            font-size: 0.9rem;
+            font-weight: 600;
+            color: #f97316;
+            margin-bottom: 20px;
+            letter-spacing: 0.05em;
         }
         .quote-text {
-            font-size: 1.8rem;
+            font-size: var(--quote-font-size, 2.0rem);
+            line-height: 1.4;
             font-weight: 600;
             color: #fff;
-            line-height: 1.4;
-            white-space: normal;
-            word-wrap: break-word;
-            overflow-wrap: break-word;
-            word-break: break-word;
-            max-height: 90px;
+            margin: 0;
+            position: relative;
+            z-index: 2;
+            display: -webkit-box;
+            -webkit-line-clamp: 3;
+            -webkit-box-orient: vertical;
             overflow: hidden;
-            display: block;
-            width: 100%;
-            box-sizing: border-box;
+            text-overflow: ellipsis;
+            max-height: calc(2.0rem * 1.4 * 3); /* 3 lines */
+        }
+        /* Fade-out effect for quote overflow */
+        .quote-hero::after-content {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 60px;
+            background: linear-gradient(to top, rgba(20, 20, 35, 0.95), transparent);
+            pointer-events: none;
+            z-index: 3;
         }
         .parties {
             display: flex;
@@ -168,6 +221,10 @@
             color: rgba(255, 255, 255, 0.7);
             line-height: 1.4;
             max-width: 280px;
+            display: -webkit-box;
+            -webkit-line-clamp: 4;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
         }
         .detail-icon {
             font-size: 1.5rem;
@@ -194,7 +251,8 @@
         </div>
 
         <div class="content">
-            <div class="quote-box">
+            <div class="quote-hero">
+                <div class="ai-roast-badge">AI Roast</div>
                 <div class="quote-text">{{debtQuote}}</div>
             </div>
 
