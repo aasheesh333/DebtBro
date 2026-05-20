@@ -205,7 +205,6 @@ object HtmlExporter {
                     try { webView.destroy() } catch (_: Exception) {}
                 }
             }
-        }
 
     fun saveBitmap(context: Context, bitmap: Bitmap): File {
         val cacheDir = File(context.cacheDir, "share_images")
