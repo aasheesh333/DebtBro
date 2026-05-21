@@ -118,6 +118,31 @@ fun SettingsScreen(viewModel: SettingsViewModel = hiltViewModel()) {
                                 )
                             }
                         }
+
+                        Divider(color = Color(0xFF2A2A2A))
+
+                        Text(LocalizedString.get("card_display_options"), color = Color.White, fontWeight = FontWeight.Bold, fontSize = 14.sp)
+
+                        SettingsToggleItem(
+                            title = LocalizedString.get("show_description"),
+                            subtitle = LocalizedString.get("show_description_sub"),
+                            checked = state.showDescription,
+                            onCheckedChange = viewModel::setShowDescription
+                        )
+
+                        SettingsToggleItem(
+                            title = LocalizedString.get("show_due_date"),
+                            subtitle = LocalizedString.get("show_due_date_sub"),
+                            checked = state.showDueDate,
+                            onCheckedChange = viewModel::setShowDueDate
+                        )
+
+                        SettingsToggleItem(
+                            title = LocalizedString.get("show_emoji"),
+                            subtitle = LocalizedString.get("show_emoji_sub"),
+                            checked = state.showEmoji,
+                            onCheckedChange = viewModel::setShowEmoji
+                        )
                     }
                 }
             }
@@ -245,6 +270,35 @@ fun SectionHeader(title: String, icon: ImageVector) {
     ) {
         Icon(icon, null, tint = PrimaryGreen, modifier = Modifier.size(20.dp))
         Text(title, color = PrimaryGreen, fontSize = 14.sp, fontWeight = FontWeight.Bold)
+    }
+}
+
+@Composable
+fun SettingsToggleItem(
+    title: String,
+    subtitle: String,
+    checked: Boolean,
+    onCheckedChange: (Boolean) -> Unit
+) {
+    Row(
+        modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(12.dp)
+    ) {
+        Column(modifier = Modifier.weight(1f)) {
+            Text(title, color = Color.White, fontWeight = FontWeight.SemiBold)
+            Text(subtitle, color = SubtitleGray, fontSize = 12.sp)
+        }
+        Switch(
+            checked = checked,
+            onCheckedChange = onCheckedChange,
+            colors = SwitchDefaults.colors(
+                checkedThumbColor = Color.Black,
+                checkedTrackColor = PrimaryGreen,
+                uncheckedThumbColor = SubtitleGray,
+                uncheckedTrackColor = Color(0xFF333333)
+            )
+        )
     }
 }
 

@@ -32,7 +32,10 @@ data class SettingsUiState(
     val selectedLanguage: String = "en",
     val testResult: String = "",
     val isSyncing: Boolean = false,
-    val syncMessage: String = ""
+    val syncMessage: String = "",
+    val showDescription: Boolean = true,
+    val showDueDate: Boolean = true,
+    val showEmoji: Boolean = true
 )
 
 @HiltViewModel
@@ -51,7 +54,8 @@ class SettingsViewModel @Inject constructor(
         prefs.userName, prefs.roastLevel,
         prefs.defaultCurrency, prefs.isGoogleSignedIn, prefs.googleUserName,
         prefs.googleUserEmail, prefs.googleUserPhoto, prefs.lastSyncedAt,
-        prefs.selectedLanguage, isSyncing, syncMessage
+        prefs.selectedLanguage, isSyncing, syncMessage,
+        prefs.showDescription, prefs.showDueDate, prefs.showEmoji
     ) { v ->
         SettingsUiState(
             userName = v[0] as String,
@@ -64,7 +68,10 @@ class SettingsViewModel @Inject constructor(
             lastSynced = v[7] as Long,
             selectedLanguage = v[8] as String,
             isSyncing = v[9] as Boolean,
-            syncMessage = v[10] as String
+            syncMessage = v[10] as String,
+            showDescription = v[11] as Boolean,
+            showDueDate = v[12] as Boolean,
+            showEmoji = v[13] as Boolean
         )
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), SettingsUiState())
 
@@ -73,7 +80,9 @@ class SettingsViewModel @Inject constructor(
     fun setRoastLevel(level: String) = viewModelScope.launch { prefs.setRoastLevel(level) }
     fun setCurrency(c: String) = viewModelScope.launch { prefs.setCurrency(c) }
     fun setLanguage(code: String) = viewModelScope.launch { prefs.setLanguage(code) }
-    
+    fun setShowDescription(value: Boolean) = viewModelScope.launch { prefs.setShowDescription(value) }
+    fun setShowDueDate(value: Boolean) = viewModelScope.launch { prefs.setShowDueDate(value) }
+    fun setShowEmoji(value: Boolean) = viewModelScope.launch { prefs.setShowEmoji(value) }
 
     fun signInWithGoogle(activity: Activity) = viewModelScope.launch {
         auth.signInWithGoogle(activity).onSuccess { user ->
