@@ -35,6 +35,9 @@ class AppPreferences(@ApplicationContext private val context: Context) {
         val SELECTED_LANGUAGE = stringPreferencesKey("selected_language")
         val AI_REGENERATION_COUNT = intPreferencesKey("ai_regeneration_count")
         val AI_REGENERATION_DATE = stringPreferencesKey("ai_regeneration_date")
+        val SHOW_DESCRIPTION = booleanPreferencesKey("show_description")
+        val SHOW_DUE_DATE = booleanPreferencesKey("show_due_date")
+        val SHOW_EMOJI = booleanPreferencesKey("show_emoji")
     }
 
     val hasCompletedOnboarding: Flow<Boolean> = context.dataStore.data.map { it[Keys.HAS_COMPLETED_ONBOARDING] ?: false }
@@ -52,6 +55,9 @@ class AppPreferences(@ApplicationContext private val context: Context) {
     val lastInterstitialAt: Flow<Long> = context.dataStore.data.map { it[Keys.LAST_INTERSTITIAL_AT] ?: 0L }
     val themeMode: Flow<String> = context.dataStore.data.map { it[Keys.THEME_MODE] ?: "SYSTEM" }
     val selectedLanguage: Flow<String> = context.dataStore.data.map { it[Keys.SELECTED_LANGUAGE] ?: "en" }
+    val showDescription: Flow<Boolean> = context.dataStore.data.map { it[Keys.SHOW_DESCRIPTION] ?: true }
+    val showDueDate: Flow<Boolean> = context.dataStore.data.map { it[Keys.SHOW_DUE_DATE] ?: true }
+    val showEmoji: Flow<Boolean> = context.dataStore.data.map { it[Keys.SHOW_EMOJI] ?: true }
 
     suspend fun setOnboardingComplete(name: String) = context.dataStore.edit {
         it[Keys.HAS_COMPLETED_ONBOARDING] = true
@@ -73,6 +79,9 @@ class AppPreferences(@ApplicationContext private val context: Context) {
     suspend fun setHasShownSignInPrompt(value: Boolean) = context.dataStore.edit { it[Keys.HAS_SHOWN_SIGNIN_PROMPT] = value }
     suspend fun setThemeMode(mode: String) = context.dataStore.edit { it[Keys.THEME_MODE] = mode }
     suspend fun setLanguage(code: String) = context.dataStore.edit { it[Keys.SELECTED_LANGUAGE] = code }
+    suspend fun setShowDescription(value: Boolean) = context.dataStore.edit { it[Keys.SHOW_DESCRIPTION] = value }
+    suspend fun setShowDueDate(value: Boolean) = context.dataStore.edit { it[Keys.SHOW_DUE_DATE] = value }
+    suspend fun setShowEmoji(value: Boolean) = context.dataStore.edit { it[Keys.SHOW_EMOJI] = value }
 
     suspend fun saveAiRegenerationCount(count: Int) {
         val today = java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.getDefault()).format(java.util.Date())
