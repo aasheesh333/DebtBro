@@ -113,9 +113,10 @@
         }
         .quote-text {
             font-size: var(--quote-font-size, 1.6rem);
-            line-height: 1.4;
-            color: rgba(255, 255, 255, 0.9);
+            line-height: 1.5;
+            color: rgba(255, 255, 255, 0.95);
             font-style: italic;
+            font-weight: 500;
             margin: 0;
             width: 100%;
             display: -webkit-box;
@@ -125,6 +126,7 @@
             text-overflow: ellipsis;
             position: relative;
             z-index: 2;
+            text-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
         }
         /* Gradient fade effect for quote overflow */
         .quote-hero::after-gradient {
@@ -268,6 +270,7 @@
                 <div class="party">
                     <div class="party-label">To</div>
                     <div class="party-name">{{borrowerName}}</div>
+                    <div class="party-emoji" style="display: {{emojiDisplay}}; font-size: 2rem; margin-top: 8px;">{{personEmoji}}</div>
                 </div>
             </div>
 
@@ -277,7 +280,7 @@
             </div>
 
             <div class="details-row">
-                <div class="detail-item">
+                <div class="detail-item" style="display: {{dueDateDisplay}}">
                     <span class="detail-icon">&#128197;</span>
                     <span class="text-content">{{dueDate}}</span>
                 </div>

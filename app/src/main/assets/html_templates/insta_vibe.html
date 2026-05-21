@@ -118,18 +118,18 @@
         }
         .quote-text {
             font-size: var(--quote-font-size, 2.0rem);
-            line-height: 1.4;
+            line-height: 1.5;
             font-weight: 600;
             color: #fff;
             margin: 0;
             position: relative;
             z-index: 2;
             display: -webkit-box;
-            -webkit-line-clamp: 3;
+            -webkit-line-clamp: 4;
             -webkit-box-orient: vertical;
             overflow: hidden;
             text-overflow: ellipsis;
-            max-height: calc(2.0rem * 1.4 * 3); /* 3 lines */
+            text-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
         }
         /* Fade-out effect for quote overflow */
         .quote-hero::after-content {
@@ -265,6 +265,7 @@
                 <div class="party">
                     <div class="party-label">Borrower</div>
                     <div class="party-name">{{borrowerName}}</div>
+                    <div class="party-emoji" style="display: {{emojiDisplay}}; font-size: 2rem; margin-top: 8px;">{{personEmoji}}</div>
                 </div>
             </div>
 
@@ -274,7 +275,7 @@
             </div>
 
             <div class="details">
-                <div class="detail-item">
+                <div class="detail-item" style="display: {{dueDateDisplay}}">
                     <span class="detail-icon">&#128197;</span>
                     <span class="text-content">{{dueDate}}</span>
                 </div>
