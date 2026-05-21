@@ -37,12 +37,10 @@ object CanvasExporter {
         basePaint: TextPaint,
         x: Float,
         y: Float,
-        maxWidth: Int,
-        maxHeight: Int
-    ) {
+        maxWidth: Int
+    ): Int {
         val displayText = text
 
-        // Auto-scale font: short text = bigger, long text = smaller
         val scaledSize = when {
             displayText.length <= 50 -> basePaint.textSize * 2.0f
             displayText.length <= 100 -> basePaint.textSize * 1.6f
@@ -63,11 +61,12 @@ object CanvasExporter {
             .setIncludePad(false)
             .build()
 
-        val saveCount = canvas.save()
-        canvas.clipRect(x.toInt(), y.toInt(), x.toInt() + maxWidth, y.toInt() + maxHeight)
+        canvas.save()
         canvas.translate(x, y)
         layout.draw(canvas)
-        canvas.restoreToCount(saveCount)
+        canvas.restore()
+
+        return layout.height
     }
 
     fun createDebtCard(
@@ -146,22 +145,33 @@ object CanvasExporter {
                 isFakeBoldText = true
             }
             val descText = "For: ${debt.description}"
-            drawWrappedText(canvas, descText, descTextPaint, 80f, yOffset.toFloat(), W - 160, 100)
-            yOffset += 110
+            val descHeight = drawWrappedText(canvas, descText, descTextPaint, 80f, yOffset.toFloat(), W - 160)
+            yOffset += descHeight + 20
             paint.textAlign = Paint.Align.CENTER
         }
 
         val boxTop = (yOffset + 40).coerceAtLeast(720).toFloat()
-        val box = RectF(80f, boxTop, (W - 80).toFloat(), (boxTop + 330).coerceAtMost(1050f))
-        canvas.drawRoundRect(box, 20f, 20f, Paint().apply { color = Color.argb(100, 0, 0, 0) })
-
+        val quoteText = "\u201C$message\u201D"
         val textPaint = TextPaint(Paint.ANTI_ALIAS_FLAG).apply {
             color = Color.WHITE
             textSize = 36f
             isFakeBoldText = true
             letterSpacing = 0.02f
         }
-        drawWrappedText(canvas, "\u201C$message\u201D", textPaint, 120f, boxTop + 60, W - 240, 260)
+        val quoteHeight = drawWrappedText(canvas, quoteText, textPaint, 120f, boxTop + 60, W - 240)
+        val boxBottom = boxTop + 60 + quoteHeight + 40
+        val box = RectF(80f, boxTop, (W - 80).toFloat(), boxBottom.coerceAtMost((H - 100).toFloat()))
+        canvas.drawRoundRect(box, 20f, 20f, Paint().apply { color = Color.argb(100, 0, 0, 0) })
+        canvas.save()
+        canvas.clipRect(box)
+        canvas.translate(120f, boxTop + 60)
+        StaticLayout.Builder.obtain(quoteText, 0, quoteText.length, textPaint, W - 240)
+            .setAlignment(Layout.Alignment.ALIGN_NORMAL)
+            .setLineSpacing(0f, 1.25f)
+            .setIncludePad(false)
+            .build()
+            .draw(canvas)
+        canvas.restore()
 
         paint.textAlign = Paint.Align.CENTER
         paint.textSize = 24f
@@ -217,21 +227,32 @@ object CanvasExporter {
                 textSize = 28f
                 isFakeBoldText = true
             }
-            drawWrappedText(canvas, "For: ${debt.description}", descTextPaint2, 80f, yOffset.toFloat(), W - 160, 90)
-            yOffset += 110
+            val descHeight = drawWrappedText(canvas, "For: ${debt.description}", descTextPaint2, 80f, yOffset.toFloat(), W - 160)
+            yOffset += descHeight + 20
             paint.textAlign = Paint.Align.CENTER
         }
 
         val quoteBoxTop = (yOffset + 30).coerceAtLeast(650).toFloat()
-        val quoteBox = RectF(80f, quoteBoxTop, (W - 80).toFloat(), (quoteBoxTop + 290).coerceAtMost(1000f))
-        canvas.drawRoundRect(quoteBox, 20f, 20f, Paint().apply { color = Color.argb(60, 100, 200, 255) })
-
+        val quoteText = "\u201C$message\u201D"
         val textPaint = TextPaint(Paint.ANTI_ALIAS_FLAG).apply {
             color = Color.WHITE
             textSize = 34f
             isFakeBoldText = true
         }
-        drawWrappedText(canvas, "\u201C$message\u201D", textPaint, 120f, quoteBoxTop + 60, W - 240, 220)
+        val quoteHeight = drawWrappedText(canvas, quoteText, textPaint, 120f, quoteBoxTop + 60, W - 240)
+        val quoteBoxBottom = quoteBoxTop + 60 + quoteHeight + 40
+        val quoteBox = RectF(80f, quoteBoxTop, (W - 80).toFloat(), quoteBoxBottom.coerceAtMost(1000f))
+        canvas.drawRoundRect(quoteBox, 20f, 20f, Paint().apply { color = Color.argb(60, 100, 200, 255) })
+        canvas.save()
+        canvas.clipRect(quoteBox)
+        canvas.translate(120f, quoteBoxTop + 60)
+        StaticLayout.Builder.obtain(quoteText, 0, quoteText.length, textPaint, W - 240)
+            .setAlignment(Layout.Alignment.ALIGN_NORMAL)
+            .setLineSpacing(0f, 1.25f)
+            .setIncludePad(false)
+            .build()
+            .draw(canvas)
+        canvas.restore()
 
         paint.textAlign = Paint.Align.CENTER
         paint.textSize = 22f
@@ -283,8 +304,8 @@ object CanvasExporter {
                 textSize = 28f
                 isFakeBoldText = true
             }
-            drawWrappedText(canvas, "For: ${debt.description}", descTextPaint3, 100f, yOffset.toFloat(), W - 200, 70)
-            yOffset += 90
+            val descHeight = drawWrappedText(canvas, "For: ${debt.description}", descTextPaint3, 100f, yOffset.toFloat(), W - 200)
+            yOffset += descHeight + 20
             paint.textAlign = Paint.Align.CENTER
         }
 
@@ -292,12 +313,13 @@ object CanvasExporter {
         paint.color = Color.rgb(220, 210, 200)
         canvas.drawLine(100f, lineY, (W - 100).toFloat(), lineY, paint)
 
+        val quoteText = "\u201C$message\u201D"
         val textPaint = TextPaint(Paint.ANTI_ALIAS_FLAG).apply {
             color = Color.rgb(60, 60, 60)
             textSize = 32f
             isFakeBoldText = true
         }
-        drawWrappedText(canvas, "\u201C$message\u201D", textPaint, 100f, lineY + 70, W - 200, 280)
+        val quoteHeight = drawWrappedText(canvas, quoteText, textPaint, 100f, lineY + 70, W - 200)
 
         paint.textAlign = Paint.Align.CENTER
         paint.textSize = 24f
@@ -360,22 +382,33 @@ object CanvasExporter {
                 textSize = 28f
                 isFakeBoldText = true
             }
-            drawWrappedText(canvas, "REASON: ${debt.description}", descTextPaint4, 60f, yOffset.toFloat(), W - 120, 80)
-            yOffset += 100
+            val descHeight = drawWrappedText(canvas, "REASON: ${debt.description}", descTextPaint4, 60f, yOffset.toFloat(), W - 120)
+            yOffset += descHeight + 20
             paint.textAlign = Paint.Align.CENTER
         }
 
         val boxTop = (yOffset + 30).coerceAtLeast(620).toFloat()
-        val box = RectF(60f, boxTop, (W - 60).toFloat(), (boxTop + 340).coerceAtMost(1000f))
-        canvas.drawRect(box, Paint().apply { color = Color.argb(40, 0, 255, 255) })
-        canvas.drawRect(box, Paint().apply { color = cyan; style = Paint.Style.STROKE; strokeWidth = 2f })
-
+        val quoteText = "\u201C$message\u201D"
         val textPaint = TextPaint(Paint.ANTI_ALIAS_FLAG).apply {
             color = Color.WHITE
             textSize = 34f
             isFakeBoldText = true
         }
-        drawWrappedText(canvas, "\u201C$message\u201D", textPaint, 100f, boxTop + 60, W - 200, 280)
+        val quoteHeight = drawWrappedText(canvas, quoteText, textPaint, 100f, boxTop + 60, W - 200)
+        val boxBottom = boxTop + 60 + quoteHeight + 40
+        val box = RectF(60f, boxTop, (W - 60).toFloat(), boxBottom.coerceAtMost(1000f))
+        canvas.drawRect(box, Paint().apply { color = Color.argb(40, 0, 255, 255) })
+        canvas.drawRect(box, Paint().apply { color = cyan; style = Paint.Style.STROKE; strokeWidth = 2f })
+        canvas.save()
+        canvas.clipRect(box)
+        canvas.translate(100f, boxTop + 60)
+        StaticLayout.Builder.obtain(quoteText, 0, quoteText.length, textPaint, W - 200)
+            .setAlignment(Layout.Alignment.ALIGN_NORMAL)
+            .setLineSpacing(0f, 1.25f)
+            .setIncludePad(false)
+            .build()
+            .draw(canvas)
+        canvas.restore()
 
         paint.textAlign = Paint.Align.CENTER
         paint.textSize = 20f
