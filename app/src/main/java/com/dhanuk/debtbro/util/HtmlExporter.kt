@@ -172,8 +172,8 @@ object HtmlExporter {
         val enforceStyles = """
         <style>
             * { box-sizing: border-box !important; }
-            body { width: 1080px !important; height: 1350px !important; overflow: hidden !important; margin: 0 !important; padding: 0 !important; }
-            .card { width: 1080px !important; height: 1350px !important; overflow: visible !important; box-sizing: border-box !important; padding: var(--card-padding) !important; }
+            body { width: 1080px !important; margin: 0 !important; padding: 0 !important; }
+            .card { width: 1080px !important; height: auto !important; min-height: 1350px !important; overflow: visible !important; box-sizing: border-box !important; padding: var(--card-padding) !important; }
             .content { overflow: visible !important; gap: var(--content-gap) !important; }
             .header { margin-bottom: var(--header-margin-bottom) !important; }
             .quote-box, .note, .quote, .quote-hero { 
@@ -248,17 +248,22 @@ object HtmlExporter {
     }
 
     private suspend fun renderHtmlToBitmap(context: Context, html: String): Bitmap =
-        withTimeout(10000L) {
+        withTimeout(15000L) {
             suspendCancellableCoroutine { continuation ->
                 val width = 1080
                 val height = 1350
 
+                if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.LOLLIPOP) {
+                    WebView.enableSlowWholeDocumentDraw()
+                }
+
                 val webView = WebView(context).apply {
                     layoutParams = android.widget.FrameLayout.LayoutParams(width, height)
                     settings.apply {
+                        javaScriptEnabled = true
                         loadWithOverviewMode = false
                         useWideViewPort = false
-                        cacheMode = WebSettings.LOAD_CACHE_ELSE_NETWORK
+                        cacheMode = WebSettings.LOAD_NO_CACHE
                         defaultTextEncodingName = "UTF-8"
                         builtInZoomControls = false
                         displayZoomControls = false
@@ -273,35 +278,51 @@ object HtmlExporter {
                 webView.webViewClient = object : WebViewClient() {
                     override fun onPageFinished(view: WebView?, url: String?) {
                         super.onPageFinished(view, url)
-                        view?.post {
+                        view?.postDelayed({
                             try {
-                                view.measure(
-                                    android.view.View.MeasureSpec.makeMeasureSpec(width, android.view.View.MeasureSpec.EXACTLY),
-                                    android.view.View.MeasureSpec.makeMeasureSpec(height, android.view.View.MeasureSpec.EXACTLY)
-                                )
-                                view.layout(0, 0, width, height)
-                                view.forceLayout()
-                                try {
-                                    val bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
-                                    val canvas = Canvas(bitmap)
-                                    canvas.drawColor(Color.WHITE)
-                                    view.draw(canvas)
-                                    if (continuation.isActive) {
-                                        continuation.resume(bitmap)
+                                val widthSpec = android.view.View.MeasureSpec.makeMeasureSpec(width, android.view.View.MeasureSpec.EXACTLY)
+                                val heightSpec = android.view.View.MeasureSpec.makeMeasureSpec(0, android.view.View.MeasureSpec.UNSPECIFIED)
+                                view.measure(widthSpec, heightSpec)
+                                view.layout(0, 0, view.measuredWidth, view.measuredHeight)
+
+                                view.evaluateJavascript(
+                                    "(function(){var c=document.querySelector('.card');return c?c.scrollHeight:1350;})();"
+                                ) { heightStr ->
+                                    try {
+                                        val contentHeight = heightStr?.replace("\"", "")?.toIntOrNull() ?: 1350
+                                        val actualHeight = maxOf(contentHeight, view.measuredHeight, height)
+
+                                        val bitmap = Bitmap.createBitmap(width, actualHeight, Bitmap.Config.ARGB_8888)
+                                        val canvas = Canvas(bitmap)
+                                        canvas.drawColor(Color.WHITE)
+                                        view.draw(canvas)
+
+                                        val scaledBitmap = if (actualHeight > height) {
+                                            val scale = height.toFloat() / actualHeight
+                                            Bitmap.createScaledBitmap(bitmap, width, height, true).also {
+                                                bitmap.recycle()
+                                            }
+                                        } else {
+                                            bitmap
+                                        }
+
+                                        if (continuation.isActive) {
+                                            continuation.resume(scaledBitmap)
+                                        }
+                                    } catch (e: Exception) {
+                                        if (continuation.isActive) {
+                                            continuation.resumeWithException(e)
+                                        }
+                                    } finally {
+                                        try { webView.destroy() } catch (_: Exception) {}
                                     }
-                                } catch (e: Exception) {
-                                    if (continuation.isActive) {
-                                        continuation.resumeWithException(e)
-                                    }
-                                } finally {
-                                    try { webView.destroy() } catch (_: Exception) {}
                                 }
                             } catch (e: Exception) {
                                 if (continuation.isActive) {
                                     continuation.resumeWithException(e)
                                 }
                             }
-                        }
+                        }, 500)
                     }
                 }
 
