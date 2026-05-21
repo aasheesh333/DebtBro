@@ -173,14 +173,14 @@ object HtmlExporter {
         <style>
             * { box-sizing: border-box !important; }
             body { width: 1080px !important; height: 1350px !important; overflow: hidden !important; margin: 0 !important; padding: 0 !important; }
-            .card { width: 1080px !important; height: 1350px !important; overflow: hidden !important; box-sizing: border-box !important; padding: var(--card-padding) !important; }
+            .card { width: 1080px !important; height: 1350px !important; overflow: visible !important; box-sizing: border-box !important; padding: var(--card-padding) !important; }
             .content { overflow: visible !important; gap: var(--content-gap) !important; }
             .header { margin-bottom: var(--header-margin-bottom) !important; }
             .quote-box, .note, .quote, .quote-hero { 
                 width: 90% !important; 
                 max-width: 900px !important; 
                 min-height: 80px !important; 
-                max-height: var(--quote-max-height) !important; 
+                max-height: none !important; 
                 overflow: visible !important; 
                 padding: var(--quote-padding) !important;
             }
@@ -219,7 +219,10 @@ object HtmlExporter {
             .amount { font-size: clamp(calc(3rem * var(--scale-factor)), 10vw, calc(8rem * var(--scale-factor))) !important; }
             .detail-item { font-size: calc(1.4rem * var(--scale-factor)) !important; }
             .detail-icon { font-size: calc(1.8rem * var(--scale-factor)) !important; }
-            .quote-hero::after, .quote-hero::before, .quote-hero::after-content,
+            /* Kill ALL fade/gradient overlays and pseudo-elements */
+            .quote-hero::after, .quote-hero::before,
+            .quote-hero::after-content, .quote-hero::after-gradient,
+            .quote-hero::after-content::after, .quote-hero::after-gradient::after,
             .detail-item::after, .detail-item::before,
             .card::after, .card::before,
             .content::after, .content::before {
@@ -232,7 +235,7 @@ object HtmlExporter {
         </style>
         """.trimIndent()
 
-        return htmlContent.replace("</style>", "</style>$cssVariables$enforceStyles")
+        return htmlContent.replace("</body>", "$cssVariables$enforceStyles</body>")
     }
 
     private fun escapeHtml(text: String): String {
