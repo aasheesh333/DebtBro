@@ -37,35 +37,34 @@ object CanvasExporter {
         basePaint: TextPaint,
         x: Float,
         y: Float,
-        maxWidth: Int
+        maxWidth: Int,
+        maxHeight: Int = Int.MAX_VALUE
     ): Int {
-        val displayText = text
-
-        val scaledSize = when {
-            displayText.length <= 50 -> basePaint.textSize * 2.0f
-            displayText.length <= 100 -> basePaint.textSize * 1.6f
-            displayText.length <= 150 -> basePaint.textSize * 1.3f
-            displayText.length <= 250 -> basePaint.textSize * 1.0f
-            else -> basePaint.textSize * 0.85f
+        var currentTextSize = basePaint.textSize
+        var layout: StaticLayout
+        var iterations = 0
+        
+        // Scale down font until it fits in maxHeight
+        while (iterations < 10) {
+            val paint = TextPaint(basePaint).apply { textSize = currentTextSize }
+            layout = StaticLayout.Builder.obtain(
+                text, 0, text.length, paint, maxWidth
+            )
+                .setAlignment(Layout.Alignment.ALIGN_NORMAL)
+                .setLineSpacing(0f, 1.25f)
+                .setIncludePad(false)
+                .build()
+            
+            if (layout.height <= maxHeight || currentTextSize <= 20f) break
+            currentTextSize *= 0.9f
+            iterations++
         }
-
-        val paint = TextPaint(basePaint).apply {
-            textSize = scaledSize
-        }
-
-        val layout = StaticLayout.Builder.obtain(
-            displayText, 0, displayText.length, paint, maxWidth
-        )
-            .setAlignment(Layout.Alignment.ALIGN_NORMAL)
-            .setLineSpacing(0f, 1.25f)
-            .setIncludePad(false)
-            .build()
-
+        
         canvas.save()
         canvas.translate(x, y)
         layout.draw(canvas)
         canvas.restore()
-
+        
         return layout.height
     }
 
@@ -151,6 +150,8 @@ object CanvasExporter {
         }
 
         val boxTop = (yOffset + 40).coerceAtLeast(720).toFloat()
+        val boxMaxBottom = (H - 100).toFloat()
+        val quoteMaxHeight = (boxMaxBottom - boxTop - 100).toInt()
         val quoteText = message
         val textPaint = TextPaint(Paint.ANTI_ALIAS_FLAG).apply {
             color = Color.WHITE
@@ -158,9 +159,9 @@ object CanvasExporter {
             isFakeBoldText = true
             letterSpacing = 0.02f
         }
-        val quoteHeight = drawWrappedText(canvas, quoteText, textPaint, 120f, boxTop + 60, W - 240)
-        val boxBottom = boxTop + 60 + quoteHeight + 40
-        val box = RectF(80f, boxTop, (W - 80).toFloat(), boxBottom.coerceAtMost((H - 100).toFloat()))
+        val quoteHeight = drawWrappedText(canvas, quoteText, textPaint, 120f, boxTop + 60, W - 240, quoteMaxHeight)
+        val boxBottom = (boxTop + 60 + quoteHeight + 40).coerceAtMost(boxMaxBottom)
+        val box = RectF(80f, boxTop, (W - 80).toFloat(), boxBottom)
         canvas.drawRoundRect(box, 20f, 20f, Paint().apply { color = Color.argb(100, 0, 0, 0) })
 
         paint.textAlign = Paint.Align.CENTER
@@ -223,15 +224,17 @@ object CanvasExporter {
         }
 
         val quoteBoxTop = (yOffset + 30).coerceAtLeast(650).toFloat()
+        val quoteBoxMaxBottom = 1000f
+        val quoteMaxHeight = (quoteBoxMaxBottom - quoteBoxTop - 100).toInt()
         val quoteText = message
         val textPaint = TextPaint(Paint.ANTI_ALIAS_FLAG).apply {
             color = Color.WHITE
             textSize = 34f
             isFakeBoldText = true
         }
-        val quoteHeight = drawWrappedText(canvas, quoteText, textPaint, 120f, quoteBoxTop + 60, W - 240)
-        val quoteBoxBottom = quoteBoxTop + 60 + quoteHeight + 40
-        val quoteBox = RectF(80f, quoteBoxTop, (W - 80).toFloat(), quoteBoxBottom.coerceAtMost(1000f))
+        val quoteHeight = drawWrappedText(canvas, quoteText, textPaint, 120f, quoteBoxTop + 60, W - 240, quoteMaxHeight)
+        val quoteBoxBottom = (quoteBoxTop + 60 + quoteHeight + 40).coerceAtMost(quoteBoxMaxBottom)
+        val quoteBox = RectF(80f, quoteBoxTop, (W - 80).toFloat(), quoteBoxBottom)
         canvas.drawRoundRect(quoteBox, 20f, 20f, Paint().apply { color = Color.argb(60, 100, 200, 255) })
 
         paint.textAlign = Paint.Align.CENTER
@@ -299,7 +302,8 @@ object CanvasExporter {
             textSize = 32f
             isFakeBoldText = true
         }
-        drawWrappedText(canvas, quoteText, textPaint, 100f, lineY + 70, W - 200)
+        val quoteMaxHeight = ((H - 80) - (lineY + 70)).toInt()
+        drawWrappedText(canvas, quoteText, textPaint, 100f, lineY + 70, W - 200, quoteMaxHeight)
 
         paint.textAlign = Paint.Align.CENTER
         paint.textSize = 24f
@@ -368,15 +372,17 @@ object CanvasExporter {
         }
 
         val boxTop = (yOffset + 30).coerceAtLeast(620).toFloat()
+        val boxMaxBottom = 1000f
+        val quoteMaxHeight = (boxMaxBottom - boxTop - 100).toInt()
         val quoteText = message
         val textPaint = TextPaint(Paint.ANTI_ALIAS_FLAG).apply {
             color = Color.WHITE
             textSize = 34f
             isFakeBoldText = true
         }
-        val quoteHeight = drawWrappedText(canvas, quoteText, textPaint, 100f, boxTop + 60, W - 200)
-        val boxBottom = boxTop + 60 + quoteHeight + 40
-        val box = RectF(60f, boxTop, (W - 60).toFloat(), boxBottom.coerceAtMost(1000f))
+        val quoteHeight = drawWrappedText(canvas, quoteText, textPaint, 100f, boxTop + 60, W - 200, quoteMaxHeight)
+        val boxBottom = (boxTop + 60 + quoteHeight + 40).coerceAtMost(boxMaxBottom)
+        val box = RectF(60f, boxTop, (W - 60).toFloat(), boxBottom)
         canvas.drawRect(box, Paint().apply { color = Color.argb(40, 0, 255, 255) })
         canvas.drawRect(box, Paint().apply { color = cyan; style = Paint.Style.STROKE; strokeWidth = 2f })
 
