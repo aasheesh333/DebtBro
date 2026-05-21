@@ -151,7 +151,7 @@ object CanvasExporter {
         }
 
         val boxTop = (yOffset + 40).coerceAtLeast(720).toFloat()
-        val quoteText = "\u201C$message\u201D"
+        val quoteText = message
         val textPaint = TextPaint(Paint.ANTI_ALIAS_FLAG).apply {
             color = Color.WHITE
             textSize = 36f
@@ -162,16 +162,6 @@ object CanvasExporter {
         val boxBottom = boxTop + 60 + quoteHeight + 40
         val box = RectF(80f, boxTop, (W - 80).toFloat(), boxBottom.coerceAtMost((H - 100).toFloat()))
         canvas.drawRoundRect(box, 20f, 20f, Paint().apply { color = Color.argb(100, 0, 0, 0) })
-        canvas.save()
-        canvas.clipRect(box)
-        canvas.translate(120f, boxTop + 60)
-        StaticLayout.Builder.obtain(quoteText, 0, quoteText.length, textPaint, W - 240)
-            .setAlignment(Layout.Alignment.ALIGN_NORMAL)
-            .setLineSpacing(0f, 1.25f)
-            .setIncludePad(false)
-            .build()
-            .draw(canvas)
-        canvas.restore()
 
         paint.textAlign = Paint.Align.CENTER
         paint.textSize = 24f
@@ -233,7 +223,7 @@ object CanvasExporter {
         }
 
         val quoteBoxTop = (yOffset + 30).coerceAtLeast(650).toFloat()
-        val quoteText = "\u201C$message\u201D"
+        val quoteText = message
         val textPaint = TextPaint(Paint.ANTI_ALIAS_FLAG).apply {
             color = Color.WHITE
             textSize = 34f
@@ -243,16 +233,6 @@ object CanvasExporter {
         val quoteBoxBottom = quoteBoxTop + 60 + quoteHeight + 40
         val quoteBox = RectF(80f, quoteBoxTop, (W - 80).toFloat(), quoteBoxBottom.coerceAtMost(1000f))
         canvas.drawRoundRect(quoteBox, 20f, 20f, Paint().apply { color = Color.argb(60, 100, 200, 255) })
-        canvas.save()
-        canvas.clipRect(quoteBox)
-        canvas.translate(120f, quoteBoxTop + 60)
-        StaticLayout.Builder.obtain(quoteText, 0, quoteText.length, textPaint, W - 240)
-            .setAlignment(Layout.Alignment.ALIGN_NORMAL)
-            .setLineSpacing(0f, 1.25f)
-            .setIncludePad(false)
-            .build()
-            .draw(canvas)
-        canvas.restore()
 
         paint.textAlign = Paint.Align.CENTER
         paint.textSize = 22f
@@ -313,13 +293,13 @@ object CanvasExporter {
         paint.color = Color.rgb(220, 210, 200)
         canvas.drawLine(100f, lineY, (W - 100).toFloat(), lineY, paint)
 
-        val quoteText = "\u201C$message\u201D"
+        val quoteText = message
         val textPaint = TextPaint(Paint.ANTI_ALIAS_FLAG).apply {
             color = Color.rgb(60, 60, 60)
             textSize = 32f
             isFakeBoldText = true
         }
-        val quoteHeight = drawWrappedText(canvas, quoteText, textPaint, 100f, lineY + 70, W - 200)
+        drawWrappedText(canvas, quoteText, textPaint, 100f, lineY + 70, W - 200)
 
         paint.textAlign = Paint.Align.CENTER
         paint.textSize = 24f
@@ -388,7 +368,7 @@ object CanvasExporter {
         }
 
         val boxTop = (yOffset + 30).coerceAtLeast(620).toFloat()
-        val quoteText = "\u201C$message\u201D"
+        val quoteText = message
         val textPaint = TextPaint(Paint.ANTI_ALIAS_FLAG).apply {
             color = Color.WHITE
             textSize = 34f
@@ -399,16 +379,6 @@ object CanvasExporter {
         val box = RectF(60f, boxTop, (W - 60).toFloat(), boxBottom.coerceAtMost(1000f))
         canvas.drawRect(box, Paint().apply { color = Color.argb(40, 0, 255, 255) })
         canvas.drawRect(box, Paint().apply { color = cyan; style = Paint.Style.STROKE; strokeWidth = 2f })
-        canvas.save()
-        canvas.clipRect(box)
-        canvas.translate(100f, boxTop + 60)
-        StaticLayout.Builder.obtain(quoteText, 0, quoteText.length, textPaint, W - 200)
-            .setAlignment(Layout.Alignment.ALIGN_NORMAL)
-            .setLineSpacing(0f, 1.25f)
-            .setIncludePad(false)
-            .build()
-            .draw(canvas)
-        canvas.restore()
 
         paint.textAlign = Paint.Align.CENTER
         paint.textSize = 20f
