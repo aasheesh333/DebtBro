@@ -70,7 +70,15 @@ object CanvasExporter {
         canvas.restoreToCount(saveCount)
     }
 
-    fun createDebtCard(context: Context, debt: DebtEntity, aiMessage: String, roastLevel: String = "MEDIUM"): Bitmap {
+    fun createDebtCard(
+        context: Context,
+        debt: DebtEntity,
+        aiMessage: String,
+        roastLevel: String = "MEDIUM",
+        showDescription: Boolean = true,
+        showDueDate: Boolean = true,
+        showEmoji: Boolean = true
+    ): Bitmap {
         val style = nextStyle()
         val bitmap = Bitmap.createBitmap(W, H, Bitmap.Config.ARGB_8888)
         val canvas = Canvas(bitmap)
@@ -82,16 +90,16 @@ object CanvasExporter {
         val message = aiMessage.ifBlank { debt.description.ifBlank { "DebtBro keeps score so you do not have to." } }
 
         when (style) {
-            0 -> drawWallOfShame(canvas, paint, debt, amountStr, dueDate, message)
-            1 -> drawInstaVibe(canvas, paint, debt, amountStr, dueDate, message)
-            2 -> drawElegantMinimal(canvas, paint, debt, amountStr, dueDate, message)
-            3 -> drawCyberpunk(canvas, paint, debt, amountStr, dueDate, message)
+            0 -> drawWallOfShame(canvas, paint, debt, amountStr, dueDate, message, showDescription, showDueDate, showEmoji)
+            1 -> drawInstaVibe(canvas, paint, debt, amountStr, dueDate, message, showDescription, showDueDate, showEmoji)
+            2 -> drawElegantMinimal(canvas, paint, debt, amountStr, dueDate, message, showDescription, showDueDate, showEmoji)
+            3 -> drawCyberpunk(canvas, paint, debt, amountStr, dueDate, message, showDescription, showDueDate, showEmoji)
         }
 
         return bitmap
     }
 
-    private fun drawWallOfShame(canvas: Canvas, paint: Paint, debt: DebtEntity, amount: String, dueDate: String, message: String) {
+    private fun drawWallOfShame(canvas: Canvas, paint: Paint, debt: DebtEntity, amount: String, dueDate: String, message: String, showDescription: Boolean, showDueDate: Boolean, showEmoji: Boolean) {
         val bg = LinearGradient(0f, 0f, W.toFloat(), H.toFloat(), Color.rgb(255, 200, 50), Color.rgb(200, 150, 30), Shader.TileMode.CLAMP)
         canvas.drawRect(0f, 0f, W.toFloat(), H.toFloat(), Paint().apply { shader = bg })
 
@@ -108,8 +116,10 @@ object CanvasExporter {
         paint.textSize = 36f
         canvas.drawText("FOR DEBT", (W / 2).toFloat(), 190f, paint)
 
-        paint.textSize = 100f
-        canvas.drawText(debt.personEmoji, (W / 2).toFloat(), 320f, paint)
+        if (showEmoji && debt.personEmoji.isNotBlank()) {
+            paint.textSize = 100f
+            canvas.drawText(debt.personEmoji, (W / 2).toFloat(), 320f, paint)
+        }
 
         paint.textSize = 52f
         paint.isFakeBoldText = true
@@ -119,29 +129,39 @@ object CanvasExporter {
         paint.color = Color.rgb(180, 0, 0)
         canvas.drawText(amount, (W / 2).toFloat(), 520f, paint)
 
-        paint.textSize = 32f
-        paint.color = Color.BLACK
-        canvas.drawText("Due: $dueDate", (W / 2).toFloat(), 600f, paint)
-
-        paint.textSize = 28f
-        paint.textAlign = Paint.Align.LEFT
-        val descTextPaint = TextPaint(Paint.ANTI_ALIAS_FLAG).apply {
-            color = Color.BLACK
-            textSize = 28f
-            isFakeBoldText = true
+        var yOffset = 600
+        if (showDueDate) {
+            paint.textSize = 32f
+            paint.color = Color.BLACK
+            canvas.drawText("Due: $dueDate", (W / 2).toFloat(), yOffset.toFloat(), paint)
+            yOffset += 40
         }
-        val descText = "For: ${debt.description}"
-        drawWrappedText(canvas, descText, descTextPaint, 80f, 630f, W - 160, 100)
-        paint.textAlign = Paint.Align.CENTER
 
-        val box = RectF(80f, 720f, (W - 80).toFloat(), 1050f)
+        if (showDescription && debt.description.isNotBlank()) {
+            paint.textSize = 28f
+            paint.textAlign = Paint.Align.LEFT
+            val descTextPaint = TextPaint(Paint.ANTI_ALIAS_FLAG).apply {
+                color = Color.BLACK
+                textSize = 28f
+                isFakeBoldText = true
+            }
+            val descText = "For: ${debt.description}"
+            drawWrappedText(canvas, descText, descTextPaint, 80f, yOffset.toFloat(), W - 160, 100)
+            yOffset += 110
+            paint.textAlign = Paint.Align.CENTER
+        }
+
+        val boxTop = (yOffset + 40).coerceAtLeast(720).toFloat()
+        val box = RectF(80f, boxTop, (W - 80).toFloat(), (boxTop + 330).coerceAtMost(1050f))
         canvas.drawRoundRect(box, 20f, 20f, Paint().apply { color = Color.argb(100, 0, 0, 0) })
 
         val textPaint = TextPaint(Paint.ANTI_ALIAS_FLAG).apply {
             color = Color.WHITE
-            textSize = 30f
+            textSize = 36f
+            isFakeBoldText = true
+            letterSpacing = 0.02f
         }
-        drawWrappedText(canvas, message, textPaint, 120f, 790f, W - 240, 290)
+        drawWrappedText(canvas, "\u201C$message\u201D", textPaint, 120f, boxTop + 60, W - 240, 260)
 
         paint.textAlign = Paint.Align.CENTER
         paint.textSize = 24f
@@ -149,7 +169,7 @@ object CanvasExporter {
         canvas.drawText("DebtBro", (W / 2).toFloat(), (H - 80).toFloat(), paint)
     }
 
-    private fun drawInstaVibe(canvas: Canvas, paint: Paint, debt: DebtEntity, amount: String, dueDate: String, message: String) {
+    private fun drawInstaVibe(canvas: Canvas, paint: Paint, debt: DebtEntity, amount: String, dueDate: String, message: String, showDescription: Boolean, showDueDate: Boolean, showEmoji: Boolean) {
         val bg = LinearGradient(0f, 0f, W.toFloat(), H.toFloat(), Color.rgb(20, 30, 60), Color.rgb(40, 60, 100), Shader.TileMode.CLAMP)
         canvas.drawRect(0f, 0f, W.toFloat(), H.toFloat(), Paint().apply { shader = bg })
 
@@ -162,9 +182,11 @@ object CanvasExporter {
         paint.isFakeBoldText = true
         canvas.drawText("DEBT ALERT", (W / 2).toFloat(), 170f, paint)
 
-        paint.textSize = 100f
-        paint.color = Color.WHITE
-        canvas.drawText(debt.personEmoji, (W / 2).toFloat(), 300f, paint)
+        if (showEmoji && debt.personEmoji.isNotBlank()) {
+            paint.textSize = 100f
+            paint.color = Color.WHITE
+            canvas.drawText(debt.personEmoji, (W / 2).toFloat(), 300f, paint)
+        }
 
         paint.textSize = 52f
         paint.isFakeBoldText = true
@@ -179,28 +201,37 @@ object CanvasExporter {
         paint.isFakeBoldText = true
         canvas.drawText(amount, (W / 2).toFloat(), 530f, paint)
 
-        paint.textSize = 30f
-        paint.color = Color.WHITE
-        paint.isFakeBoldText = false
-        canvas.drawText("Due: $dueDate", (W / 2).toFloat(), 600f, paint)
-
-        paint.textAlign = Paint.Align.LEFT
-        val descTextPaint2 = TextPaint(Paint.ANTI_ALIAS_FLAG).apply {
-            color = Color.WHITE
-            textSize = 28f
-            isFakeBoldText = true
+        var yOffset = 580
+        if (showDueDate) {
+            paint.textSize = 30f
+            paint.color = Color.WHITE
+            paint.isFakeBoldText = false
+            canvas.drawText("Due: $dueDate", (W / 2).toFloat(), yOffset.toFloat(), paint)
+            yOffset += 50
         }
-        drawWrappedText(canvas, "For: ${debt.description}", descTextPaint2, 80f, 630f, W - 160, 90)
-        paint.textAlign = Paint.Align.CENTER
 
-        val quoteBox = RectF(80f, 710f, (W - 80).toFloat(), 1000f)
+        if (showDescription && debt.description.isNotBlank()) {
+            paint.textAlign = Paint.Align.LEFT
+            val descTextPaint2 = TextPaint(Paint.ANTI_ALIAS_FLAG).apply {
+                color = Color.WHITE
+                textSize = 28f
+                isFakeBoldText = true
+            }
+            drawWrappedText(canvas, "For: ${debt.description}", descTextPaint2, 80f, yOffset.toFloat(), W - 160, 90)
+            yOffset += 110
+            paint.textAlign = Paint.Align.CENTER
+        }
+
+        val quoteBoxTop = (yOffset + 30).coerceAtLeast(650).toFloat()
+        val quoteBox = RectF(80f, quoteBoxTop, (W - 80).toFloat(), (quoteBoxTop + 290).coerceAtMost(1000f))
         canvas.drawRoundRect(quoteBox, 20f, 20f, Paint().apply { color = Color.argb(60, 100, 200, 255) })
 
         val textPaint = TextPaint(Paint.ANTI_ALIAS_FLAG).apply {
             color = Color.WHITE
-            textSize = 30f
+            textSize = 34f
+            isFakeBoldText = true
         }
-        drawWrappedText(canvas, message, textPaint, 120f, 790f, W - 240, 240)
+        drawWrappedText(canvas, "\u201C$message\u201D", textPaint, 120f, quoteBoxTop + 60, W - 240, 220)
 
         paint.textAlign = Paint.Align.CENTER
         paint.textSize = 22f
@@ -208,7 +239,7 @@ object CanvasExporter {
         canvas.drawText("DebtBro", (W / 2).toFloat(), (H - 60).toFloat(), paint)
     }
 
-    private fun drawElegantMinimal(canvas: Canvas, paint: Paint, debt: DebtEntity, amount: String, dueDate: String, message: String) {
+    private fun drawElegantMinimal(canvas: Canvas, paint: Paint, debt: DebtEntity, amount: String, dueDate: String, message: String, showDescription: Boolean, showDueDate: Boolean, showEmoji: Boolean) {
         canvas.drawRect(0f, 0f, W.toFloat(), H.toFloat(), Paint().apply { color = Color.WHITE })
 
         paint.color = Color.rgb(200, 180, 150)
@@ -223,9 +254,11 @@ object CanvasExporter {
         paint.color = Color.rgb(200, 180, 150)
         canvas.drawLine(200f, 120f, (W - 200).toFloat(), 120f, paint)
 
-        paint.textSize = 100f
-        paint.color = Color.rgb(60, 60, 60)
-        canvas.drawText(debt.personEmoji, (W / 2).toFloat(), 240f, paint)
+        if (showEmoji && debt.personEmoji.isNotBlank()) {
+            paint.textSize = 100f
+            paint.color = Color.rgb(60, 60, 60)
+            canvas.drawText(debt.personEmoji, (W / 2).toFloat(), 240f, paint)
+        }
 
         paint.textSize = 48f
         paint.isFakeBoldText = true
@@ -235,27 +268,36 @@ object CanvasExporter {
         paint.color = Color.rgb(180, 150, 100)
         canvas.drawText(amount, (W / 2).toFloat(), 420f, paint)
 
-        paint.textSize = 28f
-        paint.color = Color.rgb(120, 120, 120)
-        canvas.drawText("Due: $dueDate", (W / 2).toFloat(), 490f, paint)
-
-        paint.textAlign = Paint.Align.LEFT
-        val descTextPaint3 = TextPaint(Paint.ANTI_ALIAS_FLAG).apply {
-            color = Color.rgb(120, 120, 120)
-            textSize = 28f
-            isFakeBoldText = true
+        var yOffset = 470
+        if (showDueDate) {
+            paint.textSize = 28f
+            paint.color = Color.rgb(120, 120, 120)
+            canvas.drawText("Due: $dueDate", (W / 2).toFloat(), yOffset.toFloat(), paint)
+            yOffset += 40
         }
-        drawWrappedText(canvas, "For: ${debt.description}", descTextPaint3, 100f, 520f, W - 200, 70)
-        paint.textAlign = Paint.Align.CENTER
 
+        if (showDescription && debt.description.isNotBlank()) {
+            paint.textAlign = Paint.Align.LEFT
+            val descTextPaint3 = TextPaint(Paint.ANTI_ALIAS_FLAG).apply {
+                color = Color.rgb(120, 120, 120)
+                textSize = 28f
+                isFakeBoldText = true
+            }
+            drawWrappedText(canvas, "For: ${debt.description}", descTextPaint3, 100f, yOffset.toFloat(), W - 200, 70)
+            yOffset += 90
+            paint.textAlign = Paint.Align.CENTER
+        }
+
+        val lineY = (yOffset + 10).coerceAtLeast(560).toFloat()
         paint.color = Color.rgb(220, 210, 200)
-        canvas.drawLine(100f, 580f, (W - 100).toFloat(), 580f, paint)
+        canvas.drawLine(100f, lineY, (W - 100).toFloat(), lineY, paint)
 
         val textPaint = TextPaint(Paint.ANTI_ALIAS_FLAG).apply {
-            color = Color.rgb(80, 80, 80)
-            textSize = 30f
+            color = Color.rgb(60, 60, 60)
+            textSize = 32f
+            isFakeBoldText = true
         }
-        drawWrappedText(canvas, message, textPaint, 100f, 650f, W - 200, 300)
+        drawWrappedText(canvas, "\u201C$message\u201D", textPaint, 100f, lineY + 70, W - 200, 280)
 
         paint.textAlign = Paint.Align.CENTER
         paint.textSize = 24f
@@ -267,7 +309,7 @@ object CanvasExporter {
         canvas.drawRect(0f, (H - 8).toFloat(), W.toFloat(), H.toFloat(), paint)
     }
 
-    private fun drawCyberpunk(canvas: Canvas, paint: Paint, debt: DebtEntity, amount: String, dueDate: String, message: String) {
+    private fun drawCyberpunk(canvas: Canvas, paint: Paint, debt: DebtEntity, amount: String, dueDate: String, message: String, showDescription: Boolean, showDueDate: Boolean, showEmoji: Boolean) {
         canvas.drawRect(0f, 0f, W.toFloat(), H.toFloat(), Paint().apply { color = Color.BLACK })
 
         val cyan = Color.rgb(0, 255, 255)
@@ -284,9 +326,11 @@ object CanvasExporter {
         paint.color = Color.rgb(0, 200, 200)
         canvas.drawText("SYSTEM ALERT // PRIORITY: HIGH", (W / 2).toFloat(), 140f, paint)
 
-        paint.textSize = 100f
-        paint.color = Color.WHITE
-        canvas.drawText(debt.personEmoji, (W / 2).toFloat(), 270f, paint)
+        if (showEmoji && debt.personEmoji.isNotBlank()) {
+            paint.textSize = 100f
+            paint.color = Color.WHITE
+            canvas.drawText(debt.personEmoji, (W / 2).toFloat(), 270f, paint)
+        }
 
         paint.textSize = 48f
         paint.isFakeBoldText = true
@@ -301,28 +345,37 @@ object CanvasExporter {
         paint.isFakeBoldText = true
         canvas.drawText(amount, (W / 2).toFloat(), 500f, paint)
 
-        paint.textSize = 28f
-        paint.color = Color.WHITE
-        canvas.drawText("DUE: $dueDate", (W / 2).toFloat(), 560f, paint)
-
-        paint.textAlign = Paint.Align.LEFT
-        val descTextPaint4 = TextPaint(Paint.ANTI_ALIAS_FLAG).apply {
-            color = Color.WHITE
-            textSize = 28f
-            isFakeBoldText = true
+        var yOffset = 540
+        if (showDueDate) {
+            paint.textSize = 28f
+            paint.color = Color.WHITE
+            canvas.drawText("DUE: $dueDate", (W / 2).toFloat(), yOffset.toFloat(), paint)
+            yOffset += 40
         }
-        drawWrappedText(canvas, "REASON: ${debt.description}", descTextPaint4, 60f, 590f, W - 120, 80)
-        paint.textAlign = Paint.Align.CENTER
 
-        val box = RectF(60f, 660f, (W - 60).toFloat(), 1000f)
+        if (showDescription && debt.description.isNotBlank()) {
+            paint.textAlign = Paint.Align.LEFT
+            val descTextPaint4 = TextPaint(Paint.ANTI_ALIAS_FLAG).apply {
+                color = Color.WHITE
+                textSize = 28f
+                isFakeBoldText = true
+            }
+            drawWrappedText(canvas, "REASON: ${debt.description}", descTextPaint4, 60f, yOffset.toFloat(), W - 120, 80)
+            yOffset += 100
+            paint.textAlign = Paint.Align.CENTER
+        }
+
+        val boxTop = (yOffset + 30).coerceAtLeast(620).toFloat()
+        val box = RectF(60f, boxTop, (W - 60).toFloat(), (boxTop + 340).coerceAtMost(1000f))
         canvas.drawRect(box, Paint().apply { color = Color.argb(40, 0, 255, 255) })
         canvas.drawRect(box, Paint().apply { color = cyan; style = Paint.Style.STROKE; strokeWidth = 2f })
 
         val textPaint = TextPaint(Paint.ANTI_ALIAS_FLAG).apply {
             color = Color.WHITE
-            textSize = 28f
+            textSize = 34f
+            isFakeBoldText = true
         }
-        drawWrappedText(canvas, message, textPaint, 100f, 730f, W - 200, 300)
+        drawWrappedText(canvas, "\u201C$message\u201D", textPaint, 100f, boxTop + 60, W - 200, 280)
 
         paint.textAlign = Paint.Align.CENTER
         paint.textSize = 20f

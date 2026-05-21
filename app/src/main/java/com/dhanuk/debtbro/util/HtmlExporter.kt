@@ -48,13 +48,16 @@ object HtmlExporter {
         context: Context,
         debt: DebtEntity,
         lenderName: String,
-        aiMessage: String
+        aiMessage: String,
+        showDescription: Boolean = true,
+        showDueDate: Boolean = true,
+        showEmoji: Boolean = true
     ): Bitmap = withContext(Dispatchers.Main) {
         try {
             val templateIndex = getRandomTemplateIndex()
             val templateFile = templates[templateIndex]
             android.util.Log.d("HtmlExporter", "Using template: $templateFile (index: $templateIndex)")
-            val htmlContent = loadAndFillTemplate(context, templateFile, debt, lenderName, aiMessage)
+            val htmlContent = loadAndFillTemplate(context, templateFile, debt, lenderName, aiMessage, showDescription, showDueDate, showEmoji)
             renderHtmlToBitmap(context, htmlContent)
         } catch (e: Exception) {
             lastError = e.message
@@ -68,7 +71,10 @@ object HtmlExporter {
         templateName: String,
         debt: DebtEntity,
         lenderName: String,
-        aiMessage: String
+        aiMessage: String,
+        showDescription: Boolean = true,
+        showDueDate: Boolean = true,
+        showEmoji: Boolean = true
     ): String {
         val inputStream = context.assets.open("html_templates/$templateName")
         var htmlContent = inputStream.bufferedReader().use { it.readText() }
@@ -78,6 +84,7 @@ object HtmlExporter {
 
         val formattedAmount = "${debt.currency}${(debt.amount - debt.amountPaid).toLong()}"
         val hasDesc = debt.description.isNotBlank()
+        val hasEmoji = debt.personEmoji.isNotBlank()
         
         // Process AI message - remove truncation, preserve full message
         val processedMessage = aiMessage
@@ -92,11 +99,11 @@ object HtmlExporter {
         val descCharCount = processedDesc.length
         
         val quoteFontSize = when {
-            quoteCharCount <= 50 -> "2.2rem"
-            quoteCharCount <= 100 -> "1.8rem"
-            quoteCharCount <= 200 -> "1.4rem"
-            quoteCharCount <= 350 -> "1.1rem"
-            else -> "0.95rem"
+            quoteCharCount <= 50 -> "2.6rem"
+            quoteCharCount <= 100 -> "2.0rem"
+            quoteCharCount <= 200 -> "1.6rem"
+            quoteCharCount <= 350 -> "1.2rem"
+            else -> "1.0rem"
         }
 
         htmlContent = htmlContent
@@ -107,19 +114,12 @@ object HtmlExporter {
             .replace("{{description}}", escapeHtml(processedDesc))
             .replace("{{dueDate}}", dueDateStr)
             .replace("{{debtQuote}}", escapeHtml(processedMessage.ifBlank { "Please repay soon!" }))
-            .replace("{{descriptionDisplay}}", if (hasDesc) "flex" else "none")
+            .replace("{{descriptionDisplay}}", if (hasDesc && showDescription) "flex" else "none")
+            .replace("{{dueDateDisplay}}", if (showDueDate) "flex" else "none")
+            .replace("{{emojiDisplay}}", if (hasEmoji && showEmoji) "block" else "none")
+            .replace("{{personEmoji}}", escapeHtml(debt.personEmoji))
             .replace("{{dueDateText}}", if (hasDesc) "- Due" else "")
             .replace("{{quoteText}}", if (hasDesc) "." else "")
-
-        val cssVariables = """
-        <style>
-            :root {
-                --quote-char-count: $quoteCharCount;
-                --desc-char-count: $descCharCount;
-                --quote-font-size: $quoteFontSize;
-            }
-        </style>
-        """.trimIndent()
 
         val enforceStyles = """
         <style>
