@@ -97,44 +97,45 @@ object HtmlExporter {
         
         val quoteCharCount = processedMessage.length
         val descCharCount = processedDesc.length
+        val totalChars = quoteCharCount + descCharCount
         
         val quoteLines = (quoteCharCount / 45.0).coerceAtLeast(1.0)
         val descLines = if (hasDesc) (descCharCount / 40.0).coerceAtLeast(1.0) else 0.0
         
-        val estimatedHeight = 120 + 180 + 200 + 80 + (descLines * 28) + 100 + (quoteLines * 32) + 60 + 150
-        val scaleFactor = if (estimatedHeight > 1350) (1350.0 / estimatedHeight).coerceAtMost(0.85) else 1.0
+        val estimatedHeight = 200 + 350 + 150 + 250 + 100 + (descLines * 28) + 100 + (quoteLines * 32) + 80 + 200
+        val scaleFactor = if (estimatedHeight > 1350) (1350.0 / estimatedHeight).coerceAtMost(0.75) else 1.0
         
         val quoteFontSize = when {
-            quoteCharCount <= 50 -> "2.4rem"
-            quoteCharCount <= 100 -> "1.8rem"
-            quoteCharCount <= 200 -> "1.4rem"
-            quoteCharCount <= 350 -> "1.1rem"
-            else -> "0.95rem"
+            quoteCharCount <= 50 -> "2.2rem"
+            quoteCharCount <= 100 -> "1.7rem"
+            quoteCharCount <= 200 -> "1.3rem"
+            quoteCharCount <= 350 -> "1.0rem"
+            else -> "0.85rem"
         }
         
         val descFontSize = when {
-            descCharCount <= 40 -> "1.4rem"
-            descCharCount <= 80 -> "1.2rem"
-            descCharCount <= 150 -> "1.0rem"
-            descCharCount <= 250 -> "0.85rem"
-            else -> "0.75rem"
+            descCharCount <= 40 -> "1.3rem"
+            descCharCount <= 80 -> "1.1rem"
+            descCharCount <= 150 -> "0.95rem"
+            descCharCount <= 250 -> "0.8rem"
+            else -> "0.7rem"
         }
         
         val descLineClamp = when {
-            descCharCount <= 40 -> 2
-            descCharCount <= 80 -> 3
-            descCharCount <= 150 -> 5
-            descCharCount <= 250 -> 8
-            else -> 12
+            descCharCount <= 40 -> 3
+            descCharCount <= 80 -> 4
+            descCharCount <= 150 -> 6
+            descCharCount <= 250 -> 10
+            else -> 15
         }
         
-        val cardPadding = (60 * scaleFactor).toInt()
-        val contentGap = (30 * scaleFactor).toInt()
-        val headerMarginBottom = (40 * scaleFactor).toInt()
-        val quoteMaxHeight = (280 * scaleFactor).toInt()
-        val quotePadding = (40 * scaleFactor).toInt()
-        val amountBoxPadding = (50 * scaleFactor).toInt()
-        val detailsGap = (60 * scaleFactor).toInt()
+        val cardPadding = (50 * scaleFactor).toInt()
+        val contentGap = (25 * scaleFactor).toInt()
+        val headerMarginBottom = (35 * scaleFactor).toInt()
+        val quoteMaxHeight = (350 * scaleFactor).toInt()
+        val quotePadding = (30 * scaleFactor).toInt()
+        val amountBoxPadding = (40 * scaleFactor).toInt()
+        val detailsGap = (40 * scaleFactor).toInt()
 
         htmlContent = htmlContent
             .replace("{{lenderName}}", escapeHtml(lenderName))
@@ -180,7 +181,7 @@ object HtmlExporter {
                 max-width: 900px !important; 
                 min-height: 80px !important; 
                 max-height: var(--quote-max-height) !important; 
-                overflow: hidden !important; 
+                overflow: visible !important; 
                 padding: var(--quote-padding) !important;
             }
             .quote-text, .note-content { 
@@ -190,10 +191,13 @@ object HtmlExporter {
                 overflow-wrap: break-word !important; 
                 word-wrap: break-word !important; 
                 white-space: normal !important; 
-                overflow: hidden !important; 
+                overflow: visible !important; 
                 display: block !important;
                 font-size: var(--quote-font-size) !important;
                 line-height: 1.35 !important;
+                -webkit-line-clamp: unset !important;
+                -webkit-box-orient: unset !important;
+                text-overflow: unset !important;
             }
             .amount-box { padding: var(--amount-box-padding) !important; }
             .details { gap: var(--details-gap) !important; }
@@ -202,18 +206,29 @@ object HtmlExporter {
                 max-width: 400px !important; 
                 font-size: var(--desc-font-size) !important;
                 line-height: 1.3 !important;
-                display: -webkit-box !important; 
-                -webkit-line-clamp: $descLineClamp !important; 
-                -webkit-box-orient: vertical !important; 
-                overflow: hidden !important; 
+                display: block !important; 
+                -webkit-line-clamp: unset !important; 
+                -webkit-box-orient: unset !important; 
+                overflow: visible !important; 
                 word-break: break-word !important; 
                 overflow-wrap: break-word !important; 
+                text-overflow: unset !important;
             }
             .party { padding: calc(25px * var(--scale-factor)) !important; }
             .party-name { font-size: clamp(calc(1.5rem * var(--scale-factor)), 4vw, calc(2.5rem * var(--scale-factor))) !important; }
             .amount { font-size: clamp(calc(3rem * var(--scale-factor)), 10vw, calc(8rem * var(--scale-factor))) !important; }
             .detail-item { font-size: calc(1.4rem * var(--scale-factor)) !important; }
             .detail-icon { font-size: calc(1.8rem * var(--scale-factor)) !important; }
+            .quote-hero::after, .quote-hero::before, .quote-hero::after-content,
+            .detail-item::after, .detail-item::before,
+            .card::after, .card::before,
+            .content::after, .content::before {
+                display: none !important;
+                content: none !important;
+                background: none !important;
+                height: 0 !important;
+                width: 0 !important;
+            }
         </style>
         """.trimIndent()
 
