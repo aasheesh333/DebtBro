@@ -306,28 +306,6 @@ class DebtDetailViewModel @Inject constructor(
             shareTextToWhatsApp(context, textMessage)
         }
     }
-                append("— Sent via DebtBro")
-            }
-            else -> buildString {
-                append("🙏 *DebtBro - I Owe You*\n\n")
-                append("*From:* ${debt.personName}\n")
-                append("*Total:* ${debt.currency}${debt.amount.toLong()}\n")
-                append("*Paid:* ${debt.currency}${totalPaid.toLong()}\n")
-                append("*Remaining:* ${debt.currency}${remaining.toLong()}\n")
-                append("*Due Date:* $dueDate\n")
-                if (debt.description.isNotBlank()) append("*Reason:* ${debt.description}\n")
-                append("\n")
-                if (paymentList.isNotEmpty()) {
-                    append("*Payment History:*\n$historyLines\n\n")
-                }
-                append("— Sent via DebtBro")
-            }
-        }
-
-        withContext(Dispatchers.Main) {
-            shareTextToWhatsApp(context, textMessage)
-        }
-    }
 
     fun shareQuoteToWhatsApp(context: Context, quote: String) = viewModelScope.launch(Dispatchers.Main) {
         shareTextToWhatsApp(context, quote)
