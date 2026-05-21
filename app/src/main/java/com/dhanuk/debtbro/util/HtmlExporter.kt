@@ -83,8 +83,9 @@ object HtmlExporter {
         val dueDateStr = debt.dueDate?.let { dateFormat.format(Date(it)) } ?: "No due date"
 
         val formattedAmount = "${debt.currency}${(debt.amount - debt.amountPaid).toLong()}"
-        val hasDesc = debt.description.isNotBlank()
-        val hasEmoji = debt.personEmoji.isNotBlank()
+        val hasDesc = debt.description.isNotBlank() && showDescription
+        val hasDueDate = showDueDate
+        val hasEmoji = debt.personEmoji.isNotBlank() && showEmoji
         
         // Process AI message - remove truncation, preserve full message
         val processedMessage = aiMessage
@@ -94,17 +95,46 @@ object HtmlExporter {
         // Process description - remove truncation, preserve full description
         val processedDesc = debt.description
         
-        // Calculate CSS custom properties for dynamic font sizing
         val quoteCharCount = processedMessage.length
         val descCharCount = processedDesc.length
         
+        val quoteLines = (quoteCharCount / 45.0).coerceAtLeast(1.0)
+        val descLines = if (hasDesc) (descCharCount / 40.0).coerceAtLeast(1.0) else 0.0
+        
+        val estimatedHeight = 120 + 180 + 200 + 80 + (descLines * 28) + 100 + (quoteLines * 32) + 60 + 150
+        val scaleFactor = if (estimatedHeight > 1350) (1350.0 / estimatedHeight).coerceAtMost(0.85) else 1.0
+        
         val quoteFontSize = when {
-            quoteCharCount <= 50 -> "2.6rem"
-            quoteCharCount <= 100 -> "2.0rem"
-            quoteCharCount <= 200 -> "1.6rem"
-            quoteCharCount <= 350 -> "1.2rem"
-            else -> "1.0rem"
+            quoteCharCount <= 50 -> "2.4rem"
+            quoteCharCount <= 100 -> "1.8rem"
+            quoteCharCount <= 200 -> "1.4rem"
+            quoteCharCount <= 350 -> "1.1rem"
+            else -> "0.95rem"
         }
+        
+        val descFontSize = when {
+            descCharCount <= 40 -> "1.4rem"
+            descCharCount <= 80 -> "1.2rem"
+            descCharCount <= 150 -> "1.0rem"
+            descCharCount <= 250 -> "0.85rem"
+            else -> "0.75rem"
+        }
+        
+        val descLineClamp = when {
+            descCharCount <= 40 -> 2
+            descCharCount <= 80 -> 3
+            descCharCount <= 150 -> 5
+            descCharCount <= 250 -> 8
+            else -> 12
+        }
+        
+        val cardPadding = (60 * scaleFactor).toInt()
+        val contentGap = (30 * scaleFactor).toInt()
+        val headerMarginBottom = (40 * scaleFactor).toInt()
+        val quoteMaxHeight = (280 * scaleFactor).toInt()
+        val quotePadding = (40 * scaleFactor).toInt()
+        val amountBoxPadding = (50 * scaleFactor).toInt()
+        val detailsGap = (60 * scaleFactor).toInt()
 
         htmlContent = htmlContent
             .replace("{{lenderName}}", escapeHtml(lenderName))
@@ -114,9 +144,9 @@ object HtmlExporter {
             .replace("{{description}}", escapeHtml(processedDesc))
             .replace("{{dueDate}}", dueDateStr)
             .replace("{{debtQuote}}", escapeHtml(processedMessage.ifBlank { "Please repay soon!" }))
-            .replace("{{descriptionDisplay}}", if (hasDesc && showDescription) "flex" else "none")
-            .replace("{{dueDateDisplay}}", if (showDueDate) "flex" else "none")
-            .replace("{{emojiDisplay}}", if (hasEmoji && showEmoji) "block" else "none")
+            .replace("{{descriptionDisplay}}", if (hasDesc) "flex" else "none")
+            .replace("{{dueDateDisplay}}", if (hasDueDate) "flex" else "none")
+            .replace("{{emojiDisplay}}", if (hasEmoji) "block" else "none")
             .replace("{{personEmoji}}", escapeHtml(debt.personEmoji))
             .replace("{{dueDateText}}", if (hasDesc) "- Due" else "")
             .replace("{{quoteText}}", if (hasDesc) "." else "")
@@ -125,6 +155,15 @@ object HtmlExporter {
         <style>
             :root {
                 --quote-font-size: $quoteFontSize;
+                --desc-font-size: $descFontSize;
+                --card-padding: ${cardPadding}px;
+                --content-gap: ${contentGap}px;
+                --header-margin-bottom: ${headerMarginBottom}px;
+                --quote-max-height: ${quoteMaxHeight}px;
+                --quote-padding: ${quotePadding}px;
+                --amount-box-padding: ${amountBoxPadding}px;
+                --details-gap: ${detailsGap}px;
+                --scale-factor: $scaleFactor;
             }
         </style>
         """.trimIndent()
@@ -133,24 +172,48 @@ object HtmlExporter {
         <style>
             * { box-sizing: border-box !important; }
             body { width: 1080px !important; height: 1350px !important; overflow: hidden !important; margin: 0 !important; padding: 0 !important; }
-            .card { width: 1080px !important; height: 1350px !important; overflow: hidden !important; box-sizing: border-box !important; }
-            .content { overflow: visible !important; }
-            .quote-box, .note, .quote, .quote-hero { width: 90% !important; max-width: 900px !important; min-height: 100px !important; max-height: 300px !important; overflow: hidden !important; }
+            .card { width: 1080px !important; height: 1350px !important; overflow: hidden !important; box-sizing: border-box !important; padding: var(--card-padding) !important; }
+            .content { overflow: visible !important; gap: var(--content-gap) !important; }
+            .header { margin-bottom: var(--header-margin-bottom) !important; }
+            .quote-box, .note, .quote, .quote-hero { 
+                width: 90% !important; 
+                max-width: 900px !important; 
+                min-height: 80px !important; 
+                max-height: var(--quote-max-height) !important; 
+                overflow: hidden !important; 
+                padding: var(--quote-padding) !important;
+            }
             .quote-text, .note-content { 
                 width: 100% !important; 
                 max-width: 800px !important; 
-                max-height: 280px !important; 
                 word-break: break-word !important; 
                 overflow-wrap: break-word !important; 
                 word-wrap: break-word !important; 
                 white-space: normal !important; 
                 overflow: hidden !important; 
                 display: block !important;
-                font-size: var(--quote-font-size, 1.4rem) !important;
-                line-height: 1.4 !important;
+                font-size: var(--quote-font-size) !important;
+                line-height: 1.35 !important;
             }
+            .amount-box { padding: var(--amount-box-padding) !important; }
+            .details { gap: var(--details-gap) !important; }
             .detail-item { align-items: flex-start !important; overflow: visible !important; }
-            .detail-item .text-content { max-width: 400px !important; display: -webkit-box !important; -webkit-line-clamp: 10 !important; -webkit-box-orient: vertical !important; overflow: hidden !important; word-break: break-word !important; overflow-wrap: break-word !important; }
+            .detail-item .text-content { 
+                max-width: 400px !important; 
+                font-size: var(--desc-font-size) !important;
+                line-height: 1.3 !important;
+                display: -webkit-box !important; 
+                -webkit-line-clamp: $descLineClamp !important; 
+                -webkit-box-orient: vertical !important; 
+                overflow: hidden !important; 
+                word-break: break-word !important; 
+                overflow-wrap: break-word !important; 
+            }
+            .party { padding: calc(25px * var(--scale-factor)) !important; }
+            .party-name { font-size: clamp(calc(1.5rem * var(--scale-factor)), 4vw, calc(2.5rem * var(--scale-factor))) !important; }
+            .amount { font-size: clamp(calc(3rem * var(--scale-factor)), 10vw, calc(8rem * var(--scale-factor))) !important; }
+            .detail-item { font-size: calc(1.4rem * var(--scale-factor)) !important; }
+            .detail-icon { font-size: calc(1.8rem * var(--scale-factor)) !important; }
         </style>
         """.trimIndent()
 
