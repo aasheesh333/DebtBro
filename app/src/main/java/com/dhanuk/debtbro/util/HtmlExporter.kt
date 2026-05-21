@@ -121,6 +121,14 @@ object HtmlExporter {
             .replace("{{dueDateText}}", if (hasDesc) "- Due" else "")
             .replace("{{quoteText}}", if (hasDesc) "." else "")
 
+        val cssVariables = """
+        <style>
+            :root {
+                --quote-font-size: $quoteFontSize;
+            }
+        </style>
+        """.trimIndent()
+
         val enforceStyles = """
         <style>
             * { box-sizing: border-box !important; }
