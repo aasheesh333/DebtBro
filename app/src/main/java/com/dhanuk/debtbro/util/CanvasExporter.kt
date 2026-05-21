@@ -40,13 +40,14 @@ object CanvasExporter {
         maxWidth: Int,
         maxHeight: Int
     ) {
-        val truncated = if (text.length > 200) text.take(197) + "..." else text
+        val displayText = text
 
         // Auto-scale font: short text = bigger, long text = smaller
         val scaledSize = when {
-            truncated.length <= 50 -> basePaint.textSize * 1.5f
-            truncated.length <= 100 -> basePaint.textSize * 1.2f
-            truncated.length <= 150 -> basePaint.textSize
+            displayText.length <= 50 -> basePaint.textSize * 2.0f
+            displayText.length <= 100 -> basePaint.textSize * 1.6f
+            displayText.length <= 150 -> basePaint.textSize * 1.3f
+            displayText.length <= 250 -> basePaint.textSize * 1.0f
             else -> basePaint.textSize * 0.85f
         }
 
@@ -55,10 +56,10 @@ object CanvasExporter {
         }
 
         val layout = StaticLayout.Builder.obtain(
-            truncated, 0, truncated.length, paint, maxWidth
+            displayText, 0, displayText.length, paint, maxWidth
         )
             .setAlignment(Layout.Alignment.ALIGN_NORMAL)
-            .setLineSpacing(0f, 1.1f)
+            .setLineSpacing(0f, 1.25f)
             .setIncludePad(false)
             .build()
 
@@ -127,9 +128,10 @@ object CanvasExporter {
         val descTextPaint = TextPaint(Paint.ANTI_ALIAS_FLAG).apply {
             color = Color.BLACK
             textSize = 28f
+            isFakeBoldText = true
         }
         val descText = "For: ${debt.description}"
-        drawWrappedText(canvas, descText, descTextPaint, 80f, 630f, W - 160, 80)
+        drawWrappedText(canvas, descText, descTextPaint, 80f, 630f, W - 160, 100)
         paint.textAlign = Paint.Align.CENTER
 
         val box = RectF(80f, 720f, (W - 80).toFloat(), 1050f)
@@ -186,8 +188,9 @@ object CanvasExporter {
         val descTextPaint2 = TextPaint(Paint.ANTI_ALIAS_FLAG).apply {
             color = Color.WHITE
             textSize = 28f
+            isFakeBoldText = true
         }
-        drawWrappedText(canvas, "For: ${debt.description}", descTextPaint2, 80f, 630f, W - 160, 70)
+        drawWrappedText(canvas, "For: ${debt.description}", descTextPaint2, 80f, 630f, W - 160, 90)
         paint.textAlign = Paint.Align.CENTER
 
         val quoteBox = RectF(80f, 710f, (W - 80).toFloat(), 1000f)
@@ -240,8 +243,9 @@ object CanvasExporter {
         val descTextPaint3 = TextPaint(Paint.ANTI_ALIAS_FLAG).apply {
             color = Color.rgb(120, 120, 120)
             textSize = 28f
+            isFakeBoldText = true
         }
-        drawWrappedText(canvas, "For: ${debt.description}", descTextPaint3, 100f, 520f, W - 200, 50)
+        drawWrappedText(canvas, "For: ${debt.description}", descTextPaint3, 100f, 520f, W - 200, 70)
         paint.textAlign = Paint.Align.CENTER
 
         paint.color = Color.rgb(220, 210, 200)
@@ -305,8 +309,9 @@ object CanvasExporter {
         val descTextPaint4 = TextPaint(Paint.ANTI_ALIAS_FLAG).apply {
             color = Color.WHITE
             textSize = 28f
+            isFakeBoldText = true
         }
-        drawWrappedText(canvas, "REASON: ${debt.description}", descTextPaint4, 60f, 590f, W - 120, 60)
+        drawWrappedText(canvas, "REASON: ${debt.description}", descTextPaint4, 60f, 590f, W - 120, 80)
         paint.textAlign = Paint.Align.CENTER
 
         val box = RectF(60f, 660f, (W - 60).toFloat(), 1000f)
