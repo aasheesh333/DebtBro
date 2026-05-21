@@ -41,11 +41,10 @@ object CanvasExporter {
         maxHeight: Int = Int.MAX_VALUE
     ): Int {
         var currentTextSize = basePaint.textSize
-        var layout: StaticLayout
         var iterations = 0
+        var layout: StaticLayout
         
-        // Scale down font until it fits in maxHeight
-        while (iterations < 10) {
+        do {
             val paint = TextPaint(basePaint).apply { textSize = currentTextSize }
             layout = StaticLayout.Builder.obtain(
                 text, 0, text.length, paint, maxWidth
@@ -58,7 +57,7 @@ object CanvasExporter {
             if (layout.height <= maxHeight || currentTextSize <= 20f) break
             currentTextSize *= 0.9f
             iterations++
-        }
+        } while (iterations < 10)
         
         canvas.save()
         canvas.translate(x, y)
