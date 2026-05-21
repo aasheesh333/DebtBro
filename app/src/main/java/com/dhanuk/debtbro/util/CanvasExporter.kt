@@ -308,7 +308,7 @@ object CanvasExporter {
         paint.textSize = 24f
         paint.color = Color.rgb(180, 150, 100)
         paint.isFakeBoldText = true
-        canvas.drawText("DebtBro Luxury", (W / 2).toFloat(), (H - 80).toFloat(), paint)
+        canvas.drawText("DebtBro", (W / 2).toFloat(), (H - 80).toFloat(), paint)
 
         paint.color = Color.rgb(200, 180, 150)
         canvas.drawRect(0f, (H - 8).toFloat(), W.toFloat(), H.toFloat(), paint)
@@ -388,7 +388,7 @@ object CanvasExporter {
         paint.textAlign = Paint.Align.CENTER
         paint.textSize = 20f
         paint.color = cyan
-        canvas.drawText("DEBTBRO_OS v2.0", (W / 2).toFloat(), (H - 60).toFloat(), paint)
+        canvas.drawText("DebtBro", (W / 2).toFloat(), (H - 60).toFloat(), paint)
     }
 
     fun saveDebtCard(context: Context, bitmap: Bitmap): Uri {

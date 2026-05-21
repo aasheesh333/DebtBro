@@ -260,31 +260,77 @@ class DebtDetailViewModel @Inject constructor(
         }
     }
 
-    fun shareTextOnlyToWhatsApp(context: Context, debt: DebtEntity) = viewModelScope.launch(Dispatchers.IO) {
-        val currency = prefs.defaultCurrency.first()
+    fun shareDebtHistoryToWhatsApp(context: Context, debt: DebtEntity, paymentList: List<PaymentEntity>) = viewModelScope.launch(Dispatchers.IO) {
         val remaining = debt.amount - debt.amountPaid
         val dueDate = debt.dueDate?.let { 
             SimpleDateFormat("dd MMM yyyy", Locale.getDefault()).format(Date(it)) 
         } ?: "No due date"
 
+        val totalPaid = paymentList.sumOf { it.amount }
+        val historyLines = paymentList.mapIndexed { i, p ->
+            "${i + 1}. ${debt.currency}${p.amount.toLong()} on ${p.paidAt.toReadableDate()}${if (!p.note.isNullOrBlank()) " - ${p.note}" else ""}"
+        }.joinToString("\n")
+
         val textMessage = when (debt.type) {
             "THEY_OWE_ME" -> buildString {
-                append("💰 Reminder: ${debt.personName}, you owe ${debt.currency}${remaining.toLong()}")
-                if (debt.description.isNotBlank()) append(" for ${debt.description}")
-                append(". Due: $dueDate.")
-                append("\n\n— Sent via DebtBro")
+                append("💰 *DebtBro - Payment Reminder*\n\n")
+                append("*To:* ${debt.personName}\n")
+                append("*Total:* ${debt.currency}${debt.amount.toLong()}\n")
+                append("*Paid:* ${debt.currency}${totalPaid.toLong()}\n")
+                append("*Remaining:* ${debt.currency}${remaining.toLong()}\n")
+                append("*Due Date:* $dueDate\n")
+                if (debt.description.isNotBlank()) append("*Reason:* ${debt.description}\n")
+                append("\n")
+                if (paymentList.isNotEmpty()) {
+                    append("*Payment History:*\n$historyLines\n\n")
+                }
+                append("— Sent via DebtBro")
             }
             else -> buildString {
-                append("🙏 Hey! I owe you ${debt.currency}${remaining.toLong()}")
-                if (debt.description.isNotBlank()) append(" for ${debt.description}")
-                append(". Will pay by $dueDate.")
-                append("\n\n— Sent via DebtBro")
+                append("🙏 *DebtBro - I Owe You*\n\n")
+                append("*From:* ${debt.personName}\n")
+                append("*Total:* ${debt.currency}${debt.amount.toLong()}\n")
+                append("*Paid:* ${debt.currency}${totalPaid.toLong()}\n")
+                append("*Remaining:* ${debt.currency}${remaining.toLong()}\n")
+                append("*Due Date:* $dueDate\n")
+                if (debt.description.isNotBlank()) append("*Reason:* ${debt.description}\n")
+                append("\n")
+                if (paymentList.isNotEmpty()) {
+                    append("*Payment History:*\n$historyLines\n\n")
+                }
+                append("— Sent via DebtBro")
             }
         }
 
         withContext(Dispatchers.Main) {
             shareTextToWhatsApp(context, textMessage)
         }
+    }
+                append("— Sent via DebtBro")
+            }
+            else -> buildString {
+                append("🙏 *DebtBro - I Owe You*\n\n")
+                append("*From:* ${debt.personName}\n")
+                append("*Total:* ${debt.currency}${debt.amount.toLong()}\n")
+                append("*Paid:* ${debt.currency}${totalPaid.toLong()}\n")
+                append("*Remaining:* ${debt.currency}${remaining.toLong()}\n")
+                append("*Due Date:* $dueDate\n")
+                if (debt.description.isNotBlank()) append("*Reason:* ${debt.description}\n")
+                append("\n")
+                if (paymentList.isNotEmpty()) {
+                    append("*Payment History:*\n$historyLines\n\n")
+                }
+                append("— Sent via DebtBro")
+            }
+        }
+
+        withContext(Dispatchers.Main) {
+            shareTextToWhatsApp(context, textMessage)
+        }
+    }
+
+    fun shareQuoteToWhatsApp(context: Context, quote: String) = viewModelScope.launch(Dispatchers.Main) {
+        shareTextToWhatsApp(context, quote)
     }
 
     fun shareCardToWhatsApp(context: Context, debt: DebtEntity, message: String) = viewModelScope.launch(Dispatchers.IO) {

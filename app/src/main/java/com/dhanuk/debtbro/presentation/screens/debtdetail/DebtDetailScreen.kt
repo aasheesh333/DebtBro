@@ -266,14 +266,13 @@ Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                                   }
                                   Button(
                                       onClick = {
-                                          editQuoteText = aiMessage.ifBlank { d.aiRoastGenerated.orEmpty() }
-                                          pendingExportAction = "whatsapp"
-                                          showQuoteEditDialog = true
+                                          val quote = aiMessage.ifBlank { d.aiRoastGenerated.orEmpty() }
+                                          viewModel.shareQuoteToWhatsApp(context, quote)
                                       },
                                       colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF25D366)),
                                       modifier = Modifier.weight(1f)
                                   ) {
-                                      Icon(Icons.Default.Image, null, modifier = Modifier.size(16.dp))
+                                      Icon(Icons.Default.Send, null, modifier = Modifier.size(16.dp))
                                       Spacer(Modifier.width(8.dp))
                                       Text("WhatsApp")
                                   }
@@ -336,7 +335,7 @@ Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 item {
                     OutlinedButton(
                         onClick = { 
-                            viewModel.shareTextOnlyToWhatsApp(context, d)
+                            viewModel.shareDebtHistoryToWhatsApp(context, d, payments)
                         },
                         enabled = !isExportingImage,
                         modifier = Modifier.fillMaxWidth().height(54.dp),
@@ -456,7 +455,6 @@ if (isExportingImage) {
                 showQuoteEditDialog = false
                 when (pendingExportAction) {
                     "share" -> viewModel.shareCard(context, d, editedText)
-                    "whatsapp" -> viewModel.shareCardToWhatsApp(context, d, editedText)
                 }
                 pendingExportAction = ""
             }
