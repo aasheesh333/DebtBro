@@ -232,7 +232,7 @@ object HtmlExporter {
         </style>
         """.trimIndent()
 
-        return htmlContent.replace("</head>", "$cssVariables$enforceStyles</head>")
+        return htmlContent.replace("</style>", "</style>$cssVariables$enforceStyles")
     }
 
     private fun escapeHtml(text: String): String {
