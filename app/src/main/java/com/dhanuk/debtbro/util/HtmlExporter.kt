@@ -134,7 +134,7 @@ object HtmlExporter {
             * { box-sizing: border-box !important; }
             body { width: 1080px !important; height: 1350px !important; overflow: hidden !important; margin: 0 !important; padding: 0 !important; }
             .card { width: 1080px !important; height: 1350px !important; overflow: hidden !important; box-sizing: border-box !important; }
-            .content { overflow: hidden !important; }
+            .content { overflow: visible !important; }
             .quote-box, .note, .quote, .quote-hero { width: 90% !important; max-width: 900px !important; min-height: 100px !important; max-height: 300px !important; overflow: hidden !important; }
             .quote-text, .note-content { 
                 width: 100% !important; 
@@ -149,7 +149,8 @@ object HtmlExporter {
                 font-size: var(--quote-font-size, 1.4rem) !important;
                 line-height: 1.4 !important;
             }
-            .detail-item .text-content { max-width: 400px !important; display: -webkit-box !important; -webkit-line-clamp: 4 !important; -webkit-box-orient: vertical !important; overflow: hidden !important; word-break: break-word !important; overflow-wrap: break-word !important; }
+            .detail-item { align-items: flex-start !important; overflow: visible !important; }
+            .detail-item .text-content { max-width: 400px !important; display: -webkit-box !important; -webkit-line-clamp: 10 !important; -webkit-box-orient: vertical !important; overflow: hidden !important; word-break: break-word !important; overflow-wrap: break-word !important; }
         </style>
         """.trimIndent()
 
