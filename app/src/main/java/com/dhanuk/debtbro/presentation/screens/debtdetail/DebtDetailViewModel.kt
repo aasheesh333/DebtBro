@@ -236,11 +236,14 @@ class DebtDetailViewModel @Inject constructor(
         }
         try {
             val userName = prefs.userName.first().ifBlank { "Your Friend" }
+            val showDesc = prefs.showDescription.first()
+            val showDate = prefs.showDueDate.first()
+            val showEmojiPref = prefs.showEmoji.first()
             val bitmap = try {
-                HtmlExporter.generateShareableImage(context, debt, userName, actualMessage)
+                HtmlExporter.generateShareableImage(context, debt, userName, actualMessage, showDesc, showDate, showEmojiPref)
             } catch (e: Exception) {
                 android.util.Log.e("DebtDetailVM", "HTML export failed, falling back to Canvas: ${e.message}")
-                CanvasExporter.createDebtCard(context, debt, actualMessage, roastLevel.value)
+                CanvasExporter.createDebtCard(context, debt, actualMessage, roastLevel.value, showDesc, showDate, showEmojiPref)
             }
             HtmlExporter.shareImage(context, bitmap)
             kotlinx.coroutines.withContext(Dispatchers.Main) {
@@ -305,12 +308,15 @@ class DebtDetailViewModel @Inject constructor(
         }
         try {
             val userName = prefs.userName.first().ifBlank { "Your Friend" }
+            val showDesc = prefs.showDescription.first()
+            val showDate = prefs.showDueDate.first()
+            val showEmojiPref = prefs.showEmoji.first()
             val (bitmap, uri) = try {
-                val bmp = HtmlExporter.generateShareableImage(context, debt, userName, actualMessage)
+                val bmp = HtmlExporter.generateShareableImage(context, debt, userName, actualMessage, showDesc, showDate, showEmojiPref)
                 Pair(bmp, HtmlExporter.getShareableUri(context, bmp))
             } catch (e: Exception) {
                 android.util.Log.e("DebtDetailVM", "HTML export failed, falling back to Canvas: ${e.message}")
-                val bmp = CanvasExporter.createDebtCard(context, debt, actualMessage, roastLevel.value)
+                val bmp = CanvasExporter.createDebtCard(context, debt, actualMessage, roastLevel.value, showDesc, showDate, showEmojiPref)
                 Pair(bmp, CanvasExporter.saveDebtCard(context, bmp))
             }
             kotlinx.coroutines.withContext(Dispatchers.Main) {

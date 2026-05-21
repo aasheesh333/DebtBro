@@ -70,6 +70,9 @@ fun DebtDetailScreen(onBack: () -> Unit, viewModel: DebtDetailViewModel = hiltVi
     val remainingFree by viewModel.remainingFree.collectAsStateWithLifecycle()
     val isExportingImage by viewModel.isExportingImage.collectAsStateWithLifecycle()
     val exportElapsed by viewModel.exportElapsed.collectAsStateWithLifecycle()
+    var showQuoteEditDialog by remember { mutableStateOf(false) }
+    var pendingExportAction by remember { mutableStateOf("") }
+    var editQuoteText by remember { mutableStateOf("") }
 
     BackHandler(onBack = onBack)
 
@@ -262,9 +265,10 @@ Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                                       }
                                   }
                                   Button(
-                                      onClick = { 
-                                          Toast.makeText(context, "Generating image...", Toast.LENGTH_SHORT).show()
-                                          viewModel.shareCardToWhatsApp(context, d, aiMessage.ifBlank { d.aiRoastGenerated.orEmpty() })
+                                      onClick = {
+                                          editQuoteText = aiMessage.ifBlank { d.aiRoastGenerated.orEmpty() }
+                                          pendingExportAction = "whatsapp"
+                                          showQuoteEditDialog = true
                                       },
                                       colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF25D366)),
                                       modifier = Modifier.weight(1f)
@@ -313,8 +317,10 @@ Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 
                 item {
                     Button(
-                        onClick = { 
-                            viewModel.shareCard(context, d, aiMessage.ifBlank { d.aiRoastGenerated.orEmpty() })
+                        onClick = {
+                            editQuoteText = aiMessage.ifBlank { d.aiRoastGenerated.orEmpty() }
+                            pendingExportAction = "share"
+                            showQuoteEditDialog = true
                         },
                         enabled = !isExportingImage,
                         modifier = Modifier.fillMaxWidth().height(54.dp),
@@ -435,10 +441,28 @@ if (isExportingImage) {
                  }
              },
              confirmButton = {},
-      containerColor = Color(0xFF1A1A1A)
-          )
-      }
-  }
+       containerColor = Color(0xFF1A1A1A)
+           )
+       }
+
+    if (showQuoteEditDialog) {
+        QuoteEditDialog(
+            initialText = editQuoteText,
+            onDismiss = {
+                showQuoteEditDialog = false
+                pendingExportAction = ""
+            },
+            onConfirm = { editedText ->
+                showQuoteEditDialog = false
+                when (pendingExportAction) {
+                    "share" -> viewModel.shareCard(context, d, editedText)
+                    "whatsapp" -> viewModel.shareCardToWhatsApp(context, d, editedText)
+                }
+                pendingExportAction = ""
+            }
+        )
+    }
+   }
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -506,6 +530,61 @@ fun EditDebtDialog(debt: DebtEntity, onDismiss: () -> Unit, onSave: (String, Dou
             }
         }
     }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun QuoteEditDialog(
+    initialText: String,
+    onDismiss: () -> Unit,
+    onConfirm: (String) -> Unit
+) {
+    var text by remember { mutableStateOf(initialText) }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        containerColor = Color(0xFF1A1A1A),
+        title = {
+            Text(LocalizedString.get("edit_ai_quote"), color = Color.White, fontWeight = FontWeight.Bold)
+        },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                Text(
+                    LocalizedString.get("edit_ai_quote_desc"),
+                    color = Color(0xFFCCCCCC),
+                    fontSize = 13.sp
+                )
+                OutlinedTextField(
+                    value = text,
+                    onValueChange = { text = it },
+                    modifier = Modifier.fillMaxWidth().heightIn(min = 120.dp),
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedBorderColor = PrimaryGreen,
+                        unfocusedBorderColor = Color(0xFF333333),
+                        focusedTextColor = Color.White,
+                        unfocusedTextColor = Color.White,
+                        cursorColor = PrimaryGreen
+                    ),
+                    shape = RoundedCornerShape(12.dp),
+                    maxLines = 6
+                )
+            }
+        },
+        confirmButton = {
+            Button(
+                onClick = { onConfirm(text) },
+                colors = ButtonDefaults.buttonColors(containerColor = PrimaryGreen),
+                shape = RoundedCornerShape(12.dp)
+            ) {
+                Text(LocalizedString.get("generate_image"), color = Color.Black, fontWeight = FontWeight.Bold)
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text(LocalizedString.get("cancel"), color = SubtitleGray)
+            }
+        }
+    )
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
