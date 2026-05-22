@@ -56,6 +56,9 @@ interface DebtDao {
     @Query("UPDATE debts SET firebaseId = :firebaseId, isSynced = 1 WHERE id = :id")
     suspend fun updateFirebaseId(id: Int, firebaseId: String)
 
+    @Query("UPDATE debts SET isSynced = 1 WHERE id = :id")
+    suspend fun markAsSynced(id: Int)
+
     @Query("UPDATE debts SET amountPaid = :amountPaid, status = :status, updatedAt = :updatedAt, isSynced = 0 WHERE id = :id")
     suspend fun updatePaymentStatus(id: Int, amountPaid: Double, status: String, updatedAt: Long)
 
