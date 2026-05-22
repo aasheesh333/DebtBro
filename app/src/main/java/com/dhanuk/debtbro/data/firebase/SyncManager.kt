@@ -36,6 +36,7 @@ class SyncManager @Inject constructor(
     suspend fun syncSingleDebt(userId: String, debt: DebtEntity): String {
         val firebaseId = firebaseRepository.pushDebtToFirestore(userId, debt)
         debtDao.updateFirebaseId(debt.id, firebaseId)
+        debtDao.markAsSynced(debt.id)
         return firebaseId
     }
 
@@ -60,6 +61,7 @@ class SyncManager @Inject constructor(
                 syncSingleDebt(userId, debt)
             } else {
                 firebaseRepository.pushDebtToFirestore(userId, debt)
+                debtDao.markAsSynced(debt.id)
                 debt.firebaseId
             }
             syncPaymentsForDebt(userId, firebaseId, debt.id)
@@ -158,6 +160,7 @@ class SyncManager @Inject constructor(
             pushNewDebt(userId, debt)
         } else {
             firebaseRepository.pushDebtToFirestoreWithId(userId, debt, firebaseId)
+            debtDao.markAsSynced(debt.id)
         }
     }
 
