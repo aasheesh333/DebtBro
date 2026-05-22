@@ -15,6 +15,8 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import javax.inject.Inject
 
 data class DashboardUiState(
@@ -39,6 +41,8 @@ class DashboardViewModel @Inject constructor(
     private val syncManager: SyncManager,
     private val realTimeSyncManager: RealTimeSyncManager
 ) : ViewModel() {
+    
+    private val syncMutex = Mutex()
 
     val state: StateFlow<DashboardUiState> = combine(
         debts.getAllDebts(),
@@ -89,9 +93,11 @@ class DashboardViewModel @Inject constructor(
     fun dismissPrompt() = viewModelScope.launch { prefs.setHasShownSignInPrompt(true) }
 
     fun refresh() = viewModelScope.launch {
-        val user = authManager.authStateFlow().first()
-        if (user != null) {
-            runCatching { syncManager.fullSync(user.uid) }
+        syncMutex.withLock {
+            val user = authManager.authStateFlow().first()
+            if (user != null) {
+                runCatching { syncManager.fullSync(user.uid) }
+            }
         }
     }
 }
