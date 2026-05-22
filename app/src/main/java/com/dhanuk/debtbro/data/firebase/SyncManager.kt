@@ -148,8 +148,13 @@ class SyncManager @Inject constructor(
 
     /** Push a single newly created debt to Firestore immediately */
     suspend fun pushNewDebt(userId: String, debt: DebtEntity): String {
-        val firebaseId = firebaseRepository.pushDebtToFirestore(userId, debt)
+        // Generate firebaseId BEFORE Firestore write to prevent RealTimeSyncManager's
+        // live snapshot listener from inserting a duplicate entry (race condition).
+        // The snapshot fires immediately after the Firestore write — if we don't have
+        // the firebaseId locally yet, getDebtByFirebaseId() returns null and inserts a duplicate.
+        val firebaseId = firebaseRepository.generateDebtId(userId)
         debtDao.updateFirebaseId(debt.id, firebaseId)
+        firebaseRepository.pushDebtToFirestoreWithId(userId, debt, firebaseId)
         return firebaseId
     }
 

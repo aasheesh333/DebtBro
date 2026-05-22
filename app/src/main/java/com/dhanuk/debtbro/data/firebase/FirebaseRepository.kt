@@ -17,6 +17,12 @@ import javax.inject.Singleton
 class FirebaseRepository @Inject constructor(private val firestore: FirebaseFirestore) {
 
     // ── Debts ──────────────────────────────────────────────
+
+    /** Generate a unique Firestore document ID client-side (no network call) */
+    fun generateDebtId(userId: String): String {
+        return firestore.collection("users").document(userId).collection("debts").document().id
+    }
+
     suspend fun pushDebtToFirestore(userId: String, debt: DebtEntity): String {
         val collection = firestore.collection("users").document(userId).collection("debts")
         val document = if (debt.firebaseId.isNullOrBlank()) collection.document() else collection.document(debt.firebaseId)
