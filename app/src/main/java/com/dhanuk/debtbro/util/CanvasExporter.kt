@@ -54,10 +54,10 @@ object CanvasExporter {
                 .setIncludePad(false)
                 .build()
             
-            if (layout.height <= maxHeight || currentTextSize <= 20f) break
-            currentTextSize *= 0.9f
+            if (layout.height <= maxHeight || currentTextSize <= 12f) break
+            currentTextSize *= 0.85f
             iterations++
-        } while (iterations < 10)
+        } while (iterations < 15)
         
         canvas.save()
         canvas.translate(x, y)
@@ -392,11 +392,21 @@ object CanvasExporter {
     }
 
     fun saveDebtCard(context: Context, bitmap: Bitmap): Uri {
+        cleanOldCacheFiles(context)
         val cacheDir = File(context.cacheDir, "share_images")
         cacheDir.mkdirs()
         val file = File(cacheDir, "debtbro-card-${System.currentTimeMillis()}.png")
         file.outputStream().use { bitmap.compress(Bitmap.CompressFormat.PNG, 100, it) }
         return FileProvider.getUriForFile(context, "${context.packageName}.fileprovider", file)
+    }
+
+    private fun cleanOldCacheFiles(context: Context, maxAgeMs: Long = 24 * 60 * 60 * 1000L) {
+        val cacheDir = File(context.cacheDir, "share_images")
+        if (!cacheDir.exists()) return
+        val now = System.currentTimeMillis()
+        cacheDir.listFiles()?.forEach { file ->
+            if (now - file.lastModified() > maxAgeMs) file.delete()
+        }
     }
 
     fun shareDebtCard(context: Context, bitmap: Bitmap) {

@@ -2,6 +2,7 @@ package com.dhanuk.debtbro.presentation.screens.analytics
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.dhanuk.debtbro.data.datastore.AppPreferences
 import com.dhanuk.debtbro.data.db.entity.DebtEntity
 import com.dhanuk.debtbro.data.repository.DebtRepository
 import com.dhanuk.debtbro.data.repository.GroqRepository
@@ -25,19 +26,21 @@ data class AnalyticsUiState(
     val recoveryRate: Int = 0,
     val mostTrustedFriend: String = "No winner yet",
     val worstOffender: String = "Nobody yet",
-    val monthlyData: List<Pair<String, Double>> = emptyList()
+    val monthlyData: List<Pair<String, Double>> = emptyList(),
+    val currency: String = "₹"
 )
 
 @HiltViewModel
-class AnalyticsViewModel @Inject constructor(private val repo: DebtRepository, private val groq: GroqRepository) : ViewModel() {
+class AnalyticsViewModel @Inject constructor(private val repo: DebtRepository, private val groq: GroqRepository, private val prefs: AppPreferences) : ViewModel() {
     val aiInsight = MutableStateFlow("")
     val isLoadingInsight = MutableStateFlow(false)
-    val state: StateFlow<AnalyticsUiState> = repo.getAllDebts().combine(aiInsight) { debts, _ -> compute(debts) }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), AnalyticsUiState())
+    private val currency = prefs.defaultCurrency.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), "₹")
+    val state: StateFlow<AnalyticsUiState> = combine(repo.getAllDebts(), aiInsight, currency) { debts, _, curr -> compute(debts, curr) }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), AnalyticsUiState())
 
     init {
         loadAiInsight()
     }
-    private fun compute(debts: List<DebtEntity>): AnalyticsUiState {
+    private fun compute(debts: List<DebtEntity>, curr: String): AnalyticsUiState {
         val totalOwed = debts.filter { it.type == "THEY_OWE_ME" && it.status != "SETTLED" }.sumOf { it.amount - it.amountPaid }
         val totalIOwe = debts.filter { it.type == "I_OWE_THEM" && it.status != "SETTLED" }.sumOf { it.amount - it.amountPaid }
         val settled = debts.filter { it.status == "SETTLED" }.sumOf { it.amount }
@@ -55,7 +58,7 @@ class AnalyticsViewModel @Inject constructor(private val repo: DebtRepository, p
             }.sumOf { it.amount }
             month to value
         }
-        return AnalyticsUiState(totalOwed, totalIOwe, settled, totalOwed - totalIOwe, if (lent > 0) ((settled / lent) * 100).toInt().coerceIn(0, 100) else 0, trusted, worst, months)
+        return AnalyticsUiState(totalOwed, totalIOwe, settled, totalOwed - totalIOwe, if (lent > 0) ((settled / lent) * 100).toInt().coerceIn(0, 100) else 0, trusted, worst, months, curr)
     }
     fun loadAiInsight() = viewModelScope.launch {
         isLoadingInsight.value = true

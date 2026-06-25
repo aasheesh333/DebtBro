@@ -11,7 +11,8 @@ import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.cancelChildren
+import kotlinx.coroutines.flow.catch
+import kotlinx.coroutines.flow.cancelChildren
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -35,18 +36,22 @@ class RealTimeSyncManager @Inject constructor(
         currentUserId = userId
         _isActive.value = true
 
-        // Listen for debts
         scope.launch {
-            firebaseRepository.observeDebtsRealTime(userId).collect { cloudDebts ->
-                mergeDebtsFromCloud(cloudDebts)
-            }
+            firebaseRepository.observeDebtsRealTime(userId)
+                .catch { e -> android.util.Log.e("RealTimeSync", "Debt listener error: ${e.message}", e) }
+                .collect { cloudDebts ->
+                    try { mergeDebtsFromCloud(cloudDebts) }
+                    catch (e: Exception) { android.util.Log.e("RealTimeSync", "mergeDebts failed: ${e.message}", e) }
+                }
         }
 
-        // Listen for splits
         scope.launch {
-            firebaseRepository.observeSplitsRealTime(userId).collect { cloudSplits ->
-                mergeSplitsFromCloud(cloudSplits)
-            }
+            firebaseRepository.observeSplitsRealTime(userId)
+                .catch { e -> android.util.Log.e("RealTimeSync", "Split listener error: ${e.message}", e) }
+                .collect { cloudSplits ->
+                    try { mergeSplitsFromCloud(cloudSplits) }
+                    catch (e: Exception) { android.util.Log.e("RealTimeSync", "mergeSplits failed: ${e.message}", e) }
+                }
         }
     }
 

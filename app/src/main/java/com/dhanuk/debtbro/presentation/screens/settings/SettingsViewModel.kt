@@ -111,7 +111,7 @@ class SettingsViewModel @Inject constructor(
 
     fun exportCsv(context: Context) = viewModelScope.launch {
         val uriResult = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
-            runCatching { CsvExporter.exportDebts(context, debts.getAllDebtsOnce()) }
+            CsvExporter.exportDebts(context, debts.getAllDebtsOnce())
         }
         uriResult.onSuccess { uri ->
             val shareIntent = android.content.Intent(android.content.Intent.ACTION_SEND).apply {

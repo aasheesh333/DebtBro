@@ -248,7 +248,7 @@ object HtmlExporter {
     }
 
     private suspend fun renderHtmlToBitmap(context: Context, html: String): Bitmap =
-        withTimeout(15000L) {
+        withTimeout(25000L) {
             suspendCancellableCoroutine { continuation ->
                 val width = 1080
                 val height = 1350
@@ -257,7 +257,14 @@ object HtmlExporter {
                     WebView.enableSlowWholeDocumentDraw()
                 }
 
+                var webViewRef: WebView? = null
+
+                val destroyWebView = {
+                    try { webViewRef?.destroy() } catch (_: Exception) {}
+                }
+
                 val webView = WebView(context).apply {
+                    webViewRef = this
                     layoutParams = android.widget.FrameLayout.LayoutParams(width, height)
                     settings.apply {
                         javaScriptEnabled = true
@@ -298,7 +305,6 @@ object HtmlExporter {
                                         view.draw(canvas)
 
                                         val scaledBitmap = if (actualHeight > height) {
-                                            val scale = height.toFloat() / actualHeight
                                             Bitmap.createScaledBitmap(bitmap, width, height, true).also {
                                                 bitmap.recycle()
                                             }
@@ -314,15 +320,24 @@ object HtmlExporter {
                                             continuation.resumeWithException(e)
                                         }
                                     } finally {
-                                        try { webView.destroy() } catch (_: Exception) {}
+                                        destroyWebView()
                                     }
                                 }
                             } catch (e: Exception) {
                                 if (continuation.isActive) {
                                     continuation.resumeWithException(e)
+                                } finally {
+                                    destroyWebView()
                                 }
                             }
-                        }, 500)
+                        }, 800)
+                    }
+
+                    override fun onReceivedError(view: WebView?, errorCode: Int, description: String?, failingUrl: String?) {
+                        if (continuation.isActive) {
+                            continuation.resumeWithException(Exception("WebView error: $description"))
+                        }
+                        destroyWebView()
                     }
                 }
 
@@ -341,6 +356,7 @@ object HtmlExporter {
         }
 
     fun saveBitmap(context: Context, bitmap: Bitmap): File {
+        cleanOldCacheFiles(context)
         val cacheDir = File(context.cacheDir, "share_images")
         cacheDir.mkdirs()
         val file = File(cacheDir, "debtbro-export-${System.currentTimeMillis()}.jpg")
@@ -348,6 +364,15 @@ object HtmlExporter {
             bitmap.compress(Bitmap.CompressFormat.JPEG, 85, out)
         }
         return file
+    }
+
+    private fun cleanOldCacheFiles(context: Context, maxAgeMs: Long = 24 * 60 * 60 * 1000L) {
+        val cacheDir = File(context.cacheDir, "share_images")
+        if (!cacheDir.exists()) return
+        val now = System.currentTimeMillis()
+        cacheDir.listFiles()?.forEach { file ->
+            if (now - file.lastModified() > maxAgeMs) file.delete()
+        }
     }
 
     fun getShareableUri(context: Context, bitmap: Bitmap): android.net.Uri {

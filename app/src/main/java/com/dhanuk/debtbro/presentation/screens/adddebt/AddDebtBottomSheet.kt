@@ -115,7 +115,7 @@ fun AddDebtBottomSheet(
             ) {
                 Text("Add Debt", color = Color.White, fontSize = 22.sp, fontWeight = FontWeight.Bold)
                 IconButton(onClick = onDismiss) {
-                    Icon(Icons.Default.Close, null, tint = Color.White)
+                    Icon(Icons.Default.Close, contentDescription = LocalizedString.get("cancel"), tint = Color.White)
                 }
             }
 
@@ -217,7 +217,7 @@ fun AddDebtBottomSheet(
                 ) {
                     Text("Avatar", color = SubtitleGray, fontSize = 13.sp)
                     TextButton(onClick = { showEmojiPicker = true }) {
-                        Icon(Icons.Default.EmojiEmotions, null, tint = PrimaryGreen, modifier = Modifier.size(16.dp))
+                        Icon(Icons.Default.EmojiEmotions, contentDescription = null, tint = PrimaryGreen, modifier = Modifier.size(16.dp))
                         Spacer(Modifier.width(4.dp))
                         Text("From device", color = PrimaryGreen, fontSize = 12.sp)
                     }
@@ -314,11 +314,11 @@ fun AddDebtBottomSheet(
                     Row {
                         if (selectedDate != null) {
                             IconButton(onClick = { selectedDate = null }) {
-                                Icon(Icons.Default.Clear, null, tint = DangerRed)
+                                Icon(Icons.Default.Clear, contentDescription = LocalizedString.get("cancel"), tint = DangerRed)
                             }
                         }
                         IconButton(onClick = { showDatePicker = true }) {
-                            Icon(Icons.Default.CalendarMonth, null, tint = PrimaryGreen)
+                            Icon(Icons.Default.CalendarMonth, contentDescription = LocalizedString.get("select_due_date"), tint = PrimaryGreen)
                         }
                     }
                 },

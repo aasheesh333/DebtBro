@@ -24,9 +24,14 @@ class DebtReminderWorker @AssistedInject constructor(
 ) : CoroutineWorker(context, params) {
     override suspend fun doWork(): Result {
         ensureChannel()
+        val notificationManager = applicationContext.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N && !notificationManager.areNotificationsEnabled()) {
+            return Result.success()
+        }
         val now = System.currentTimeMillis()
-        val debts = debtDao.getOverdueDebts(now) + debtDao.getDebtsDueBetween(now, now + 2 * 86400000L)
-        debts.distinctBy { it.id }.forEach { debt ->
+        val debts = (debtDao.getOverdueDebts(now) + debtDao.getDebtsDueBetween(now, now + 2 * 86400000L))
+            .distinctBy { it.id }
+        debts.forEach { debt ->
             val intent = Intent(applicationContext, MainActivity::class.java).apply {
                 action = Intent.ACTION_VIEW
                 data = android.net.Uri.parse("debtbro://debt/${debt.id}")
@@ -39,8 +44,10 @@ class DebtReminderWorker @AssistedInject constructor(
                 .setContentIntent(pendingIntent)
                 .setAutoCancel(true)
                 .setPriority(NotificationCompat.PRIORITY_DEFAULT)
+                .setOnlyAlertOnce(true)
+                .setGroup("debtbro_reminders")
                 .build()
-                .also { (applicationContext.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager).notify(1000 + debt.id, it) }
+                .also { notificationManager.notify(1000 + debt.id, it) }
         }
         return Result.success()
     }

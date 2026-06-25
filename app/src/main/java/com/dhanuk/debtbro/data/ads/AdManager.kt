@@ -49,6 +49,12 @@ class AdManager @Inject constructor(private val prefs: AppPreferences) {
                 loadInterstitial(activity)
                 onDismissed()
             }
+            override fun onAdFailedToShowFullScreenContent(error: com.google.android.gms.ads.AdError) {
+                android.util.Log.e("AdManager", "Interstitial show failed: ${error.message}")
+                interstitialAd = null
+                loadInterstitial(activity)
+                onDismissed()
+            }
         }
         ad.show(activity)
         return true
@@ -62,6 +68,14 @@ class AdManager @Inject constructor(private val prefs: AppPreferences) {
     }
     fun showRewardedAd(activity: Activity, onRewarded: (RewardItem) -> Unit, onFailed: () -> Unit) {
         val ad = rewardedAd ?: return onFailed()
+        ad.fullScreenContentCallback = object : FullScreenContentCallback() {
+            override fun onAdFailedToShowFullScreenContent(error: com.google.android.gms.ads.AdError) {
+                android.util.Log.e("AdManager", "RewardedAd show failed: ${error.message}")
+                rewardedAd = null
+                loadRewardedAd(activity)
+                onFailed()
+            }
+        }
         ad.show(activity) { reward ->
             scope.launch { prefs.setRewardTimestamp(System.currentTimeMillis()) }
             rewardedAd = null

@@ -1,5 +1,11 @@
 package com.dhanuk.debtbro.presentation.navigation
 
+import androidx.compose.animation.EnterTransition
+import androidx.compose.animation.ExitTransition
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInHorizontally
+import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
@@ -222,7 +228,11 @@ fun DebtBroNavGraph(appPreferences: AppPreferences) {
         NavHost(
             navController = navController,
             startDestination = startDest,
-            modifier = Modifier.padding(paddingValues)
+            modifier = Modifier.padding(paddingValues),
+            enterTransition = { fadeIn() + slideInHorizontally { it / 3 } },
+            exitTransition = { fadeOut() + slideOutHorizontally { -it / 3 } },
+            popEnterTransition = { fadeIn() + slideInHorizontally { -it / 3 } },
+            popExitTransition = { fadeOut() + slideOutHorizontally { it / 3 } }
         ) {
             composable(Screen.Onboarding.route) {
                 OnboardingScreen(

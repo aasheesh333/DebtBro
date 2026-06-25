@@ -16,6 +16,7 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -55,7 +56,20 @@ fun AnalyticsScreen(viewModel: AnalyticsViewModel = hiltViewModel()) {
         }
     }
 
-    Box(modifier = Modifier.fillMaxSize().background(Color(0xFF0D0D0D))) {
+    Box(modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) {
+        if (state.totalOwedToMe == 0.0 && state.totalIOwe == 0.0 && state.totalSettled == 0.0) {
+            Column(
+                modifier = Modifier.fillMaxSize().padding(32.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.Center
+            ) {
+                Text("📊", fontSize = 48.sp)
+                Spacer(Modifier.height(16.dp))
+                Text(LocalizedString.get("no_data_yet"), color = MaterialTheme.colorScheme.onBackground, fontSize = 18.sp, fontWeight = FontWeight.Bold)
+                Spacer(Modifier.height(8.dp))
+                Text(LocalizedString.get("add_debts_to_see_stats"), color = SubtitleGray, fontSize = 14.sp, textAlign = TextAlign.Center)
+            }
+        } else {
         LazyColumn(
             modifier = Modifier.fillMaxSize().padding(horizontal = 16.dp),
             verticalArrangement = Arrangement.spacedBy(20.dp),
@@ -78,6 +92,7 @@ fun AnalyticsScreen(viewModel: AnalyticsViewModel = hiltViewModel()) {
                         amount = state.totalOwedToMe,
                         color = PrimaryGreen,
                         icon = Icons.Default.ArrowDownward,
+                        currency = state.currency,
                         modifier = Modifier.weight(1f)
                     )
                     AnalyticsStatCard(
@@ -85,6 +100,7 @@ fun AnalyticsScreen(viewModel: AnalyticsViewModel = hiltViewModel()) {
                         amount = state.totalIOwe,
                         color = DangerRed,
                         icon = Icons.Default.ArrowUpward,
+                        currency = state.currency,
                         modifier = Modifier.weight(1f)
                     )
                 }
@@ -97,6 +113,7 @@ fun AnalyticsScreen(viewModel: AnalyticsViewModel = hiltViewModel()) {
                         amount = state.totalSettled,
                         color = Color.White,
                         icon = Icons.Default.DoneAll,
+                        currency = state.currency,
                         modifier = Modifier.weight(1f)
                     )
                     AnalyticsStatCard(
@@ -104,6 +121,7 @@ fun AnalyticsScreen(viewModel: AnalyticsViewModel = hiltViewModel()) {
                         amount = state.netBalance,
                         color = if (state.netBalance >= 0) PrimaryGreen else DangerRed,
                         icon = Icons.Default.AccountBalanceWallet,
+                        currency = state.currency,
                         modifier = Modifier.weight(1f)
                     )
                 }
@@ -118,7 +136,7 @@ fun AnalyticsScreen(viewModel: AnalyticsViewModel = hiltViewModel()) {
                 ) {
                     Column(Modifier.padding(20.dp)) {
                         Row(verticalAlignment = Alignment.CenterVertically) {
-                            Icon(Icons.Default.Recycling, null, tint = PrimaryGreen, modifier = Modifier.size(20.dp))
+                            Icon(Icons.Default.Recycling, contentDescription = null, tint = PrimaryGreen, modifier = Modifier.size(20.dp))
                             Spacer(Modifier.width(8.dp))
                             Text(LocalizedString.get("debt_recovery_rate"), color = Color.White, fontWeight = FontWeight.Bold)
                             Spacer(Modifier.weight(1f))
@@ -194,7 +212,7 @@ fun AnalyticsScreen(viewModel: AnalyticsViewModel = hiltViewModel()) {
                             Text(LocalizedString.get("ai_take"), color = Color.White, fontWeight = FontWeight.Bold, fontSize = 18.sp)
                             Spacer(Modifier.weight(1f))
                             IconButton(onClick = { viewModel.loadAiInsight() }) {
-                                Icon(Icons.Default.Refresh, null, tint = PrimaryGreen)
+                                Icon(Icons.Default.Refresh, contentDescription = LocalizedString.get("regenerate"), tint = PrimaryGreen)
                             }
                         }
 
@@ -219,21 +237,22 @@ fun AnalyticsScreen(viewModel: AnalyticsViewModel = hiltViewModel()) {
                 }
             }
         }
+        }
     }
 }
 
 @Composable
-fun AnalyticsStatCard(title: String, amount: Double, color: Color, icon: ImageVector, modifier: Modifier) {
+fun AnalyticsStatCard(title: String, amount: Double, color: Color, icon: ImageVector, currency: String = "₹", modifier: Modifier) {
     Card(
         modifier = modifier,
         colors = CardDefaults.cardColors(containerColor = Color(0xFF1E1E1E)),
         shape = RoundedCornerShape(16.dp)
     ) {
         Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            Icon(icon, null, tint = color, modifier = Modifier.size(20.dp))
+            Icon(icon, contentDescription = title, tint = color, modifier = Modifier.size(20.dp))
             Text(title, color = SubtitleGray, fontSize = 12.sp)
             Text(
-                formatCurrency(amount),
+                formatCurrency(amount, currency),
                 color = color,
                 fontSize = 18.sp,
                 fontWeight = FontWeight.Bold

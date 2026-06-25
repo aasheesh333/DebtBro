@@ -7,6 +7,8 @@ import com.dhanuk.debtbro.data.db.dao.SplitDao
 import com.dhanuk.debtbro.data.db.entity.DebtEntity
 import com.dhanuk.debtbro.data.db.entity.PaymentEntity
 import com.dhanuk.debtbro.data.db.entity.SplitEntity
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -18,6 +20,11 @@ class SyncManager @Inject constructor(
     private val firebaseRepository: FirebaseRepository,
     private val prefs: AppPreferences
 ) {
+    private val syncMutex = kotlinx.coroutines.sync.Mutex()
+
+    private suspend fun <T> withSyncLock(block: suspend () -> T): T {
+        return syncMutex.withLock { block() }
+    }
     // ── Push local → cloud ────────────────────────────────
 
     suspend fun pushLocalToCloud(userId: String) {
@@ -147,25 +154,35 @@ class SyncManager @Inject constructor(
     // ── Immediate push after local mutation ──────────────
 
     /** Push a single newly created debt to Firestore immediately */
-    suspend fun pushNewDebt(userId: String, debt: DebtEntity): String {
-        // Generate firebaseId BEFORE Firestore write to prevent RealTimeSyncManager's
-        // live snapshot listener from inserting a duplicate entry (race condition).
-        // The snapshot fires immediately after the Firestore write — if we don't have
-        // the firebaseId locally yet, getDebtByFirebaseId() returns null and inserts a duplicate.
+    suspend fun pushNewDebt(userId: String, debt: DebtEntity): String = withSyncLock {
+        pushNewDebtInternal(userId, debt)
+    }
+
+    private suspend fun pushNewDebtInternal(userId: String, debt: DebtEntity): String {
         val firebaseId = firebaseRepository.generateDebtId(userId)
         debtDao.updateFirebaseId(debt.id, firebaseId)
-        firebaseRepository.pushDebtToFirestoreWithId(userId, debt, firebaseId)
-        return firebaseId
+        try {
+            firebaseRepository.pushDebtToFirestoreWithId(userId, debt, firebaseId)
+        } catch (e: Exception) {
+            android.util.Log.e("SyncManager", "pushNewDebt failed for debt ${debt.id}: ${e.message}", e)
+            throw e
+        }
+        firebaseId
     }
 
     /** Push a single updated debt to Firestore immediately */
-    suspend fun pushUpdatedDebt(userId: String, debt: DebtEntity) {
+    suspend fun pushUpdatedDebt(userId: String, debt: DebtEntity) = withSyncLock {
         val firebaseId = debt.firebaseId
         if (firebaseId.isNullOrBlank()) {
-            pushNewDebt(userId, debt)
+            pushNewDebtInternal(userId, debt)
         } else {
-            firebaseRepository.pushDebtToFirestoreWithId(userId, debt, firebaseId)
-            debtDao.markAsSynced(debt.id)
+            try {
+                firebaseRepository.pushDebtToFirestoreWithId(userId, debt, firebaseId)
+                debtDao.markAsSynced(debt.id)
+            } catch (e: Exception) {
+                android.util.Log.e("SyncManager", "pushUpdatedDebt failed for debt ${debt.id}: ${e.message}", e)
+                throw e
+            }
         }
     }
 
@@ -200,7 +217,12 @@ class SyncManager @Inject constructor(
     // ── Full bidirectional sync ───────────────────────────
 
     suspend fun fullSync(userId: String) {
-        mergePendingUnsynced(userId)
-        pullCloudToLocal(userId)
+        try {
+            mergePendingUnsynced(userId)
+            pullCloudToLocal(userId)
+        } catch (e: Exception) {
+            android.util.Log.e("SyncManager", "fullSync failed: ${e.message}", e)
+            throw e
+        }
     }
 }

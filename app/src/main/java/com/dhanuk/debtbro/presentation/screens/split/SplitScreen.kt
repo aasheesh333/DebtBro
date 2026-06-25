@@ -50,7 +50,8 @@ fun SplitScreen(viewModel: SplitViewModel = hiltViewModel()) {
     LazyColumn(
         modifier = Modifier
             .fillMaxSize()
-            .padding(16.dp),
+            .padding(16.dp)
+            .background(MaterialTheme.colorScheme.background),
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
         item {
@@ -89,7 +90,7 @@ fun SplitScreen(viewModel: SplitViewModel = hiltViewModel()) {
                         onValueChange = { if (it.all { c -> c.isDigit() || c == '.' }) viewModel.updateTotal(it) },
                         label = { Text(LocalizedString.get("total_amount")) },
                         placeholder = { Text("0.00") },
-                        prefix = { Text("₹", color = PrimaryGreen, fontWeight = FontWeight.Bold) },
+                        prefix = { Text(state.currencySymbol, color = PrimaryGreen, fontWeight = FontWeight.Bold) },
                         modifier = Modifier.fillMaxWidth(),
                         keyboardOptions = KeyboardOptions(
                             keyboardType = KeyboardType.Decimal,

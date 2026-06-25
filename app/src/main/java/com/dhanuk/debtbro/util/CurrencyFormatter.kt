@@ -11,3 +11,5 @@ fun formatIndian(amount: Double): String {
 }
 
 fun formatCurrency(amount: Double, currency: String = "₹"): String = "$currency${formatIndian(amount)}"
+
+fun Double.toReadableAmount(): String = formatIndian(this)

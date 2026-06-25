@@ -97,25 +97,25 @@ fun DebtDetailScreen(onBack: () -> Unit, viewModel: DebtDetailViewModel = hiltVi
                 title = { Text(d.personName, fontWeight = FontWeight.Bold) },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.Default.ArrowBack, null, tint = Color.White)
+                        Icon(Icons.Default.ArrowBack, contentDescription = LocalizedString.get("nav_back"), tint = Color.White)
                     }
                 },
                 actions = {
                     IconButton(onClick = { viewModel.showEditDebtSheet.value = true }) {
-                        Icon(Icons.Default.Edit, null, tint = Color.White)
+                        Icon(Icons.Default.Edit, contentDescription = LocalizedString.get("edit_debt"), tint = Color.White)
                     }
 
                     IconButton(onClick = { showDeleteConfirm = true }) {
-                        Icon(Icons.Default.Delete, null, tint = Color(0xFFFF4757))
+                        Icon(Icons.Default.Delete, contentDescription = LocalizedString.get("delete_debt"), tint = Color(0xFFFF4757))
                     }
                 },
                 colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
-                    containerColor = Color(0xFF0D0D0D),
+                    containerColor = MaterialTheme.colorScheme.background,
                     titleContentColor = Color.White
                 )
             )
         },
-        containerColor = Color(0xFF0D0D0D)
+        containerColor = MaterialTheme.colorScheme.background
     ) { padding ->
         Box(modifier = Modifier.padding(padding)) {
             LazyColumn(
@@ -187,7 +187,7 @@ fun DebtDetailScreen(onBack: () -> Unit, viewModel: DebtDetailViewModel = hiltVi
                             shape = RoundedCornerShape(12.dp),
                             enabled = remaining > 0
                         ) {
-                            Icon(Icons.Default.Add, null, tint = Color.Black)
+                            Icon(Icons.Default.Add, contentDescription = null, tint = Color.Black)
                             Spacer(Modifier.width(8.dp))
                             Text(LocalizedString.get("add_payment"), color = Color.Black, fontWeight = FontWeight.Bold)
                         }
@@ -272,7 +272,7 @@ Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                                       colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF25D366)),
                                       modifier = Modifier.weight(1f)
                                   ) {
-                                      Icon(Icons.Default.Send, null, modifier = Modifier.size(16.dp))
+                                       Icon(Icons.Default.Send, contentDescription = null, modifier = Modifier.size(16.dp))
                                       Spacer(Modifier.width(8.dp))
                                       Text("WhatsApp")
                                   }
@@ -308,7 +308,7 @@ Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                                 }
                             }
                             IconButton(onClick = { viewModel.deletePayment(payment.id) }) {
-                                Icon(Icons.Default.Delete, null, tint = SubtitleGray.copy(alpha = 0.5f), modifier = Modifier.size(20.dp))
+                                Icon(Icons.Default.Delete, contentDescription = LocalizedString.get("delete"), tint = SubtitleGray.copy(alpha = 0.5f), modifier = Modifier.size(20.dp))
                             }
                         }
                     }
@@ -326,7 +326,7 @@ Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                         colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF1E1E1E)),
                         shape = RoundedCornerShape(12.dp)
                     ) {
-                        Icon(Icons.Default.Image, null, tint = Color.White)
+                        Icon(Icons.Default.Image, contentDescription = null, tint = Color.White)
                         Spacer(Modifier.width(8.dp))
                         Text(LocalizedString.get("export_image"), color = Color.White)
                     }
@@ -345,7 +345,7 @@ Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                         border = BorderStroke(1.dp, Color(0xFF25D366)),
                         shape = RoundedCornerShape(12.dp)
                     ) {
-                        Icon(androidx.compose.material.icons.Icons.Filled.Send, null, tint = Color(0xFF25D366))
+                        Icon(androidx.compose.material.icons.Icons.Filled.Send, contentDescription = null, tint = Color(0xFF25D366))
                         Spacer(Modifier.width(8.dp))
                         Text(LocalizedString.get("share_whatsapp"), color = Color(0xFF25D366))
                     }
@@ -467,16 +467,23 @@ if (isExportingImage) {
 fun AddPaymentDialog(remaining: Double, currency: String, onDismiss: () -> Unit, onSave: (Double, String) -> Unit) {
     var amount by remember { mutableStateOf("%.2f".format(remaining)) }
     var note by remember { mutableStateOf("") }
+    val context = LocalContext.current
 
     ModalBottomSheet(onDismissRequest = onDismiss, containerColor = Color(0xFF1A1A1A)) {
         Column(Modifier.padding(24.dp).padding(bottom = 32.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
             Text(LocalizedString.get("add_payment"), fontSize = 20.sp, fontWeight = FontWeight.Bold, color = Color.White)
-            OutlinedTextField(
+                                OutlinedTextField(
                 value = amount,
                 onValueChange = { if (it.all { c -> c.isDigit() || c == '.' }) amount = it },
                 label = { Text("${LocalizedString.get("amount")} ($currency)") },
                 modifier = Modifier.fillMaxWidth(),
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+                isError = (amount.toDoubleOrNull() ?: 0.0) > remaining,
+                supportingText = {
+                    if ((amount.toDoubleOrNull() ?: 0.0) > remaining) {
+                        Text("Exceeds remaining balance", color = MaterialTheme.colorScheme.error)
+                    }
+                },
                 colors = OutlinedTextFieldDefaults.colors(focusedBorderColor = PrimaryGreen)
             )
             OutlinedTextField(
@@ -489,7 +496,10 @@ fun AddPaymentDialog(remaining: Double, currency: String, onDismiss: () -> Unit,
             Button(
                 onClick = {
                     val amt = amount.toDoubleOrNull() ?: 0.0
-                    if (amt > 0) onSave(amt, note)
+                    if (amt > 0 && amt <= remaining) onSave(amt, note)
+                    else if (amt > remaining) {
+                        Toast.makeText(context, "Amount exceeds remaining balance", Toast.LENGTH_SHORT).show()
+                    }
                 },
                 modifier = Modifier.fillMaxWidth().height(54.dp),
                 colors = ButtonDefaults.buttonColors(containerColor = PrimaryGreen)

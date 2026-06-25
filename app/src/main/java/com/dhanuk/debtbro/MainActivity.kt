@@ -14,8 +14,7 @@ import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import com.dhanuk.debtbro.data.datastore.AppPreferences
 import com.dhanuk.debtbro.presentation.navigation.DebtBroNavGraph
 import com.dhanuk.debtbro.presentation.theme.DebtBroTheme
-import androidx.compose.runtime.CompositionLocalProvider
-import androidx.lifecycle.compose.LocalLifecycleOwner
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.ui.graphics.Color
 import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
@@ -35,15 +34,11 @@ class MainActivity : ComponentActivity() {
                 else -> isSystemInDarkTheme()
             }
             DebtBroTheme(darkTheme = darkTheme) {
-                CompositionLocalProvider(
-                    LocalLifecycleOwner provides this
+                Surface(
+                    modifier = Modifier.fillMaxSize(),
+                    color = MaterialTheme.colorScheme.background
                 ) {
-                    Surface(
-                        modifier = Modifier.fillMaxSize(),
-                        color = Color(0xFF0D0D0D)
-                    ) {
-                        DebtBroNavGraph(appPreferences = appPreferences)
-                    }
+                    DebtBroNavGraph(appPreferences = appPreferences)
                 }
             }
         }

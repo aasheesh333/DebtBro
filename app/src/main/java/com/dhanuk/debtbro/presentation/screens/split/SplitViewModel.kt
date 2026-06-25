@@ -2,6 +2,7 @@ package com.dhanuk.debtbro.presentation.screens.split
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.dhanuk.debtbro.data.datastore.AppPreferences
 import com.dhanuk.debtbro.data.db.entity.DebtEntity
 import com.dhanuk.debtbro.data.db.entity.SplitEntity
 import com.dhanuk.debtbro.data.firebase.AuthManager
@@ -23,7 +24,8 @@ data class SplitUiState(
     val participants: List<String> = listOf("Me"),
     val perPerson: Double = 0.0,
     val aiSummary: String = "",
-    val isLoading: Boolean = false
+    val isLoading: Boolean = false,
+    val currencySymbol: String = "₹"
 )
 
 @HiltViewModel
@@ -32,7 +34,8 @@ class SplitViewModel @Inject constructor(
     private val debts: DebtRepository,
     private val groq: GroqRepository,
     private val authManager: AuthManager,
-    private val syncManager: SyncManager
+    private val syncManager: SyncManager,
+    private val prefs: AppPreferences
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(SplitUiState())
@@ -42,6 +45,11 @@ class SplitViewModel @Inject constructor(
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     init {
+        viewModelScope.launch {
+            prefs.defaultCurrency.collect { symbol ->
+                _state.value = _state.value.copy(currencySymbol = symbol)
+            }
+        }
         viewModelScope.launch {
             _state.collect { s ->
                 val total = s.totalAmount.toDoubleOrNull() ?: 0.0

@@ -47,7 +47,7 @@ fun DebtListScreen(
     
     val hapticFeedback = LocalHapticFeedback.current
 
-    Box(modifier = Modifier.fillMaxSize().background(Color(0xFF0D0D0D))) {
+    Box(modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) {
         Column(modifier = Modifier.fillMaxSize()) {
             // Header
             Row(
@@ -67,7 +67,7 @@ fun DebtListScreen(
                     onClick = onAddDebtClick,
                     modifier = Modifier.clip(CircleShape).background(PrimaryGreen)
                 ) {
-                    Icon(Icons.Default.Add, null, tint = Color.Black)
+                    Icon(Icons.Default.Add, contentDescription = LocalizedString.get("add_debt"), tint = Color.Black)
                 }
             }
 
@@ -79,11 +79,11 @@ fun DebtListScreen(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(horizontal = 16.dp),
-                leadingIcon = { Icon(Icons.Default.Search, null, tint = SubtitleGray) },
+                leadingIcon = { Icon(Icons.Default.Search, contentDescription = null, tint = SubtitleGray) },
                 trailingIcon = {
                     if (searchQuery.isNotEmpty()) {
                         IconButton(onClick = { viewModel.searchQuery.value = "" }) {
-                            Icon(Icons.Default.Clear, null, tint = SubtitleGray)
+                            Icon(Icons.Default.Clear, contentDescription = null, tint = SubtitleGray)
                         }
                     }
                 },

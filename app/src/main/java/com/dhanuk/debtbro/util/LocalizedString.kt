@@ -137,6 +137,10 @@ object LocalizedString {
             "show_due_date_sub" to "Include due date in card",
             "show_emoji" to "Show Emoji",
             "show_emoji_sub" to "Include person emoji in card",
+            "no_data_yet" to "No data yet",
+            "add_debts_to_see_stats" to "Add some debts to see your financial insights here.",
+            "select_due_date" to "Select due date",
+            "nav_back" to "Back",
         ),
         "hi" to mapOf(
             "nav_home" to "होम",

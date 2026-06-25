@@ -12,11 +12,11 @@ import java.io.IOException
 import java.io.OutputStreamWriter
 
 object CsvExporter {
-    fun exportDebts(context: Context, debts: List<DebtEntity>): Uri {
+    fun exportDebts(context: Context, debts: List<DebtEntity>): Result<Uri> = runCatching {
+        if (debts.isEmpty()) throw IOException("No debts to export")
         val fileName = "debtbro-${System.currentTimeMillis()}.csv"
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-            // Android 10+ — use MediaStore Downloads collection
             val values = android.content.ContentValues().apply {
                 put(MediaStore.MediaColumns.DISPLAY_NAME, fileName)
                 put(MediaStore.MediaColumns.MIME_TYPE, "text/csv")
@@ -27,14 +27,13 @@ object CsvExporter {
             context.contentResolver.openOutputStream(uri)?.use { stream ->
                 writeCsv(stream, debts)
             } ?: throw IOException("Unable to open output stream for CSV")
-            return uri
+            uri
         } else {
-            // Android 9 and below — use FileProvider to avoid permission issues on MIUI/other ROMs
             val downloadsDir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS)
             if (!downloadsDir.exists()) downloadsDir.mkdirs()
             val file = File(downloadsDir, fileName)
             file.outputStream().use { writeCsv(it, debts) }
-            return FileProvider.getUriForFile(context, "${context.packageName}.fileprovider", file)
+            FileProvider.getUriForFile(context, "${context.packageName}.fileprovider", file)
         }
     }
 

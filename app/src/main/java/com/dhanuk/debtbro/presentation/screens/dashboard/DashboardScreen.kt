@@ -24,6 +24,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -73,7 +74,7 @@ fun DashboardScreen(
         }
     }
 
-    Box(modifier = Modifier.fillMaxSize().background(Color(0xFF0D0D0D))) {
+    Box(modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) {
         Box(modifier = Modifier.fillMaxSize().pullRefresh(pullRefreshState)) {
         LazyColumn(
             modifier = Modifier.fillMaxSize().padding(horizontal = 16.dp),
@@ -104,7 +105,7 @@ fun DashboardScreen(
                         onClick = onSettingsClick,
                         modifier = Modifier.clip(CircleShape).background(Color(0xFF1E1E1E))
                     ) {
-                        Icon(Icons.Default.Settings, null, tint = Color.White)
+                        Icon(Icons.Default.Settings, contentDescription = LocalizedString.get("settings"), tint = Color.White)
                     }
                 }
             }
@@ -252,7 +253,7 @@ fun StatsCard(totalOwedToMe: Double, totalIOwe: Double, recoveryRate: Int) {
                         .background(PrimaryGreen.copy(alpha = 0.1f)),
                     contentAlignment = Alignment.Center
                 ) {
-                    Icon(Icons.Default.TrendingUp, null, tint = PrimaryGreen)
+                    Icon(Icons.Default.TrendingUp, contentDescription = null, tint = PrimaryGreen)
                 }
             }
             

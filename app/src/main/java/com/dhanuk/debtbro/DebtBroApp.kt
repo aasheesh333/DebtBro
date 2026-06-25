@@ -31,7 +31,15 @@ class DebtBroApp : Application(), Configuration.Provider {
             OneSignal.initWithContext(this, BuildConfig.ONESIGNAL_APP_ID)
             CoroutineScope(Dispatchers.IO).launch { OneSignal.Notifications.requestPermission(false) }
         }
-        WorkManager.getInstance(this).enqueueUniquePeriodicWork("daily-debt-reminders", ExistingPeriodicWorkPolicy.UPDATE, PeriodicWorkRequestBuilder<DebtReminderWorker>(1, TimeUnit.DAYS).build())
-        WorkManager.getInstance(this).enqueueUniquePeriodicWork("weekly-summary", ExistingPeriodicWorkPolicy.UPDATE, PeriodicWorkRequestBuilder<WeeklySummaryWorker>(7, TimeUnit.DAYS).build())
+        WorkManager.getInstance(this).enqueueUniquePeriodicWork(
+            "daily-debt-reminders",
+            ExistingPeriodicWorkPolicy.UPDATE,
+            PeriodicWorkRequestBuilder<DebtReminderWorker>(1, TimeUnit.DAYS).build()
+        )
+        WorkManager.getInstance(this).enqueueUniquePeriodicWork(
+            "weekly-summary",
+            ExistingPeriodicWorkPolicy.UPDATE,
+            PeriodicWorkRequestBuilder<WeeklySummaryWorker>(7, TimeUnit.DAYS).build()
+        )
     }
 }
