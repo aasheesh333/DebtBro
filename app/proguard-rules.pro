@@ -15,3 +15,8 @@
 -keepclassmembers class * {
     @androidx.annotation.Keep *;
 }
+-keep class androidx.lifecycle.** { *; }
+-keep class androidx.activity.** { *; }
+-keep class androidx.compose.runtime.** { *; }
+-keep class androidx.compose.ui.** { *; }
+-keepclassmembers class androidx.lifecycle.** { *; }
