@@ -167,7 +167,7 @@ class SyncManager @Inject constructor(
             android.util.Log.e("SyncManager", "pushNewDebt failed for debt ${debt.id}: ${e.message}", e)
             throw e
         }
-        firebaseId
+        return firebaseId
     }
 
     /** Push a single updated debt to Firestore immediately */

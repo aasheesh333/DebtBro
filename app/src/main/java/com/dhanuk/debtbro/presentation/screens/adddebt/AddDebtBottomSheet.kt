@@ -34,6 +34,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.dhanuk.debtbro.presentation.theme.DangerRed
 import com.dhanuk.debtbro.presentation.theme.PrimaryGreen
 import com.dhanuk.debtbro.presentation.theme.SubtitleGray
+import com.dhanuk.debtbro.util.LocalizedString
 import java.text.SimpleDateFormat
 import java.util.*
 

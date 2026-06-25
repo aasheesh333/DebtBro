@@ -326,9 +326,8 @@ object HtmlExporter {
                             } catch (e: Exception) {
                                 if (continuation.isActive) {
                                     continuation.resumeWithException(e)
-                                } finally {
-                                    destroyWebView()
                                 }
+                                destroyWebView()
                             }
                         }, 800)
                     }
