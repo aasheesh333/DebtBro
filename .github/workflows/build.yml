@@ -1,4 +1,4 @@
-name: DebtBro Build Release APK
+name: DebtBro CI/CD
 
 on:
   push:
@@ -8,7 +8,7 @@ on:
 
 jobs:
   build:
-    name: Build Signed Release APK
+    name: Build Signed Release Artifacts
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -42,11 +42,19 @@ jobs:
         run: chmod +x gradlew
       - name: Build Release APK
         run: ./gradlew assembleRelease --stacktrace
+      - name: Build Release AAB
+        run: ./gradlew bundleRelease --stacktrace
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: DebtBro-${{ github.sha }}
+          name: DebtBro-APK-${{ github.sha }}
           path: app/build/outputs/apk/release/app-release.apk
+          retention-days: 30
+      - name: Upload AAB
+        uses: actions/upload-artifact@v4
+        with:
+          name: DebtBro-AAB-${{ github.sha }}
+          path: app/build/outputs/bundle/release/app-release.aab
           retention-days: 30
       - name: Create GitHub Release
         if: github.ref == 'refs/heads/main'
@@ -54,6 +62,8 @@ jobs:
         with:
           tag_name: v1.0.${{ github.run_number }}
           name: "DebtBro v1.0.${{ github.run_number }}"
-          files: app/build/outputs/apk/release/app-release.apk
+          files: |
+            app/build/outputs/apk/release/app-release.apk
+            app/build/outputs/bundle/release/app-release.aab
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
