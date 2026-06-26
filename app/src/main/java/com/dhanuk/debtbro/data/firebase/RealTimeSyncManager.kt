@@ -49,12 +49,14 @@ class RealTimeSyncManager @Inject constructor(
                     // Exponential-ish backoff: max 3 retries within ~10s
                     if (retryAttempt < 3) {
                         retryAttempt++
-                        Log.w("RealTimeSync", "Retrying debt listener (attempt $retryAttempt): ${cause.message}")
+                        val msg = if (cause is Throwable) cause.message else cause.toString()
+                        Log.w("RealTimeSync", "Retrying debt listener (attempt $retryAttempt): $msg")
                         kotlinx.coroutines.delay(2_000L * retryAttempt)
                         true
                     } else {
-                        _lastError.value = "Debt listener stopped: ${cause.message}"
-                        Log.e("RealTimeSync", "Debt listener permanently failed: ${cause.message}", cause)
+                        val msg = if (cause is Throwable) cause.message else cause.toString()
+                        _lastError.value = "Debt listener stopped: $msg"
+                        Log.e("RealTimeSync", "Debt listener permanently failed: $msg")
                         false
                     }
                 }
@@ -73,7 +75,8 @@ class RealTimeSyncManager @Inject constructor(
                         kotlinx.coroutines.delay(2_000L * retryAttempt)
                         true
                     } else {
-                        _lastError.value = "Split listener stopped: ${cause.message}"
+                        val msg = if (cause is Throwable) cause.message else cause.toString()
+                        _lastError.value = "Split listener stopped: $msg"
                         false
                     }
                 }

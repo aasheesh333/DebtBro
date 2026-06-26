@@ -156,13 +156,7 @@ class AuthManager @Inject constructor(
      */
     suspend fun refreshTokenIfStale(forceRefreshSeconds: Long = 300L): Result<Unit> = runCatching {
         val user = auth.currentUser ?: return@runCatching
-        val nowSeconds = System.currentTimeMillis() / 1000L
-        val tokenResult = user.getIdToken(false).await()
-        val issuedAt = tokenResult.issueTime ?: 0L
-        val ttl = tokenResult.expirationTime - issuedAt
-        if (ttl == 0L || (ttl - (nowSeconds * 1000L - issuedAt)) < forceRefreshSeconds * 1000L) {
-            user.getIdToken(true).await()
-        }
+        user.getIdToken(true).await()
     }.onFailure { e ->
         android.util.Log.e("AuthManager", "token refresh failed: ${e.message}", e)
     }

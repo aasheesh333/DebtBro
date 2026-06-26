@@ -88,7 +88,7 @@ class AdManager @Inject constructor(private val prefs: AppPreferences) {
                 onDismissed()
             }
             override fun onAdFailedToShowFullScreenContent(error: com.google.android.gms.ads.AdError) {
-                Log.e("AdManager", "Interstitial show failed: ${error.message}", error)
+                Log.e("AdManager", "Interstitial show failed: ${error.message}")
                 interstitialAd = null
                 loadInterstitial(activity)
                 onDismissed()
@@ -117,7 +117,7 @@ class AdManager @Inject constructor(private val prefs: AppPreferences) {
         val ad = rewardedAd ?: return onFailed()
         ad.fullScreenContentCallback = object : FullScreenContentCallback() {
             override fun onAdFailedToShowFullScreenContent(error: com.google.android.gms.ads.AdError) {
-                Log.e("AdManager", "RewardedAd show failed: ${error.message}", error)
+                Log.e("AdManager", "RewardedAd show failed: ${error.message}")
                 rewardedAd = null
                 loadRewardedAd(activity)
                 onFailed()
