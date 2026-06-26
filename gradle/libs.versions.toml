@@ -85,5 +85,5 @@ kotlin-compose = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "ko
 ksp = { id = "com.google.devtools.ksp", version.ref = "ksp" }
 hilt = { id = "com.google.dagger.hilt.android", version.ref = "hilt" }
 google-services = { id = "com.google.gms.google-services", version = "4.4.2" }
-firebase-crashlytics = { id = "com.google.gms.firebase.crashlytics", version = "3.0.2" }
-firebase-performance = { id = "com.google.gms.firebase.performance", version = "1.4.2" }
+firebase-crashlytics = { id = "com.google.firebase.crashlytics", version = "2.9.9" }
+firebase-performance = { id = "com.google.firebase.firebase-perf", version = "1.4.2" }
