@@ -1,5 +1,6 @@
 package com.dhanuk.debtbro.data.firebase
 
+import android.util.Log
 import com.dhanuk.debtbro.data.db.dao.DebtDao
 import com.dhanuk.debtbro.data.db.dao.PaymentDao
 import com.dhanuk.debtbro.data.db.dao.SplitDao
@@ -12,6 +13,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.catch
+import kotlinx.coroutines.flow.retryWhen
 import kotlinx.coroutines.cancelChildren
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -28,29 +30,57 @@ class RealTimeSyncManager @Inject constructor(
     private val _isActive = MutableStateFlow(false)
     val isActive: StateFlow<Boolean> = _isActive.asStateFlow()
 
+    private val _lastError = MutableStateFlow<String?>(null)
+    val lastError: StateFlow<String?> = _lastError.asStateFlow()
+
     private var currentUserId: String? = null
+    private var retryAttempt = 0
 
     fun startListening(userId: String) {
         if (currentUserId == userId) return
         stopListening()
         currentUserId = userId
         _isActive.value = true
+        _lastError.value = null
 
         scope.launch {
             firebaseRepository.observeDebtsRealTime(userId)
-                .catch { e -> android.util.Log.e("RealTimeSync", "Debt listener error: ${e.message}", e) }
+                .retryWhen { _, cause ->
+                    // Exponential-ish backoff: max 3 retries within ~10s
+                    if (retryAttempt < 3) {
+                        retryAttempt++
+                        Log.w("RealTimeSync", "Retrying debt listener (attempt $retryAttempt): ${cause.message}")
+                        kotlinx.coroutines.delay(2_000L * retryAttempt)
+                        true
+                    } else {
+                        _lastError.value = "Debt listener stopped: ${cause.message}"
+                        Log.e("RealTimeSync", "Debt listener permanently failed: ${cause.message}", cause)
+                        false
+                    }
+                }
+                .catch { e -> Log.e("RealTimeSync", "Debt listener error: ${e.message}", e) }
                 .collect { cloudDebts ->
                     try { mergeDebtsFromCloud(cloudDebts) }
-                    catch (e: Exception) { android.util.Log.e("RealTimeSync", "mergeDebts failed: ${e.message}", e) }
+                    catch (e: Exception) { Log.e("RealTimeSync", "mergeDebts failed: ${e.message}", e) }
                 }
         }
 
         scope.launch {
             firebaseRepository.observeSplitsRealTime(userId)
-                .catch { e -> android.util.Log.e("RealTimeSync", "Split listener error: ${e.message}", e) }
+                .retryWhen { _, cause ->
+                    if (retryAttempt < 3) {
+                        retryAttempt++
+                        kotlinx.coroutines.delay(2_000L * retryAttempt)
+                        true
+                    } else {
+                        _lastError.value = "Split listener stopped: ${cause.message}"
+                        false
+                    }
+                }
+                .catch { e -> Log.e("RealTimeSync", "Split listener error: ${e.message}", e) }
                 .collect { cloudSplits ->
                     try { mergeSplitsFromCloud(cloudSplits) }
-                    catch (e: Exception) { android.util.Log.e("RealTimeSync", "mergeSplits failed: ${e.message}", e) }
+                    catch (e: Exception) { Log.e("RealTimeSync", "mergeSplits failed: ${e.message}", e) }
                 }
         }
     }
@@ -59,6 +89,7 @@ class RealTimeSyncManager @Inject constructor(
         scope.coroutineContext.cancelChildren()
         currentUserId = null
         _isActive.value = false
+        retryAttempt = 0
     }
 
     private suspend fun mergeDebtsFromCloud(cloudDebts: List<DebtEntity>) {
@@ -68,22 +99,24 @@ class RealTimeSyncManager @Inject constructor(
             if (existingLocal == null) {
                 debtDao.insertDebtIgnore(cloudDebt.copy(id = 0, isSynced = true))
             } else if (cloudDebt.updatedAt > existingLocal.updatedAt) {
-                debtDao.updateDebt(existingLocal.copy(
-                    personName = cloudDebt.personName,
-                    personEmoji = cloudDebt.personEmoji,
-                    amount = cloudDebt.amount,
-                    currency = cloudDebt.currency,
-                    description = cloudDebt.description,
-                    type = cloudDebt.type,
-                    status = cloudDebt.status,
-                    dueDate = cloudDebt.dueDate,
-                    amountPaid = cloudDebt.amountPaid,
-                    lastNudgedAt = cloudDebt.lastNudgedAt,
-                    aiRoastGenerated = cloudDebt.aiRoastGenerated,
-                    notes = cloudDebt.notes,
-                    updatedAt = cloudDebt.updatedAt,
-                    isSynced = true
-                ))
+                debtDao.updateDebt(
+                    existingLocal.copy(
+                        personName = cloudDebt.personName,
+                        personEmoji = cloudDebt.personEmoji,
+                        amount = cloudDebt.amount,
+                        currency = cloudDebt.currency,
+                        description = cloudDebt.description,
+                        type = cloudDebt.type,
+                        status = cloudDebt.status,
+                        dueDate = cloudDebt.dueDate,
+                        amountPaid = cloudDebt.amountPaid,
+                        lastNudgedAt = cloudDebt.lastNudgedAt,
+                        aiRoastGenerated = cloudDebt.aiRoastGenerated,
+                        notes = cloudDebt.notes,
+                        updatedAt = cloudDebt.updatedAt,
+                        isSynced = true
+                    )
+                )
             }
         }
     }

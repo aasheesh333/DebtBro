@@ -37,7 +37,7 @@ import com.dhanuk.debtbro.presentation.components.EmptyStateView
 import com.dhanuk.debtbro.presentation.components.LoadingDotsIndicator
 import com.dhanuk.debtbro.presentation.theme.DangerRed
 import com.dhanuk.debtbro.presentation.theme.PrimaryGreen
-import com.dhanuk.debtbro.presentation.theme.SubtitleGray
+import com.dhanuk.debtbro.presentation.theme.LocalExtraColors
 import com.dhanuk.debtbro.util.copyToClipboard
 import com.dhanuk.debtbro.util.formatCurrency
 import com.dhanuk.debtbro.util.toReadableDate
@@ -56,6 +56,7 @@ fun android.content.Context.findActivity(): Activity? {
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun DebtDetailScreen(onBack: () -> Unit, viewModel: DebtDetailViewModel = hiltViewModel()) {
+    val extra = LocalExtraColors.current
     var showDeleteConfirm by remember { mutableStateOf(false) }
     val debt by viewModel.debt.collectAsStateWithLifecycle()
     val payments by viewModel.payments.collectAsStateWithLifecycle()
@@ -97,21 +98,21 @@ fun DebtDetailScreen(onBack: () -> Unit, viewModel: DebtDetailViewModel = hiltVi
                 title = { Text(d.personName, fontWeight = FontWeight.Bold) },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = LocalizedString.get("nav_back"), tint = Color.White)
+                        Icon(Icons.Default.ArrowBack, contentDescription = LocalizedString.get("nav_back"), tint = MaterialTheme.colorScheme.onSurface)
                     }
                 },
                 actions = {
                     IconButton(onClick = { viewModel.showEditDebtSheet.value = true }) {
-                        Icon(Icons.Default.Edit, contentDescription = LocalizedString.get("edit_debt"), tint = Color.White)
+                        Icon(Icons.Default.Edit, contentDescription = LocalizedString.get("edit_debt"), tint = MaterialTheme.colorScheme.onSurface)
                     }
 
                     IconButton(onClick = { showDeleteConfirm = true }) {
-                        Icon(Icons.Default.Delete, contentDescription = LocalizedString.get("delete_debt"), tint = Color(0xFFFF4757))
+                        Icon(Icons.Default.Delete, contentDescription = LocalizedString.get("delete_debt"), tint = MaterialTheme.colorScheme.error)
                     }
                 },
                 colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
                     containerColor = MaterialTheme.colorScheme.background,
-                    titleContentColor = Color.White
+                    titleContentColor = MaterialTheme.colorScheme.onSurface
                 )
             )
         },
@@ -123,7 +124,6 @@ fun DebtDetailScreen(onBack: () -> Unit, viewModel: DebtDetailViewModel = hiltVi
                 verticalArrangement = Arrangement.spacedBy(20.dp),
                 contentPadding = PaddingValues(bottom = 32.dp)
             ) {
-                // Main Info Section
                 item {
                     Column(
                         modifier = Modifier.fillMaxWidth().padding(vertical = 16.dp),
@@ -133,7 +133,7 @@ fun DebtDetailScreen(onBack: () -> Unit, viewModel: DebtDetailViewModel = hiltVi
                             modifier = Modifier
                                 .size(80.dp)
                                 .clip(CircleShape)
-                                .background(Color(0xFF1E1E1E)),
+                                .background(MaterialTheme.colorScheme.surface),
                             contentAlignment = Alignment.Center
                         ) {
                             Text(d.personEmoji, fontSize = 40.sp)
@@ -141,12 +141,12 @@ fun DebtDetailScreen(onBack: () -> Unit, viewModel: DebtDetailViewModel = hiltVi
                         Spacer(Modifier.height(16.dp))
                         Text(
                             if (remaining > 0) LocalizedString.get("remaining_balance") else LocalizedString.get("debt_settled"),
-                            color = SubtitleGray,
+                            color = extra.subtitleGray,
                             fontSize = 14.sp
                         )
                         Text(
                             formatCurrency(remaining, d.currency),
-                            color = if (remaining > 0) (if (d.type == "THEY_OWE_ME") PrimaryGreen else DangerRed) else Color.White,
+                            color = if (remaining > 0) (if (d.type == "THEY_OWE_ME") PrimaryGreen else DangerRed) else MaterialTheme.colorScheme.onSurface,
                             fontSize = 42.sp,
                             fontWeight = FontWeight.ExtraBold
                         )
@@ -157,27 +157,26 @@ fun DebtDetailScreen(onBack: () -> Unit, viewModel: DebtDetailViewModel = hiltVi
                             progress = progress,
                             modifier = Modifier.fillMaxWidth().height(8.dp).clip(CircleShape),
                             color = PrimaryGreen,
-                            trackColor = Color(0xFF1E1E1E)
+                            trackColor = MaterialTheme.colorScheme.surface
                         )
                         
                         Row(
                             modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
                             horizontalArrangement = Arrangement.SpaceBetween
                         ) {
-                            Text("${LocalizedString.get("paid")}: ${formatCurrency(d.amountPaid, d.currency)}", color = SubtitleGray, fontSize = 12.sp)
-                            Text("${LocalizedString.get("total")}: ${formatCurrency(d.amount, d.currency)}", color = SubtitleGray, fontSize = 12.sp)
+                            Text("${LocalizedString.get("paid")}: ${formatCurrency(d.amountPaid, d.currency)}", color = extra.subtitleGray, fontSize = 12.sp)
+                            Text("${LocalizedString.get("total")}: ${formatCurrency(d.amount, d.currency)}", color = extra.subtitleGray, fontSize = 12.sp)
                         }
 
                         Spacer(Modifier.height(4.dp))
                         Text(
                             "${LocalizedString.get("created")}: ${d.createdAt.toReadableDateTime()}",
-                            color = SubtitleGray,
+                            color = extra.subtitleGray,
                             fontSize = 11.sp
                         )
                     }
                 }
 
-                // Actions Section
                 item {
                     Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                         Button(
@@ -196,24 +195,23 @@ fun DebtDetailScreen(onBack: () -> Unit, viewModel: DebtDetailViewModel = hiltVi
                             onClick = { viewModel.markSettled() },
                             modifier = Modifier.weight(1f).height(54.dp),
                             shape = RoundedCornerShape(12.dp),
-                            border = BorderStroke(1.dp, if (remaining > 0) PrimaryGreen else Color(0xFF333333)),
+                            border = BorderStroke(1.dp, if (remaining > 0) PrimaryGreen else MaterialTheme.colorScheme.outline),
                             enabled = remaining > 0
                         ) {
-                            Text(LocalizedString.get("settle_all"), color = if (remaining > 0) PrimaryGreen else SubtitleGray)
+                            Text(LocalizedString.get("settle_all"), color = if (remaining > 0) PrimaryGreen else extra.subtitleGray)
                         }
                     }
                 }
 
-                // Nudge Section
                 item {
                     Card(
                         modifier = Modifier.fillMaxWidth(),
-                        colors = CardDefaults.cardColors(containerColor = Color(0xFF1E1E1E)),
+                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
                         shape = RoundedCornerShape(16.dp)
                     ) {
                         Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
                             Row(verticalAlignment = Alignment.CenterVertically) {
-                                Text(LocalizedString.get("nudge"), fontWeight = FontWeight.Bold, color = Color.White)
+                                Text(LocalizedString.get("nudge"), fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
                                 Spacer(Modifier.weight(1f))
                                 Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
                                     listOf("MILD", "MEDIUM", "SAVAGE").forEach { level ->
@@ -234,7 +232,7 @@ fun DebtDetailScreen(onBack: () -> Unit, viewModel: DebtDetailViewModel = hiltVi
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .clip(RoundedCornerShape(12.dp))
-                                    .background(Color(0xFF2A2A2A))
+                                    .background(MaterialTheme.colorScheme.surfaceVariant)
                                     .padding(16.dp)
                             ) {
                                 if (isGenerating) {
@@ -243,7 +241,7 @@ fun DebtDetailScreen(onBack: () -> Unit, viewModel: DebtDetailViewModel = hiltVi
                                     val msg = aiMessage.ifBlank { d.aiRoastGenerated ?: LocalizedString.get("tap_refresh") }
                                     Text(
                                         msg,
-                                        color = Color.White,
+                                        color = MaterialTheme.colorScheme.onSurface,
                                         fontSize = 14.sp
                                     )
                                 }
@@ -281,14 +279,13 @@ Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     }
                 }
 
-                // Payment History Section
                 item {
-                    Text(LocalizedString.get("payment_history"), fontWeight = FontWeight.Bold, color = Color.White, fontSize = 18.sp)
+                    Text(LocalizedString.get("payment_history"), fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface, fontSize = 18.sp)
                 }
                 
                 if (payments.isEmpty()) {
                     item {
-                        Text(LocalizedString.get("no_payments"), color = SubtitleGray, modifier = Modifier.padding(vertical = 16.dp))
+                        Text(LocalizedString.get("no_payments"), color = extra.subtitleGray, modifier = Modifier.padding(vertical = 16.dp))
                     }
                 } else {
                     items(payments, key = { it.id }) { payment ->
@@ -296,19 +293,19 @@ Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .clip(RoundedCornerShape(12.dp))
-                                .background(Color(0xFF161616))
+                                .background(MaterialTheme.colorScheme.surfaceVariant)
                                 .padding(16.dp),
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             Column(Modifier.weight(1f)) {
                                 Text(formatCurrency(payment.amount, d.currency), color = PrimaryGreen, fontWeight = FontWeight.Bold)
-                                Text(payment.paidAt.toReadableDate(), color = SubtitleGray, fontSize = 12.sp)
+                                Text(payment.paidAt.toReadableDate(), color = extra.subtitleGray, fontSize = 12.sp)
                                 if (!payment.note.isNullOrBlank()) {
-                                    Text(payment.note, color = Color.White, fontSize = 13.sp, modifier = Modifier.padding(top = 4.dp))
+                                    Text(payment.note, color = MaterialTheme.colorScheme.onSurface, fontSize = 13.sp, modifier = Modifier.padding(top = 4.dp))
                                 }
                             }
                             IconButton(onClick = { viewModel.deletePayment(payment.id) }) {
-                                Icon(Icons.Default.Delete, contentDescription = LocalizedString.get("delete"), tint = SubtitleGray.copy(alpha = 0.5f), modifier = Modifier.size(20.dp))
+                                Icon(Icons.Default.Delete, contentDescription = LocalizedString.get("delete"), tint = extra.subtitleGray.copy(alpha = 0.5f), modifier = Modifier.size(20.dp))
                             }
                         }
                     }
@@ -323,12 +320,12 @@ Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                         },
                         enabled = !isExportingImage,
                         modifier = Modifier.fillMaxWidth().height(54.dp),
-                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF1E1E1E)),
+                        colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.surface),
                         shape = RoundedCornerShape(12.dp)
                     ) {
-                        Icon(Icons.Default.Image, contentDescription = null, tint = Color.White)
+                        Icon(Icons.Default.Image, contentDescription = null, tint = MaterialTheme.colorScheme.onSurface)
                         Spacer(Modifier.width(8.dp))
-                        Text(LocalizedString.get("export_image"), color = Color.White)
+                        Text(LocalizedString.get("export_image"), color = MaterialTheme.colorScheme.onSurface)
                     }
                 }
                 
@@ -370,21 +367,21 @@ Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
     if (showDeleteConfirm) {
         AlertDialog(
             onDismissRequest = { showDeleteConfirm = false },
-            containerColor = Color(0xFF1A1A1A),
-            title = { Text(LocalizedString.get("delete_debt"), color = Color.White) },
-            text = { Text(LocalizedString.get("delete_confirm"), color = Color(0xFFCCCCCC)) },
+            containerColor = MaterialTheme.colorScheme.surface,
+            title = { Text(LocalizedString.get("delete_debt"), color = MaterialTheme.colorScheme.onSurface) },
+            text = { Text(LocalizedString.get("delete_confirm"), color = MaterialTheme.colorScheme.onSurfaceVariant) },
             confirmButton = {
                 TextButton(onClick = {
                     viewModel.deleteDebt()
                     showDeleteConfirm = false
                     onBack()
                 }) {
-                    Text(LocalizedString.get("delete"), color = Color(0xFFFF4757))
+                    Text(LocalizedString.get("delete"), color = MaterialTheme.colorScheme.error)
                 }
             },
             dismissButton = {
                 TextButton(onClick = { showDeleteConfirm = false }) {
-                    Text(LocalizedString.get("cancel"), color = SubtitleGray)
+                    Text(LocalizedString.get("cancel"), color = extra.subtitleGray)
                 }
             }
         )
@@ -401,8 +398,8 @@ Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
     if (showRewardAd) {
         AlertDialog(
             onDismissRequest = { viewModel.dismissRewardAd() },
-            title = { Text(LocalizedString.get("free_regenerations_used"), color = Color.White) },
-            text = { Text(LocalizedString.get("free_regenerations_desc").replace("{count}", MAX_FREE_REGENERATIONS.toString()), color = Color(0xFFCCCCCC)) },
+            title = { Text(LocalizedString.get("free_regenerations_used"), color = MaterialTheme.colorScheme.onSurface) },
+            text = { Text(LocalizedString.get("free_regenerations_desc").replace("{count}", MAX_FREE_REGENERATIONS.toString()), color = MaterialTheme.colorScheme.onSurfaceVariant) },
             confirmButton = {
                 TextButton(onClick = {
                     val activity = context.findActivity()
@@ -417,10 +414,10 @@ Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             },
             dismissButton = {
                 TextButton(onClick = { viewModel.dismissRewardAd() }) {
-                    Text(LocalizedString.get("later"), color = SubtitleGray)
+                    Text(LocalizedString.get("later"), color = extra.subtitleGray)
                 }
             },
-            containerColor = Color(0xFF1A1A1A)
+            containerColor = MaterialTheme.colorScheme.surface
         )
     }
 
@@ -428,19 +425,19 @@ if (isExportingImage) {
          val seconds = exportElapsed / 1000
          AlertDialog(
              onDismissRequest = {},
-             title = { Text("Preparing image...", color = Color.White) },
+             title = { Text("Preparing image...", color = MaterialTheme.colorScheme.onSurface) },
              text = {
                  Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                      LinearProgressIndicator(
                          modifier = Modifier.fillMaxWidth().height(6.dp).clip(RoundedCornerShape(3.dp)),
                          color = PrimaryGreen,
-                         trackColor = Color(0xFF333333)
+                         trackColor = MaterialTheme.colorScheme.outline
                      )
-                     Text("${seconds}s elapsed — rendering your card", color = Color(0xFFCCCCCC))
+                     Text("${seconds}s elapsed — rendering your card", color = MaterialTheme.colorScheme.onSurfaceVariant)
                  }
              },
              confirmButton = {},
-       containerColor = Color(0xFF1A1A1A)
+       containerColor = MaterialTheme.colorScheme.surface
            )
        }
 
@@ -465,13 +462,14 @@ if (isExportingImage) {
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AddPaymentDialog(remaining: Double, currency: String, onDismiss: () -> Unit, onSave: (Double, String) -> Unit) {
+    val extra = LocalExtraColors.current
     var amount by remember { mutableStateOf("%.2f".format(remaining)) }
     var note by remember { mutableStateOf("") }
     val context = LocalContext.current
 
-    ModalBottomSheet(onDismissRequest = onDismiss, containerColor = Color(0xFF1A1A1A)) {
+    ModalBottomSheet(onDismissRequest = onDismiss, containerColor = MaterialTheme.colorScheme.surface) {
         Column(Modifier.padding(24.dp).padding(bottom = 32.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
-            Text(LocalizedString.get("add_payment"), fontSize = 20.sp, fontWeight = FontWeight.Bold, color = Color.White)
+            Text(LocalizedString.get("add_payment"), fontSize = 20.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
                                 OutlinedTextField(
                 value = amount,
                 onValueChange = { if (it.all { c -> c.isDigit() || c == '.' }) amount = it },
@@ -518,9 +516,9 @@ fun EditDebtDialog(debt: DebtEntity, onDismiss: () -> Unit, onSave: (String, Dou
     var desc by remember { mutableStateOf(debt.description) }
     var emoji by remember { mutableStateOf(debt.personEmoji) }
 
-    ModalBottomSheet(onDismissRequest = onDismiss, containerColor = Color(0xFF1A1A1A)) {
+    ModalBottomSheet(onDismissRequest = onDismiss, containerColor = MaterialTheme.colorScheme.surface) {
         Column(Modifier.padding(24.dp).padding(bottom = 32.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
-            Text(LocalizedString.get("edit_debt"), fontSize = 20.sp, fontWeight = FontWeight.Bold, color = Color.White)
+            Text(LocalizedString.get("edit_debt"), fontSize = 20.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
             OutlinedTextField(value = name, onValueChange = { name = it }, label = { Text(LocalizedString.get("person_name")) }, modifier = Modifier.fillMaxWidth())
             OutlinedTextField(value = amount, onValueChange = { amount = it }, label = { Text(LocalizedString.get("total_amount")) }, modifier = Modifier.fillMaxWidth(), keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal))
             OutlinedTextField(value = desc, onValueChange = { desc = it }, label = { Text(LocalizedString.get("description")) }, modifier = Modifier.fillMaxWidth())
@@ -547,19 +545,20 @@ fun QuoteEditDialog(
     onDismiss: () -> Unit,
     onConfirm: (String) -> Unit
 ) {
+    val extra = LocalExtraColors.current
     var text by remember { mutableStateOf(initialText) }
 
     AlertDialog(
         onDismissRequest = onDismiss,
-        containerColor = Color(0xFF1A1A1A),
+        containerColor = MaterialTheme.colorScheme.surface,
         title = {
-            Text(LocalizedString.get("edit_ai_quote"), color = Color.White, fontWeight = FontWeight.Bold)
+            Text(LocalizedString.get("edit_ai_quote"), color = MaterialTheme.colorScheme.onSurface, fontWeight = FontWeight.Bold)
         },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 Text(
                     LocalizedString.get("edit_ai_quote_desc"),
-                    color = Color(0xFFCCCCCC),
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                     fontSize = 13.sp
                 )
                 OutlinedTextField(
@@ -568,9 +567,9 @@ fun QuoteEditDialog(
                     modifier = Modifier.fillMaxWidth().heightIn(min = 120.dp),
                     colors = OutlinedTextFieldDefaults.colors(
                         focusedBorderColor = PrimaryGreen,
-                        unfocusedBorderColor = Color(0xFF333333),
-                        focusedTextColor = Color.White,
-                        unfocusedTextColor = Color.White,
+                        unfocusedBorderColor = MaterialTheme.colorScheme.outline,
+                        focusedTextColor = MaterialTheme.colorScheme.onSurface,
+                        unfocusedTextColor = MaterialTheme.colorScheme.onSurface,
                         cursorColor = PrimaryGreen
                     ),
                     shape = RoundedCornerShape(12.dp),
@@ -589,7 +588,7 @@ fun QuoteEditDialog(
         },
         dismissButton = {
             TextButton(onClick = onDismiss) {
-                Text(LocalizedString.get("cancel"), color = SubtitleGray)
+                Text(LocalizedString.get("cancel"), color = extra.subtitleGray)
             }
         }
     )
@@ -598,13 +597,14 @@ fun QuoteEditDialog(
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun DebtNotFoundScreen(onBack: () -> Unit) {
+    val extra = LocalExtraColors.current
     Scaffold(
         topBar = {
             CenterAlignedTopAppBar(
                 title = { },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = LocalizedString.get("nav_back"), tint = Color.White)
+                        Icon(Icons.Default.ArrowBack, contentDescription = LocalizedString.get("nav_back"), tint = MaterialTheme.colorScheme.onSurface)
                     }
                 }
             )
@@ -614,9 +614,9 @@ private fun DebtNotFoundScreen(onBack: () -> Unit) {
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
                 Text("📭", fontSize = 48.sp)
                 Spacer(Modifier.height(16.dp))
-                Text("Debt not found", color = Color.White, fontSize = 18.sp, fontWeight = FontWeight.Bold)
+                Text("Debt not found", color = MaterialTheme.colorScheme.onSurface, fontSize = 18.sp, fontWeight = FontWeight.Bold)
                 Spacer(Modifier.height(8.dp))
-                Text("It might have been deleted.", color = SubtitleGray, fontSize = 14.sp)
+                Text("It might have been deleted.", color = extra.subtitleGray, fontSize = 14.sp)
             }
         }
     }

@@ -32,8 +32,8 @@ import android.widget.Toast
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.dhanuk.debtbro.presentation.theme.DangerRed
+import com.dhanuk.debtbro.presentation.theme.LocalExtraColors
 import com.dhanuk.debtbro.presentation.theme.PrimaryGreen
-import com.dhanuk.debtbro.presentation.theme.SubtitleGray
 import com.dhanuk.debtbro.util.LocalizedString
 import java.text.SimpleDateFormat
 import java.util.*
@@ -45,6 +45,7 @@ fun AddDebtBottomSheet(
     onDebtAdded: () -> Unit,
     viewModel: AddDebtViewModel = hiltViewModel()
 ) {
+    val extra = LocalExtraColors.current
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     val hapticFeedback = LocalHapticFeedback.current
     val context = LocalContext.current
@@ -63,7 +64,6 @@ fun AddDebtBottomSheet(
     var showDatePicker by remember { mutableStateOf(false) }
     var customEmoji by remember { mutableStateOf("") }
 
-    // Different emojis for each debt type
     val THEY_OWE_EMOJIS = listOf(
         "😊","😎","🤝","🍕","🚕","☕","🏠","💼","🎁","🎮",
         "📚","✈️","🏖️","🎬","🍔","💪","🎉","🏋️","🚗","💊",
@@ -77,7 +77,6 @@ fun AddDebtBottomSheet(
     val currentEmojis = if (debtType == "THEY_OWE_ME") THEY_OWE_EMOJIS else I_OWE_EMOJIS
     var selectedEmoji by remember { mutableStateOf("") }
 
-    // Reset selected emoji when debt type changes
     LaunchedEffect(debtType) {
         selectedEmoji = currentEmojis[0]
     }
@@ -89,7 +88,7 @@ fun AddDebtBottomSheet(
     ModalBottomSheet(
         onDismissRequest = onDismiss,
         sheetState = sheetState,
-        containerColor = Color(0xFF1A1A1A),
+        containerColor = MaterialTheme.colorScheme.surface,
         dragHandle = {
             Box(
                 Modifier
@@ -97,7 +96,7 @@ fun AddDebtBottomSheet(
                     .width(40.dp)
                     .height(4.dp)
                     .clip(CircleShape)
-                    .background(Color(0xFF444444))
+                    .background(MaterialTheme.colorScheme.outline)
             )
         }
     ) {
@@ -114,16 +113,15 @@ fun AddDebtBottomSheet(
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Text("Add Debt", color = Color.White, fontSize = 22.sp, fontWeight = FontWeight.Bold)
+                Text("Add Debt", color = MaterialTheme.colorScheme.onSurface, fontSize = 22.sp, fontWeight = FontWeight.Bold)
                 IconButton(onClick = onDismiss) {
-                    Icon(Icons.Default.Close, contentDescription = LocalizedString.get("cancel"), tint = Color.White)
+                    Icon(Icons.Default.Close, contentDescription = LocalizedString.get("cancel"), tint = MaterialTheme.colorScheme.onSurface)
                 }
             }
 
-            // FIELD 1 — Person Name
             OutlinedTextField(
                 value = personName,
-                onValueChange = { 
+                onValueChange = {
                     if (it.length <= 30) personName = it.trimStart()
                 },
                 label = { Text("Person Name *") },
@@ -136,7 +134,7 @@ fun AddDebtBottomSheet(
                     imeAction = ImeAction.Next
                 ),
                 trailingIcon = {
-                    Text("${personName.length}/30", color = SubtitleGray, fontSize = 11.sp)
+                    Text("${personName.length}/30", color = extra.subtitleGray, fontSize = 11.sp)
                 },
                 isError = personName.isBlank() && triedToSave,
                 supportingText = {
@@ -146,10 +144,9 @@ fun AddDebtBottomSheet(
                 }
             )
 
-            // FIELD 2 — Amount
             OutlinedTextField(
                 value = amount,
-                onValueChange = { 
+                onValueChange = {
                     val filtered = it.filter { c -> c.isDigit() || c == '.' }
                     val dots = filtered.count { c -> c == '.' }
                     if (dots <= 1 && (filtered.toDoubleOrNull() ?: 0.0 <= 9999999.0)) {
@@ -159,7 +156,7 @@ fun AddDebtBottomSheet(
                 label = { Text("Amount *") },
                 placeholder = { Text("0") },
                 modifier = Modifier.fillMaxWidth(),
-                leadingIcon = { 
+                leadingIcon = {
                     Text(selectedCurrency, color = PrimaryGreen, fontWeight = FontWeight.Bold)
                 },
                 keyboardOptions = KeyboardOptions(
@@ -175,19 +172,18 @@ fun AddDebtBottomSheet(
                 }
             )
 
-            // FIELD 3 — Debt Direction (Toggle)
             Row(modifier = Modifier.fillMaxWidth()) {
                 Button(
                     onClick = { debtType = "THEY_OWE_ME" },
                     modifier = Modifier.weight(1f).height(48.dp),
                     colors = ButtonDefaults.buttonColors(
-                        containerColor = if (debtType == "THEY_OWE_ME") PrimaryGreen else Color(0xFF2A2A2A)
+                        containerColor = if (debtType == "THEY_OWE_ME") PrimaryGreen else MaterialTheme.colorScheme.surfaceVariant
                     ),
                     shape = RoundedCornerShape(topStart = 12.dp, bottomStart = 12.dp)
                 ) {
                     Text(
                         "💰 They Owe Me",
-                        color = if (debtType == "THEY_OWE_ME") Color.Black else SubtitleGray,
+                        color = if (debtType == "THEY_OWE_ME") Color.Black else extra.subtitleGray,
                         fontWeight = FontWeight.SemiBold,
                         fontSize = 13.sp
                     )
@@ -196,34 +192,33 @@ fun AddDebtBottomSheet(
                     onClick = { debtType = "I_OWE_THEM" },
                     modifier = Modifier.weight(1f).height(48.dp),
                     colors = ButtonDefaults.buttonColors(
-                        containerColor = if (debtType == "I_OWE_THEM") DangerRed else Color(0xFF2A2A2A)
+                        containerColor = if (debtType == "I_OWE_THEM") DangerRed else MaterialTheme.colorScheme.surfaceVariant
                     ),
                     shape = RoundedCornerShape(topEnd = 12.dp, bottomEnd = 12.dp)
                 ) {
                     Text(
                         "😅 I Owe Them",
-                        color = if (debtType == "I_OWE_THEM") Color.White else SubtitleGray,
+                        color = if (debtType == "I_OWE_THEM") Color.White else extra.subtitleGray,
                         fontWeight = FontWeight.SemiBold,
                         fontSize = 13.sp
                     )
                 }
             }
 
-            // FIELD 4 — Emoji Avatar Picker
             Column {
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.SpaceBetween
                 ) {
-                    Text("Avatar", color = SubtitleGray, fontSize = 13.sp)
+                    Text("Avatar", color = extra.subtitleGray, fontSize = 13.sp)
                     TextButton(onClick = { showEmojiPicker = true }) {
                         Icon(Icons.Default.EmojiEmotions, contentDescription = null, tint = PrimaryGreen, modifier = Modifier.size(16.dp))
                         Spacer(Modifier.width(4.dp))
                         Text("From device", color = PrimaryGreen, fontSize = 12.sp)
                     }
                 }
-                
+
                 LazyRow(
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
                     contentPadding = PaddingValues(vertical = 8.dp)
@@ -236,14 +231,14 @@ fun AddDebtBottomSheet(
                                 .clip(CircleShape)
                                 .background(
                                     if (isSelected) PrimaryGreen.copy(alpha = 0.25f)
-                                    else Color(0xFF2A2A2A)
+                                    else MaterialTheme.colorScheme.surfaceVariant
                                 )
                                 .border(
                                     width = if (isSelected) 2.5.dp else 0.dp,
                                     color = if (isSelected) PrimaryGreen else Color.Transparent,
                                     shape = CircleShape
                                 )
-                                .clickable { 
+                                .clickable {
                                     selectedEmoji = emoji
                                     hapticFeedback.performHapticFeedback(HapticFeedbackType.LongPress)
                                 },
@@ -272,7 +267,6 @@ fun AddDebtBottomSheet(
                 }
             }
 
-            // FIELD 5 — Currency Selector
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 listOf("₹", "$", "€", "£", "¥", "₩").forEach { curr ->
                     FilterChip(
@@ -282,14 +276,13 @@ fun AddDebtBottomSheet(
                         colors = FilterChipDefaults.filterChipColors(
                             selectedContainerColor = PrimaryGreen,
                             selectedLabelColor = Color.Black,
-                            containerColor = Color(0xFF2A2A2A),
-                            labelColor = SubtitleGray
+                            containerColor = MaterialTheme.colorScheme.surfaceVariant,
+                            labelColor = extra.subtitleGray
                         )
                     )
                 }
             }
 
-            // FIELD 6 — Description
             OutlinedTextField(
                 value = description,
                 onValueChange = { if (it.length <= 100) description = it },
@@ -298,14 +291,13 @@ fun AddDebtBottomSheet(
                 modifier = Modifier.fillMaxWidth(),
                 maxLines = 2,
                 trailingIcon = {
-                    Text("${description.length}/100", color = SubtitleGray, fontSize = 11.sp)
+                    Text("${description.length}/100", color = extra.subtitleGray, fontSize = 11.sp)
                 }
             )
 
-            // FIELD 7 — Due Date
             OutlinedTextField(
-                value = selectedDate?.let { 
-                    SimpleDateFormat("dd MMM yyyy", Locale.getDefault()).format(Date(it)) 
+                value = selectedDate?.let {
+                    SimpleDateFormat("dd MMM yyyy", Locale.getDefault()).format(Date(it))
                 } ?: "",
                 onValueChange = {},
                 readOnly = true,
@@ -328,7 +320,6 @@ fun AddDebtBottomSheet(
                     .clickable { showDatePicker = true }
             )
 
-            // FIELD 8 — Notes
             OutlinedTextField(
                 value = notes,
                 onValueChange = { if (it.length <= 200) notes = it },
@@ -337,13 +328,12 @@ fun AddDebtBottomSheet(
                 modifier = Modifier.fillMaxWidth(),
                 maxLines = 3,
                 trailingIcon = {
-                    Text("${notes.length}/200", color = SubtitleGray, fontSize = 11.sp)
+                    Text("${notes.length}/200", color = extra.subtitleGray, fontSize = 11.sp)
                 }
             )
 
             Spacer(Modifier.height(8.dp))
 
-            // SAVE BUTTON
             Button(
                 onClick = {
                     triedToSave = true
@@ -402,11 +392,11 @@ fun AddDebtBottomSheet(
     if (showEmojiPicker) {
         AlertDialog(
             onDismissRequest = { showEmojiPicker = false },
-            title = { Text("Type or paste an emoji", color = Color.White) },
+            title = { Text("Type or paste an emoji", color = MaterialTheme.colorScheme.onSurface) },
             text = {
                 OutlinedTextField(
                     value = customEmoji,
-                    onValueChange = { 
+                    onValueChange = {
                         if (it.isNotEmpty()) {
                             customEmoji = it
                             selectedEmoji = it.take(2).trim()
@@ -421,7 +411,7 @@ fun AddDebtBottomSheet(
                     Text("Done", color = PrimaryGreen)
                 }
             },
-            containerColor = Color(0xFF1E1E1E)
+            containerColor = MaterialTheme.colorScheme.surface
         )
     }
 
@@ -438,11 +428,11 @@ fun AddDebtBottomSheet(
                 }) { Text("OK", color = PrimaryGreen) }
             },
             dismissButton = {
-                TextButton(onClick = { showDatePicker = false }) { 
-                    Text("Cancel", color = SubtitleGray) 
+                TextButton(onClick = { showDatePicker = false }) {
+                    Text("Cancel", color = extra.subtitleGray)
                 }
             },
-            colors = DatePickerDefaults.colors(containerColor = Color(0xFF1E1E1E))
+            colors = DatePickerDefaults.colors(containerColor = MaterialTheme.colorScheme.surface)
         ) {
             DatePicker(state = datePickerState)
         }

@@ -38,7 +38,19 @@ class AppPreferences(@ApplicationContext private val context: Context) {
         val SHOW_DESCRIPTION = booleanPreferencesKey("show_description")
         val SHOW_DUE_DATE = booleanPreferencesKey("show_due_date")
         val SHOW_EMOJI = booleanPreferencesKey("show_emoji")
+
+        // ── Notification preferences ──────────────────────────────────────────
+        val NOTIFY_DAILY_REMINDER = booleanPreferencesKey("notify_daily_reminder")
+        val NOTIFY_WEEKLY_SUMMARY = booleanPreferencesKey("notify_weekly_summary")
+        val NOTIFY_PAYMENT_ALERTS = booleanPreferencesKey("notify_payment_alerts")
+
+        // ── Export preferences ────────────────────────────────────────────────
+        val EXPORT_FORMAT = stringPreferencesKey("export_format")
+        val CUSTOM_AVATAR_URI = stringPreferencesKey("custom_avatar_uri")
     }
+
+    enum class ThemeMode { SYSTEM, LIGHT, DARK }
+    enum class ExportFormat { CSV, HTML_CYBERPUNK, HTML_ELEGANT, HTML_INSTA, HTML_SHAME }
 
     val hasCompletedOnboarding: Flow<Boolean> = context.dataStore.data.map { it[Keys.HAS_COMPLETED_ONBOARDING] ?: false }
     val userName: Flow<String> = context.dataStore.data.map { it[Keys.USER_NAME] ?: "" }
@@ -58,6 +70,11 @@ class AppPreferences(@ApplicationContext private val context: Context) {
     val showDescription: Flow<Boolean> = context.dataStore.data.map { it[Keys.SHOW_DESCRIPTION] ?: true }
     val showDueDate: Flow<Boolean> = context.dataStore.data.map { it[Keys.SHOW_DUE_DATE] ?: true }
     val showEmoji: Flow<Boolean> = context.dataStore.data.map { it[Keys.SHOW_EMOJI] ?: true }
+    val notifyDailyReminder: Flow<Boolean> = context.dataStore.data.map { it[Keys.NOTIFY_DAILY_REMINDER] ?: true }
+    val notifyWeeklySummary: Flow<Boolean> = context.dataStore.data.map { it[Keys.NOTIFY_WEEKLY_SUMMARY] ?: true }
+    val notifyPaymentAlerts: Flow<Boolean> = context.dataStore.data.map { it[Keys.NOTIFY_PAYMENT_ALERTS] ?: true }
+    val exportFormat: Flow<String> = context.dataStore.data.map { it[Keys.EXPORT_FORMAT] ?: "CSV" }
+    val customAvatarUri: Flow<String> = context.dataStore.data.map { it[Keys.CUSTOM_AVATAR_URI] ?: "" }
 
     suspend fun setOnboardingComplete(name: String) = context.dataStore.edit {
         it[Keys.HAS_COMPLETED_ONBOARDING] = true
@@ -82,6 +99,11 @@ class AppPreferences(@ApplicationContext private val context: Context) {
     suspend fun setShowDescription(value: Boolean) = context.dataStore.edit { it[Keys.SHOW_DESCRIPTION] = value }
     suspend fun setShowDueDate(value: Boolean) = context.dataStore.edit { it[Keys.SHOW_DUE_DATE] = value }
     suspend fun setShowEmoji(value: Boolean) = context.dataStore.edit { it[Keys.SHOW_EMOJI] = value }
+    suspend fun setNotifyDailyReminder(value: Boolean) = context.dataStore.edit { it[Keys.NOTIFY_DAILY_REMINDER] = value }
+    suspend fun setNotifyWeeklySummary(value: Boolean) = context.dataStore.edit { it[Keys.NOTIFY_WEEKLY_SUMMARY] = value }
+    suspend fun setNotifyPaymentAlerts(value: Boolean) = context.dataStore.edit { it[Keys.NOTIFY_PAYMENT_ALERTS] = value }
+    suspend fun setExportFormat(format: String) = context.dataStore.edit { it[Keys.EXPORT_FORMAT] = format }
+    suspend fun setCustomAvatarUri(uri: String) = context.dataStore.edit { it[Keys.CUSTOM_AVATAR_URI] = uri }
 
     suspend fun saveAiRegenerationCount(count: Int) {
         val today = java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.getDefault()).format(java.util.Date())

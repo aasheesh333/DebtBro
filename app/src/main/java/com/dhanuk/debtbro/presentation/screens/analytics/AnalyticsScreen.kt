@@ -23,8 +23,8 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.dhanuk.debtbro.presentation.components.LoadingDotsIndicator
 import com.dhanuk.debtbro.presentation.theme.DangerRed
+import com.dhanuk.debtbro.presentation.theme.LocalExtraColors
 import com.dhanuk.debtbro.presentation.theme.PrimaryGreen
-import com.dhanuk.debtbro.presentation.theme.SubtitleGray
 import com.dhanuk.debtbro.util.formatCurrency
 import com.dhanuk.debtbro.util.LocalizedString
 import com.patrykandpatrick.vico.compose.cartesian.CartesianChartHost
@@ -43,6 +43,7 @@ fun AnalyticsScreen(viewModel: AnalyticsViewModel = hiltViewModel()) {
     val state by viewModel.state.collectAsStateWithLifecycle()
     val insight by viewModel.aiInsight.collectAsStateWithLifecycle()
     val loading by viewModel.isLoadingInsight.collectAsStateWithLifecycle()
+    val extra = LocalExtraColors.current
 
     val modelProducer = remember { CartesianChartModelProducer.build() }
     
@@ -67,7 +68,7 @@ fun AnalyticsScreen(viewModel: AnalyticsViewModel = hiltViewModel()) {
                 Spacer(Modifier.height(16.dp))
                 Text(LocalizedString.get("no_data_yet"), color = MaterialTheme.colorScheme.onBackground, fontSize = 18.sp, fontWeight = FontWeight.Bold)
                 Spacer(Modifier.height(8.dp))
-                Text(LocalizedString.get("add_debts_to_see_stats"), color = SubtitleGray, fontSize = 14.sp, textAlign = TextAlign.Center)
+                Text(LocalizedString.get("add_debts_to_see_stats"), color = extra.subtitleGray, fontSize = 14.sp, textAlign = TextAlign.Center)
             }
         } else {
         LazyColumn(
@@ -78,7 +79,7 @@ fun AnalyticsScreen(viewModel: AnalyticsViewModel = hiltViewModel()) {
             item {
                 Text(
                     LocalizedString.get("financial_insights"),
-                    color = Color.White,
+                    color = MaterialTheme.colorScheme.onSurface,
                     fontSize = 28.sp,
                     fontWeight = FontWeight.Bold
                 )
@@ -111,7 +112,7 @@ fun AnalyticsScreen(viewModel: AnalyticsViewModel = hiltViewModel()) {
                     AnalyticsStatCard(
                         title = LocalizedString.get("all_time_settled"),
                         amount = state.totalSettled,
-                        color = Color.White,
+                        color = MaterialTheme.colorScheme.onSurface,
                         icon = Icons.Default.DoneAll,
                         currency = state.currency,
                         modifier = Modifier.weight(1f)
@@ -131,14 +132,14 @@ fun AnalyticsScreen(viewModel: AnalyticsViewModel = hiltViewModel()) {
             item {
                 Card(
                     modifier = Modifier.fillMaxWidth(),
-                    colors = CardDefaults.cardColors(containerColor = Color(0xFF1E1E1E)),
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
                     shape = RoundedCornerShape(16.dp)
                 ) {
                     Column(Modifier.padding(20.dp)) {
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             Icon(Icons.Default.Recycling, contentDescription = null, tint = PrimaryGreen, modifier = Modifier.size(20.dp))
                             Spacer(Modifier.width(8.dp))
-                            Text(LocalizedString.get("debt_recovery_rate"), color = Color.White, fontWeight = FontWeight.Bold)
+                            Text(LocalizedString.get("debt_recovery_rate"), color = MaterialTheme.colorScheme.onSurface, fontWeight = FontWeight.Bold)
                             Spacer(Modifier.weight(1f))
                             Text("${state.recoveryRate}%", color = PrimaryGreen, fontWeight = FontWeight.Bold)
                         }
@@ -147,7 +148,7 @@ fun AnalyticsScreen(viewModel: AnalyticsViewModel = hiltViewModel()) {
                             progress = state.recoveryRate / 100f,
                             modifier = Modifier.fillMaxWidth().height(8.dp).clip(CircleShape),
                             color = PrimaryGreen,
-                            trackColor = Color(0xFF2A2A2A)
+                            trackColor = extra.divider
                         )
                     }
                 }
@@ -157,11 +158,11 @@ fun AnalyticsScreen(viewModel: AnalyticsViewModel = hiltViewModel()) {
             item {
                 Card(
                     modifier = Modifier.fillMaxWidth(),
-                    colors = CardDefaults.cardColors(containerColor = Color(0xFF1E1E1E)),
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
                     shape = RoundedCornerShape(16.dp)
                 ) {
                     Column(Modifier.padding(20.dp)) {
-                        Text(LocalizedString.get("monthly_trend"), color = Color.White, fontWeight = FontWeight.Bold)
+                        Text(LocalizedString.get("monthly_trend"), color = MaterialTheme.colorScheme.onSurface, fontWeight = FontWeight.Bold)
                         Spacer(Modifier.height(16.dp))
                         
                         CartesianChartHost(
@@ -176,10 +177,10 @@ fun AnalyticsScreen(viewModel: AnalyticsViewModel = hiltViewModel()) {
                                     )
                                 ),
                                 startAxis = rememberStartAxis(
-                                    label = com.patrykandpatrick.vico.compose.common.component.rememberTextComponent(color = SubtitleGray)
+                                    label = com.patrykandpatrick.vico.compose.common.component.rememberTextComponent(color = extra.subtitleGray)
                                 ),
                                 bottomAxis = rememberBottomAxis(
-                                    label = com.patrykandpatrick.vico.compose.common.component.rememberTextComponent(color = SubtitleGray),
+                                    label = com.patrykandpatrick.vico.compose.common.component.rememberTextComponent(color = extra.subtitleGray),
                                     valueFormatter = { value, _, _ ->
                                         state.monthlyData.getOrNull(value.toInt())?.first ?: ""
                                     }
@@ -204,12 +205,12 @@ fun AnalyticsScreen(viewModel: AnalyticsViewModel = hiltViewModel()) {
             item {
                 Card(
                     modifier = Modifier.fillMaxWidth(),
-                    colors = CardDefaults.cardColors(containerColor = Color(0xFF1E1E1E)),
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
                     shape = RoundedCornerShape(16.dp)
                 ) {
                     Column(Modifier.padding(20.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
                         Row(verticalAlignment = Alignment.CenterVertically) {
-                            Text(LocalizedString.get("ai_take"), color = Color.White, fontWeight = FontWeight.Bold, fontSize = 18.sp)
+                            Text(LocalizedString.get("ai_take"), color = MaterialTheme.colorScheme.onSurface, fontWeight = FontWeight.Bold, fontSize = 18.sp)
                             Spacer(Modifier.weight(1f))
                             IconButton(onClick = { viewModel.loadAiInsight() }) {
                                 Icon(Icons.Default.Refresh, contentDescription = LocalizedString.get("regenerate"), tint = PrimaryGreen)
@@ -220,7 +221,7 @@ fun AnalyticsScreen(viewModel: AnalyticsViewModel = hiltViewModel()) {
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .clip(RoundedCornerShape(12.dp))
-                                .background(Color(0xFF2A2A2A))
+                                .background(extra.cardInner)
                                 .padding(16.dp)
                         ) {
                             if (loading) {
@@ -228,7 +229,7 @@ fun AnalyticsScreen(viewModel: AnalyticsViewModel = hiltViewModel()) {
                             } else {
                                 Text(
                                     insight.ifBlank { LocalizedString.get("tap_refresh") },
-                                    color = Color.White,
+                                    color = MaterialTheme.colorScheme.onSurface,
                                     fontSize = 14.sp
                                 )
                             }
@@ -243,14 +244,15 @@ fun AnalyticsScreen(viewModel: AnalyticsViewModel = hiltViewModel()) {
 
 @Composable
 fun AnalyticsStatCard(title: String, amount: Double, color: Color, icon: ImageVector, currency: String = "₹", modifier: Modifier) {
+    val extra = LocalExtraColors.current
     Card(
         modifier = modifier,
-        colors = CardDefaults.cardColors(containerColor = Color(0xFF1E1E1E)),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
         shape = RoundedCornerShape(16.dp)
     ) {
         Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             Icon(icon, contentDescription = title, tint = color, modifier = Modifier.size(20.dp))
-            Text(title, color = SubtitleGray, fontSize = 12.sp)
+            Text(title, color = extra.subtitleGray, fontSize = 12.sp)
             Text(
                 formatCurrency(amount, currency),
                 color = color,
@@ -263,13 +265,14 @@ fun AnalyticsStatCard(title: String, amount: Double, color: Color, icon: ImageVe
 
 @Composable
 fun FunStatItem(label: String, value: String, modifier: Modifier) {
+    val extra = LocalExtraColors.current
     Column(
         modifier = modifier
             .clip(RoundedCornerShape(12.dp))
-            .background(Color(0xFF1E1E1E))
+            .background(MaterialTheme.colorScheme.surface)
             .padding(12.dp)
     ) {
-        Text(label, color = SubtitleGray, fontSize = 12.sp)
-        Text(value, color = Color.White, fontSize = 14.sp, fontWeight = FontWeight.Bold, maxLines = 1)
+        Text(label, color = extra.subtitleGray, fontSize = 12.sp)
+        Text(value, color = MaterialTheme.colorScheme.onSurface, fontSize = 14.sp, fontWeight = FontWeight.Bold, maxLines = 1)
     }
 }

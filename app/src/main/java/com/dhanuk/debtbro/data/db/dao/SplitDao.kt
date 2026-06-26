@@ -33,4 +33,7 @@ interface SplitDao {
 
     @Query("SELECT * FROM splits WHERE isSynced = 0")
     suspend fun getUnsyncedSplits(): List<SplitEntity>
+
+    @Query("DELETE FROM splits")
+    suspend fun deleteAll()
 }

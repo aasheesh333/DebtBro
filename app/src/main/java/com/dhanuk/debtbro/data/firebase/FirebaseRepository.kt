@@ -139,4 +139,37 @@ class FirebaseRepository @Inject constructor(private val firestore: FirebaseFire
     suspend fun deleteSplitFromFirestore(userId: String, firebaseId: String) {
         firestore.collection("users").document(userId).collection("splits").document(firebaseId).delete().await()
     }
+
+    /**
+     * GDPR: delete every Firestore doc owned by this user. Walks debts + splits + their
+     * payments. Soft-warns on individual doc failures but does not abort (we want a clean
+     * wipe even if a single doc is missing or stale).
+     */
+    suspend fun deleteAllUserData(userId: String) {
+        try {
+            val debts = firestore.collection("users").document(userId).collection("debts").get().await()
+            for (debtDoc in debts.documents) {
+                runCatching {
+                    val payments = debtDoc.reference.collection("payments").get().await()
+                    for (p in payments.documents) runCatching { p.reference.delete().await() }
+                }
+                runCatching { debtDoc.reference.delete().await() }
+            }
+        } catch (e: Exception) {
+            android.util.Log.w("FirebaseRepository", "deleteAllUserData: debts/payments walk failed: ${e.message}", e)
+        }
+
+        try {
+            val splits = firestore.collection("users").document(userId).collection("splits").get().await()
+            for (s in splits.documents) runCatching { s.reference.delete().await() }
+        } catch (e: Exception) {
+            android.util.Log.w("FirebaseRepository", "deleteAllUserData: splits walk failed: ${e.message}", e)
+        }
+
+        try {
+            firestore.collection("users").document(userId).delete().await()
+        } catch (e: Exception) {
+            android.util.Log.w("FirebaseRepository", "deleteAllUserData: user doc delete failed: ${e.message}", e)
+        }
+    }
 }

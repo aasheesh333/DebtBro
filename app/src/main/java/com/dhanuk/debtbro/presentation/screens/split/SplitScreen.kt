@@ -22,7 +22,6 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
@@ -32,8 +31,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.dhanuk.debtbro.presentation.theme.LocalExtraColors
 import com.dhanuk.debtbro.presentation.theme.PrimaryGreen
-import com.dhanuk.debtbro.presentation.theme.SubtitleGray
 import com.dhanuk.debtbro.util.formatCurrency
 import com.dhanuk.debtbro.util.LocalizedString
 import com.google.accompanist.permissions.ExperimentalPermissionsApi
@@ -45,6 +44,7 @@ import com.google.accompanist.permissions.rememberPermissionState
 fun SplitScreen(viewModel: SplitViewModel = hiltViewModel()) {
     val state by viewModel.state.collectAsStateWithLifecycle()
     val pastSplits by viewModel.pastSplits.collectAsStateWithLifecycle()
+    val extra = LocalExtraColors.current
     var showContactPicker by remember { mutableStateOf(false) }
 
     LazyColumn(
@@ -57,7 +57,7 @@ fun SplitScreen(viewModel: SplitViewModel = hiltViewModel()) {
         item {
             Text(
                 LocalizedString.get("split_bill"),
-                color = Color.White,
+                color = MaterialTheme.colorScheme.onSurface,
                 fontSize = 28.sp,
                 fontWeight = FontWeight.Bold
             )
@@ -66,7 +66,7 @@ fun SplitScreen(viewModel: SplitViewModel = hiltViewModel()) {
         item {
             Card(
                 modifier = Modifier.fillMaxWidth(),
-                colors = CardDefaults.cardColors(containerColor = Color(0xFF1E1E1E)),
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
                 shape = RoundedCornerShape(16.dp)
             ) {
                 Column(
@@ -81,7 +81,7 @@ fun SplitScreen(viewModel: SplitViewModel = hiltViewModel()) {
                         modifier = Modifier.fillMaxWidth(),
                         colors = OutlinedTextFieldDefaults.colors(
                             focusedBorderColor = PrimaryGreen,
-                            unfocusedBorderColor = Color(0xFF333333)
+                            unfocusedBorderColor = MaterialTheme.colorScheme.outline
                         )
                     )
 
@@ -98,7 +98,7 @@ fun SplitScreen(viewModel: SplitViewModel = hiltViewModel()) {
                         ),
                         colors = OutlinedTextFieldDefaults.colors(
                             focusedBorderColor = PrimaryGreen,
-                            unfocusedBorderColor = Color(0xFF333333)
+                            unfocusedBorderColor = MaterialTheme.colorScheme.outline
                         )
                     )
 
@@ -130,8 +130,8 @@ fun SplitScreen(viewModel: SplitViewModel = hiltViewModel()) {
                                     }
                                 },
                                 colors = InputChipDefaults.inputChipColors(
-                                    containerColor = Color(0xFF2A2A2A),
-                                    labelColor = Color.White
+                                    containerColor = MaterialTheme.colorScheme.surfaceVariant,
+                                    labelColor = MaterialTheme.colorScheme.onSurface
                                 ),
                                 border = null
                             )
@@ -147,7 +147,7 @@ fun SplitScreen(viewModel: SplitViewModel = hiltViewModel()) {
                             modifier = Modifier.padding(16.dp),
                             horizontalAlignment = Alignment.CenterHorizontally
                         ) {
-                            Text(LocalizedString.get("per_person"), color = SubtitleGray, fontSize = 12.sp)
+                            Text(LocalizedString.get("per_person"), color = extra.subtitleGray, fontSize = 12.sp)
                             Text(
                                 formatCurrency(state.perPerson),
                                 color = PrimaryGreen,
@@ -156,7 +156,7 @@ fun SplitScreen(viewModel: SplitViewModel = hiltViewModel()) {
                             )
                             Text(
                                 LocalizedString.get("among_people").replace("{count}", state.participants.size.toString()),
-                                color = SubtitleGray,
+                                color = extra.subtitleGray,
                                 fontSize = 12.sp
                             )
                         }
@@ -180,12 +180,12 @@ fun SplitScreen(viewModel: SplitViewModel = hiltViewModel()) {
 
                     AnimatedVisibility(visible = state.aiSummary.isNotEmpty()) {
                         Card(
-                            colors = CardDefaults.cardColors(containerColor = Color(0xFF2A2A2A))
+                            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
                         ) {
                             Row(Modifier.padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
                                 Text("🤖", fontSize = 24.sp)
                                 Spacer(Modifier.width(8.dp))
-                                Text(state.aiSummary, color = Color.White, fontSize = 13.sp)
+                                Text(state.aiSummary, color = MaterialTheme.colorScheme.onSurface, fontSize = 13.sp)
                             }
                         }
                     }
@@ -196,7 +196,7 @@ fun SplitScreen(viewModel: SplitViewModel = hiltViewModel()) {
         item {
             Text(
                 LocalizedString.get("past_splits"),
-                color = Color.White,
+                color = MaterialTheme.colorScheme.onSurface,
                 fontSize = 20.sp,
                 fontWeight = FontWeight.Bold,
                 modifier = Modifier.padding(top = 8.dp)
@@ -247,7 +247,7 @@ fun AddParticipantRow(
             keyboardActions = KeyboardActions(onDone = { onAdd() }),
             colors = OutlinedTextFieldDefaults.colors(
                 focusedBorderColor = PrimaryGreen,
-                unfocusedBorderColor = Color(0xFF333333)
+                unfocusedBorderColor = MaterialTheme.colorScheme.outline
             )
         )
         IconButton(
@@ -264,19 +264,20 @@ fun AddParticipantRow(
 
 @Composable
 fun SplitItemCard(split: com.dhanuk.debtbro.data.db.entity.SplitEntity, onGetAi: (com.dhanuk.debtbro.data.db.entity.SplitEntity) -> Unit, onCreateDebts: (com.dhanuk.debtbro.data.db.entity.SplitEntity) -> Unit) {
+    val extra = LocalExtraColors.current
     Card(
         modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(containerColor = Color(0xFF1E1E1E)),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
         shape = RoundedCornerShape(12.dp)
     ) {
         Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                Text(split.title, color = Color.White, fontWeight = FontWeight.Bold, fontSize = 16.sp)
+                Text(split.title, color = MaterialTheme.colorScheme.onSurface, fontWeight = FontWeight.Bold, fontSize = 16.sp)
                 Text(formatCurrency(split.totalAmount), color = PrimaryGreen, fontWeight = FontWeight.Bold)
             }
             Text(
                 "${formatCurrency(split.perPersonAmount)} each",
-                color = SubtitleGray,
+                color = extra.subtitleGray,
                 fontSize = 13.sp
             )
             
@@ -285,7 +286,7 @@ fun SplitItemCard(split: com.dhanuk.debtbro.data.db.entity.SplitEntity, onGetAi:
                     Modifier
                         .fillMaxWidth()
                         .clip(RoundedCornerShape(8.dp))
-                        .background(Color(0xFF2A2A2A))
+                        .background(MaterialTheme.colorScheme.surfaceVariant)
                         .padding(8.dp)
                 ) {
                     Text("🤖 ${split.aiSummary}", color = Color.LightGray, fontSize = 12.sp)
@@ -325,6 +326,7 @@ fun ContactPickerBottomSheet(
     val context = LocalContext.current
     var contacts by remember { mutableStateOf<List<String>>(emptyList()) }
     var searchQuery by remember { mutableStateOf("") }
+    val extra = LocalExtraColors.current
 
     val contactLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.StartActivityForResult()
@@ -353,7 +355,7 @@ fun ContactPickerBottomSheet(
 
     ModalBottomSheet(
         onDismissRequest = onDismiss,
-        containerColor = Color(0xFF1A1A1A)
+        containerColor = MaterialTheme.colorScheme.surface
     ) {
         Column(
             modifier = Modifier
@@ -363,7 +365,7 @@ fun ContactPickerBottomSheet(
         ) {
             Text(
                 LocalizedString.get("select_contact"),
-                color = Color.White,
+                color = MaterialTheme.colorScheme.onSurface,
                 fontSize = 20.sp,
                 fontWeight = FontWeight.Bold,
                 modifier = Modifier.padding(bottom = 16.dp)
@@ -378,7 +380,7 @@ fun ContactPickerBottomSheet(
                     leadingIcon = { Icon(Icons.Default.Search, null) },
                     colors = OutlinedTextFieldDefaults.colors(
                         focusedBorderColor = PrimaryGreen,
-                        unfocusedBorderColor = Color(0xFF333333)
+                        unfocusedBorderColor = MaterialTheme.colorScheme.outline
                     )
                 )
 
@@ -399,15 +401,15 @@ fun ContactPickerBottomSheet(
                                 modifier = Modifier
                                     .size(36.dp)
                                     .clip(CircleShape)
-                                    .background(Color(0xFF2A2A2A)),
+                                    .background(MaterialTheme.colorScheme.surfaceVariant),
                                 contentAlignment = Alignment.Center
                             ) {
                                 Text(name.take(1), color = PrimaryGreen, fontWeight = FontWeight.Bold)
                             }
                             Spacer(Modifier.width(12.dp))
-                            Text(name, color = Color.White)
+                            Text(name, color = MaterialTheme.colorScheme.onSurface)
                         }
-                        Divider(color = Color(0xFF2A2A2A))
+                        HorizontalDivider(color = extra.divider)
                     }
                 }
             } else {
@@ -415,11 +417,11 @@ fun ContactPickerBottomSheet(
                     modifier = Modifier.fillMaxWidth().padding(32.dp),
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
-                    Icon(Icons.Default.Contacts, null, modifier = Modifier.size(48.dp), tint = SubtitleGray)
+                    Icon(Icons.Default.Contacts, null, modifier = Modifier.size(48.dp), tint = extra.subtitleGray)
                     Spacer(Modifier.height(16.dp))
                     Text(
                         LocalizedString.get("contact_permission_msg"),
-                        color = SubtitleGray,
+                        color = extra.subtitleGray,
                         textAlign = TextAlign.Center
                     )
                     Spacer(Modifier.height(24.dp))

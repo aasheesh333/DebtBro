@@ -13,7 +13,17 @@ import javax.inject.Singleton
 @Module
 @InstallIn(SingletonComponent::class)
 object DatabaseModule {
-    @Provides @Singleton fun provideDb(@ApplicationContext context: Context): DebtBroDB = Room.databaseBuilder(context, DebtBroDB::class.java, "debtbro.db").fallbackToDestructiveMigration().build()
+    @Provides
+    @Singleton
+    fun provideDb(@ApplicationContext context: Context): DebtBroDB =
+        Room.databaseBuilder(context, DebtBroDB::class.java, "debtbro.db")
+            // Production: use real migrations. Fallback to destructive only as a last resort
+            // if a future migration is not provided — this is safer for users on stale schemas.
+            .addMigrations(DebtBroDB.MIGRATION_1_2)
+            .fallbackToDestructiveMigrationOnDowngrade()
+            .fallbackToDestructiveMigration()
+            .build()
+
     @Provides fun provideDebtDao(db: DebtBroDB) = db.debtDao()
     @Provides fun providePaymentDao(db: DebtBroDB) = db.paymentDao()
     @Provides fun provideSplitDao(db: DebtBroDB) = db.splitDao()

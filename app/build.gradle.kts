@@ -7,6 +7,8 @@ plugins {
     alias(libs.plugins.ksp)
     alias(libs.plugins.hilt)
     alias(libs.plugins.google.services)
+    alias(libs.plugins.firebase.crashlytics)
+    alias(libs.plugins.firebase.performance)
 }
 
 val localProps = Properties().apply {
@@ -35,7 +37,16 @@ android {
         buildConfigField("String", "ADMOB_INTERSTITIAL_ID", "\"${escapedProp("ADMOB_INTERSTITIAL_ID")}\"")
         buildConfigField("String", "ADMOB_REWARDED_ID", "\"${escapedProp("ADMOB_REWARDED_ID")}\"")
         buildConfigField("String", "ONESIGNAL_APP_ID", "\"${escapedProp("ONESIGNAL_APP_ID")}\"")
-        manifestPlaceholders["ADMOB_APP_ID"] = localProp("ADMOB_APP_ID").ifEmpty { "ca-app-pub-3940256099942544~3347511713" }
+        buildConfigField("Boolean", "ENABLE_CRASHLYTICS", "true")
+        buildConfigField("Boolean", "ENABLE_PERFORMANCE_MONITORING", "true")
+        buildConfigField("String", "PRIVACY_POLICY_URL", "\"${escapedProp("PRIVACY_POLICY_URL")}\"")
+        // App-level ADMOB_APP_ID is a manifest placeholder only. Real ad unit IDs live in BuildConfig above.
+        // The fallback is only used when local.properties / CI is missing config — production builds must ship real IDs.
+        manifestPlaceholders["ADMOB_APP_ID"] = localProp("ADMOB_APP_ID").ifEmpty {
+            if (project.hasProperty("debuggable") && !rootProject.findProperty("debug")?.toString().equals("true", ignoreCase = true).or(false))
+                error("ADMOB_APP_ID must be set in local.properties or CI secrets for release builds")
+            else "ca-app-pub-3940256099942544~3347511713"
+        }
     }
 
     signingConfigs {
@@ -99,6 +110,8 @@ dependencies {
     implementation(libs.firebase.auth)
     implementation(libs.firebase.firestore)
     implementation(libs.firebase.analytics)
+    implementation(libs.firebase.crashlytics)
+    implementation(libs.firebase.performance)
     implementation(libs.androidx.credentials)
     implementation(libs.androidx.credentials.auth)
     implementation(libs.googleid)

@@ -32,6 +32,7 @@
         <provider
             android:name="androidx.startup.InitializationProvider"
             android:authorities="${applicationId}.androidx-startup"
+            android:exported="false"
             tools:node="remove" />
         <provider
             android:name="androidx.core.content.FileProvider"

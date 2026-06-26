@@ -67,4 +67,7 @@ interface DebtDao {
 
     @Query("DELETE FROM debts WHERE status = 'SETTLED'")
     suspend fun deleteSettledDebts()
+
+    @Query("DELETE FROM debts")
+    suspend fun deleteAll()
 }

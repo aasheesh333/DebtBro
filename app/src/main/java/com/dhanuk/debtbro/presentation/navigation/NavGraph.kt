@@ -33,8 +33,8 @@ import com.dhanuk.debtbro.presentation.screens.debtlist.DebtListScreen
 import com.dhanuk.debtbro.presentation.screens.onboarding.OnboardingScreen
 import com.dhanuk.debtbro.presentation.screens.settings.SettingsScreen
 import com.dhanuk.debtbro.presentation.screens.split.SplitScreen
+import com.dhanuk.debtbro.presentation.theme.LocalExtraColors
 import com.dhanuk.debtbro.presentation.theme.PrimaryGreen
-import com.dhanuk.debtbro.presentation.theme.SubtitleGray
 import com.dhanuk.debtbro.util.LocalizedString
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
@@ -81,6 +81,7 @@ fun DebtBroNavGraph(appPreferences: AppPreferences) {
     val backStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = backStackEntry?.destination?.route
 
+    val extra = LocalExtraColors.current
     val navTabs = listOf(
         Screen.Dashboard,
         Screen.DebtList,
@@ -95,7 +96,7 @@ fun DebtBroNavGraph(appPreferences: AppPreferences) {
             if (currentRoute in navTabRoutes) {
                 Column {
                     NavigationBar(
-                        containerColor = Color(0xFF111111),
+                        containerColor = MaterialTheme.colorScheme.surface,
                         tonalElevation = 0.dp
                     ) {
                         // Tab 1: Home
@@ -124,8 +125,8 @@ fun DebtBroNavGraph(appPreferences: AppPreferences) {
                                 selectedIconColor = PrimaryGreen,
                                 selectedTextColor = PrimaryGreen,
                                 indicatorColor = PrimaryGreen.copy(alpha = 0.15f),
-                                unselectedIconColor = SubtitleGray,
-                                unselectedTextColor = SubtitleGray
+                                unselectedIconColor = extra.subtitleGray,
+                                unselectedTextColor = extra.subtitleGray
                             )
                         )
                         
@@ -155,8 +156,8 @@ fun DebtBroNavGraph(appPreferences: AppPreferences) {
                                 selectedIconColor = PrimaryGreen,
                                 selectedTextColor = PrimaryGreen,
                                 indicatorColor = PrimaryGreen.copy(alpha = 0.15f),
-                                unselectedIconColor = SubtitleGray,
-                                unselectedTextColor = SubtitleGray
+                                unselectedIconColor = extra.subtitleGray,
+                                unselectedTextColor = extra.subtitleGray
                             )
                         )
                         
@@ -184,8 +185,8 @@ fun DebtBroNavGraph(appPreferences: AppPreferences) {
                                 selectedIconColor = PrimaryGreen,
                                 selectedTextColor = PrimaryGreen,
                                 indicatorColor = PrimaryGreen.copy(alpha = 0.15f),
-                                unselectedIconColor = SubtitleGray,
-                                unselectedTextColor = SubtitleGray
+                                unselectedIconColor = extra.subtitleGray,
+                                unselectedTextColor = extra.subtitleGray
                             )
                         )
                         
@@ -215,8 +216,8 @@ fun DebtBroNavGraph(appPreferences: AppPreferences) {
                                 selectedIconColor = PrimaryGreen,
                                 selectedTextColor = PrimaryGreen,
                                 indicatorColor = PrimaryGreen.copy(alpha = 0.15f),
-                                unselectedIconColor = SubtitleGray,
-                                unselectedTextColor = SubtitleGray
+                                unselectedIconColor = extra.subtitleGray,
+                                unselectedTextColor = extra.subtitleGray
                             )
                         )
                     }

@@ -28,8 +28,8 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.dhanuk.debtbro.data.db.entity.DebtEntity
 import com.dhanuk.debtbro.presentation.components.DebtCard
 import com.dhanuk.debtbro.presentation.components.EmptyStateView
+import com.dhanuk.debtbro.presentation.theme.LocalExtraColors
 import com.dhanuk.debtbro.presentation.theme.PrimaryGreen
-import com.dhanuk.debtbro.presentation.theme.SubtitleGray
 import com.dhanuk.debtbro.util.LocalizedString
 
 @OptIn(ExperimentalFoundationApi::class)
@@ -44,59 +44,47 @@ fun DebtListScreen(
     val selectedTab by viewModel.selectedTab.collectAsStateWithLifecycle()
     val searchQuery by viewModel.searchQuery.collectAsStateWithLifecycle()
     val filterStatus by viewModel.filterStatus.collectAsStateWithLifecycle()
-    
+    val extra = LocalExtraColors.current
     val hapticFeedback = LocalHapticFeedback.current
 
     Box(modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) {
         Column(modifier = Modifier.fillMaxSize()) {
-            // Header
             Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 16.dp, vertical = 24.dp),
+                modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 24.dp),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Text(
-                    LocalizedString.get("all_debts"),
-                    color = Color.White,
-                    fontSize = 28.sp,
-                    fontWeight = FontWeight.Bold
-                )
+                Text(LocalizedString.get("all_debts"), color = MaterialTheme.colorScheme.onSurface, fontSize = 28.sp, fontWeight = FontWeight.Bold)
                 IconButton(
                     onClick = onAddDebtClick,
                     modifier = Modifier.clip(CircleShape).background(PrimaryGreen)
                 ) {
-                    Icon(Icons.Default.Add, contentDescription = LocalizedString.get("add_debt"), tint = Color.Black)
+                    Icon(Icons.Default.Add, contentDescription = LocalizedString.get("add_debt"), tint = MaterialTheme.colorScheme.onPrimary)
                 }
             }
 
-            // Search Bar
             OutlinedTextField(
                 value = searchQuery,
                 onValueChange = { viewModel.searchQuery.value = it },
                 placeholder = { Text(LocalizedString.get("search_debts")) },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 16.dp),
-                leadingIcon = { Icon(Icons.Default.Search, contentDescription = null, tint = SubtitleGray) },
+                modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
+                leadingIcon = { Icon(Icons.Default.Search, contentDescription = null, tint = extra.subtitleGray) },
                 trailingIcon = {
                     if (searchQuery.isNotEmpty()) {
                         IconButton(onClick = { viewModel.searchQuery.value = "" }) {
-                            Icon(Icons.Default.Clear, contentDescription = null, tint = SubtitleGray)
+                            Icon(Icons.Default.Clear, contentDescription = null, tint = extra.subtitleGray)
                         }
                     }
                 },
                 shape = RoundedCornerShape(12.dp),
                 colors = OutlinedTextFieldDefaults.colors(
                     focusedBorderColor = PrimaryGreen,
-                    unfocusedBorderColor = Color(0xFF333333),
-                    focusedContainerColor = Color(0xFF1E1E1E),
-                    unfocusedContainerColor = Color(0xFF1E1E1E)
+                    unfocusedBorderColor = MaterialTheme.colorScheme.outline,
+                    focusedContainerColor = MaterialTheme.colorScheme.surface,
+                    unfocusedContainerColor = MaterialTheme.colorScheme.surface
                 )
             )
 
-            // Tabs
             TabRow(
                 selectedTabIndex = selectedTab,
                 containerColor = Color.Transparent,
@@ -109,23 +97,14 @@ fun DebtListScreen(
                 },
                 divider = {}
             ) {
-                Tab(
-                    selected = selectedTab == 0,
-                    onClick = { viewModel.selectedTab.value = 0 },
-                    text = { Text(LocalizedString.get("they_owe_me"), fontWeight = if (selectedTab == 0) FontWeight.Bold else FontWeight.Normal) }
-                )
-                Tab(
-                    selected = selectedTab == 1,
-                    onClick = { viewModel.selectedTab.value = 1 },
-                    text = { Text(LocalizedString.get("i_owe_them"), fontWeight = if (selectedTab == 1) FontWeight.Bold else FontWeight.Normal) }
-                )
+                Tab(selected = selectedTab == 0, onClick = { viewModel.selectedTab.value = 0 },
+                    text = { Text(LocalizedString.get("they_owe_me"), fontWeight = if (selectedTab == 0) FontWeight.Bold else FontWeight.Normal) })
+                Tab(selected = selectedTab == 1, onClick = { viewModel.selectedTab.value = 1 },
+                    text = { Text(LocalizedString.get("i_owe_them"), fontWeight = if (selectedTab == 1) FontWeight.Bold else FontWeight.Normal) })
             }
 
-            // Filter Chips
             Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 16.dp, vertical = 12.dp),
+                modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 12.dp),
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 listOf("ALL", "PENDING", "SETTLED").forEach { status ->
@@ -135,19 +114,18 @@ fun DebtListScreen(
                         label = { Text(status.lowercase().replaceFirstChar { it.uppercase() }) },
                         colors = FilterChipDefaults.filterChipColors(
                             selectedContainerColor = PrimaryGreen,
-                            selectedLabelColor = Color.Black,
-                            containerColor = Color(0xFF1E1E1E),
-                            labelColor = SubtitleGray
+                            selectedLabelColor = MaterialTheme.colorScheme.onPrimary,
+                            containerColor = MaterialTheme.colorScheme.surface,
+                            labelColor = extra.subtitleGray
                         ),
                         border = null
                     )
                 }
             }
 
-            // Debt List
             if (debts.isEmpty()) {
                 EmptyStateView(
-                    emoji = if (searchQuery.isNotEmpty()) "🔍" else "🏜️",
+                    emoji = if (searchQuery.isNotEmpty()) "\uD83D\uDD0D" else "\uD83D\uDDF1\uFE0F",
                     title = if (searchQuery.isNotEmpty()) LocalizedString.get("no_results") else LocalizedString.get("no_debts"),
                     subtitle = if (searchQuery.isNotEmpty()) LocalizedString.get("try_different") else LocalizedString.get("empty_owed")
                 )
@@ -158,14 +136,8 @@ fun DebtListScreen(
                     verticalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
                     items(debts, key = { it.id }) { debt ->
-                        SwipeableDebtCard(
-                            debt = debt,
-                            isSignedIn = signedIn,
-                            onClick = { onDebtClick(debt.id) },
-                            onSettle = { 
-                                hapticFeedback.performHapticFeedback(HapticFeedbackType.LongPress)
-                                viewModel.markSettled(it) 
-                            },
+                        SwipeableDebtCard(debt, signedIn, { onDebtClick(debt.id) },
+                            onSettle = { hapticFeedback.performHapticFeedback(HapticFeedbackType.LongPress); viewModel.markSettled(it) },
                             onDelete = { viewModel.deleteDebt(it) }
                         )
                     }
@@ -198,23 +170,17 @@ fun SwipeableDebtCard(
         DropdownMenu(
             expanded = showMenu,
             onDismissRequest = { showMenu = false },
-            modifier = Modifier.background(Color(0xFF2A2A2A))
+            modifier = Modifier.background(MaterialTheme.colorScheme.surfaceVariant)
         ) {
             if (debt.status != "SETTLED") {
                 DropdownMenuItem(
-                    text = { Text("Mark Settled ✅", color = Color.White) },
-                    onClick = {
-                        showMenu = false
-                        onSettle(debt)
-                    }
+                    text = { Text("Mark Settled \u2705", color = MaterialTheme.colorScheme.onSurface) },
+                    onClick = { showMenu = false; onSettle(debt) }
                 )
             }
             DropdownMenuItem(
-                text = { Text("Delete 🗑️", color = Color(0xFFFF4757)) },
-                onClick = {
-                    showMenu = false
-                    onDelete(debt)
-                }
+                text = { Text("Delete \uD83D\uDDD1\uFE0F", color = MaterialTheme.colorScheme.error) },
+                onClick = { showMenu = false; onDelete(debt) }
             )
         }
     }

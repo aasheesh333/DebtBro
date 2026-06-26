@@ -27,9 +27,8 @@ import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.dhanuk.debtbro.presentation.components.LanguageSelectorGrid
-import com.dhanuk.debtbro.presentation.theme.BackgroundDark
+import com.dhanuk.debtbro.presentation.theme.LocalExtraColors
 import com.dhanuk.debtbro.presentation.theme.PrimaryGreen
-import com.dhanuk.debtbro.presentation.theme.SubtitleGray
 import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalFoundationApi::class)
@@ -39,33 +38,25 @@ fun OnboardingScreen(onOnboardingComplete: () -> Unit) {
     val pagerState = rememberPagerState(pageCount = { 5 })
     val scope = rememberCoroutineScope()
     val hapticFeedback = LocalHapticFeedback.current
+    val extra = LocalExtraColors.current
     val name by viewModel.userName.collectAsStateWithLifecycle()
     val selectedLanguage by viewModel.selectedLanguage.collectAsStateWithLifecycle()
 
     Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(MaterialTheme.colorScheme.background)
+        modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)
     ) {
         Column(
             modifier = Modifier.fillMaxSize(),
             verticalArrangement = Arrangement.SpaceBetween,
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            // Skip button top-right for pages 2, 3, 4
             Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(top = 32.dp, end = 16.dp),
+                modifier = Modifier.fillMaxWidth().padding(top = 32.dp, end = 16.dp),
                 horizontalArrangement = Arrangement.End
             ) {
                 if (pagerState.currentPage in 1..3) {
-                    TextButton(
-                        onClick = {
-                            scope.launch { pagerState.animateScrollToPage(4) }
-                        }
-                    ) {
-                        Text("Skip", color = SubtitleGray)
+                    TextButton(onClick = { scope.launch { pagerState.animateScrollToPage(4) } }) {
+                        Text("Skip", color = extra.subtitleGray)
                     }
                 } else {
                     Spacer(modifier = Modifier.height(48.dp))
@@ -85,14 +76,10 @@ fun OnboardingScreen(onOnboardingComplete: () -> Unit) {
                 }
             }
 
-            // Bottom section: dots and button
             Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(24.dp),
+                modifier = Modifier.fillMaxWidth().padding(24.dp),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                // Animated dots
                 Row(
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
                     modifier = Modifier.padding(bottom = 24.dp)
@@ -101,16 +88,12 @@ fun OnboardingScreen(onOnboardingComplete: () -> Unit) {
                         val isSelected = pagerState.currentPage == index
                         val width by animateDpAsState(targetValue = if (isSelected) 24.dp else 8.dp, label = "dotWidth")
                         Box(
-                            Modifier
-                                .height(8.dp)
-                                .width(width)
-                                .clip(CircleShape)
-                                .background(if (isSelected) PrimaryGreen else Color.DarkGray)
+                            Modifier.height(8.dp).width(width).clip(CircleShape)
+                                .background(if (isSelected) PrimaryGreen else MaterialTheme.colorScheme.outline)
                         )
                     }
                 }
 
-                // Action button
                 Button(
                     onClick = {
                         hapticFeedback.performHapticFeedback(HapticFeedbackType.LongPress)
@@ -122,14 +105,12 @@ fun OnboardingScreen(onOnboardingComplete: () -> Unit) {
                     },
                     enabled = pagerState.currentPage < 4 || name.isNotBlank(),
                     shape = RoundedCornerShape(28.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = PrimaryGreen, disabledContainerColor = Color(0xFF333333)),
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(56.dp)
+                    colors = ButtonDefaults.buttonColors(containerColor = PrimaryGreen, disabledContainerColor = MaterialTheme.colorScheme.outline),
+                    modifier = Modifier.fillMaxWidth().height(56.dp)
                 ) {
                     Text(
-                        if (pagerState.currentPage < 4) "Next →" else "Let's Go 🚀",
-                        color = if (pagerState.currentPage < 4 || name.isNotBlank()) Color.Black else SubtitleGray,
+                        if (pagerState.currentPage < 4) "Next \u2192" else "Let's Go \uD83D\uDE80",
+                        color = if (pagerState.currentPage < 4 || name.isNotBlank()) MaterialTheme.colorScheme.onPrimary else extra.subtitleGray,
                         fontWeight = FontWeight.Bold,
                         fontSize = 18.sp
                     )
@@ -141,149 +122,95 @@ fun OnboardingScreen(onOnboardingComplete: () -> Unit) {
 
 @Composable
 fun Page1Welcome(selectedLanguage: String, onLanguageSelected: (com.dhanuk.debtbro.presentation.components.AppLanguage) -> Unit) {
+    val extra = LocalExtraColors.current
     Column(
-        Modifier
-            .fillMaxSize()
-            .padding(horizontal = 24.dp),
+        Modifier.fillMaxSize().padding(horizontal = 24.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         Spacer(Modifier.height(32.dp))
-        Text("💸", fontSize = 80.sp)
-        Text(
-            "DebtBro",
-            color = PrimaryGreen,
-            fontSize = 48.sp,
-            fontWeight = FontWeight.ExtraBold
-        )
-        Text(
-            "Money memory with a sense of humor",
-            color = SubtitleGray,
-            fontSize = 16.sp,
-            textAlign = TextAlign.Center
-        )
+        Text("\uD83D\uDCB8", fontSize = 80.sp)
+        Text("DebtBro", color = PrimaryGreen, fontSize = 48.sp, fontWeight = FontWeight.ExtraBold)
+        Text("Money memory with a sense of humor", color = extra.subtitleGray, fontSize = 16.sp, textAlign = TextAlign.Center)
         Spacer(Modifier.height(32.dp))
-        Text(
-            "🌍 Choose your language",
-            color = Color.White,
-            fontSize = 18.sp,
-            fontWeight = FontWeight.Bold,
-            modifier = Modifier.padding(bottom = 16.dp)
-        )
-        LanguageSelectorGrid(
-            selectedCode = selectedLanguage,
-            onLanguageSelected = onLanguageSelected
-        )
+        Text("\uD83C\uDF0D Choose your language", color = MaterialTheme.colorScheme.onSurface, fontSize = 18.sp, fontWeight = FontWeight.Bold, modifier = Modifier.padding(bottom = 16.dp))
+        LanguageSelectorGrid(selectedCode = selectedLanguage, onLanguageSelected = onLanguageSelected)
     }
 }
 
 @Composable
 fun Page2Track() {
+    val extra = LocalExtraColors.current
     Column(
-        Modifier
-            .fillMaxSize()
-            .padding(horizontal = 24.dp),
+        Modifier.fillMaxSize().padding(horizontal = 24.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ) {
-        Text("💸", fontSize = 96.sp)
+        Text("\uD83D\uDCB8", fontSize = 96.sp)
         Spacer(Modifier.height(24.dp))
-        Text(
-            "Track Who Owes You",
-            color = Color.White,
-            fontSize = 32.sp,
-            fontWeight = FontWeight.ExtraBold,
-            textAlign = TextAlign.Center
-        )
+        Text("Track Who Owes You", color = MaterialTheme.colorScheme.onSurface, fontSize = 32.sp, fontWeight = FontWeight.ExtraBold, textAlign = TextAlign.Center)
         Spacer(Modifier.height(16.dp))
-        Text(
-            "Every loan, chai, trip split, and awkward IOU in one clean place.",
-            color = SubtitleGray,
-            fontSize = 16.sp,
-            textAlign = TextAlign.Center
-        )
+        Text("Every loan, chai, trip split, and awkward IOU in one clean place.", color = extra.subtitleGray, fontSize = 16.sp, textAlign = TextAlign.Center)
         Spacer(Modifier.height(32.dp))
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            FeaturePill("💰 They Owe Me")
-            FeaturePill("😅 I Owe Them")
-            FeaturePill("📊 Analytics")
+            FeaturePill("\uD83D\uDCB0 They Owe Me")
+            FeaturePill("\uD83D\uDE05 I Owe Them")
+            FeaturePill("\uD83D\uDCCA Analytics")
         }
     }
 }
 
 @Composable
 fun Page3Roasts() {
+    val extra = LocalExtraColors.current
     Column(
-        Modifier
-            .fillMaxSize()
-            .padding(horizontal = 24.dp),
+        Modifier.fillMaxSize().padding(horizontal = 24.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ) {
-        Text("🤖", fontSize = 96.sp)
+        Text("\uD83E\uDD16", fontSize = 96.sp)
         Spacer(Modifier.height(24.dp))
-        Text(
-            "AI Roasts Your Broke Friends",
-            color = Color.White,
-            fontSize = 32.sp,
-            fontWeight = FontWeight.ExtraBold,
-            textAlign = TextAlign.Center
-        )
+        Text("AI Roasts Your Broke Friends", color = MaterialTheme.colorScheme.onSurface, fontSize = 32.sp, fontWeight = FontWeight.ExtraBold, textAlign = TextAlign.Center)
         Spacer(Modifier.height(24.dp))
         Card(
             modifier = Modifier.fillMaxWidth(),
-            colors = CardDefaults.cardColors(containerColor = Color(0xFF1E1E1E)),
+            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
             shape = RoundedCornerShape(16.dp)
         ) {
             Text(
-                "Hey bro, still waiting on that ₹500 for pizza. Unless you're paying me in exposure?",
-                color = Color.White,
+                "Hey bro, still waiting on that \u20B9500 for pizza. Unless you're paying me in exposure?",
+                color = MaterialTheme.colorScheme.onSurface,
                 modifier = Modifier.padding(16.dp),
                 fontSize = 15.sp
             )
         }
         Spacer(Modifier.height(24.dp))
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            FeaturePill("😊 Mild")
-            FeaturePill("😏 Medium")
-            FeaturePill("🔥 Savage")
+            FeaturePill("\uD83D\uDE0A Mild")
+            FeaturePill("\uD83D\uDE0F Medium")
+            FeaturePill("\uD83D\uDD25 Savage")
         }
     }
 }
 
 @Composable
 fun Page4Sync() {
+    val extra = LocalExtraColors.current
     Column(
-        Modifier
-            .fillMaxSize()
-            .padding(horizontal = 24.dp),
+        Modifier.fillMaxSize().padding(horizontal = 24.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ) {
-        Text("☁️", fontSize = 96.sp)
+        Text("\u2601\uFE0F", fontSize = 96.sp)
         Spacer(Modifier.height(24.dp))
-        Text(
-            "Never Lose Your Data",
-            color = Color.White,
-            fontSize = 32.sp,
-            fontWeight = FontWeight.ExtraBold,
-            textAlign = TextAlign.Center
-        )
+        Text("Never Lose Your Data", color = MaterialTheme.colorScheme.onSurface, fontSize = 32.sp, fontWeight = FontWeight.ExtraBold, textAlign = TextAlign.Center)
         Spacer(Modifier.height(16.dp))
-        Text(
-            "Sign in with Google anytime from Settings to sync across all devices.",
-            color = SubtitleGray,
-            fontSize = 16.sp,
-            textAlign = TextAlign.Center
-        )
+        Text("Sign in with Google anytime from Settings to sync across all devices.", color = extra.subtitleGray, fontSize = 16.sp, textAlign = TextAlign.Center)
         Spacer(Modifier.height(32.dp))
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(8.dp)
-        ) {
+        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             Text("Add Debt", color = PrimaryGreen, fontSize = 12.sp, fontWeight = FontWeight.Bold)
-            Text("→", color = SubtitleGray)
+            Text("\u2192", color = extra.subtitleGray)
             Text("Auto Sync", color = PrimaryGreen, fontSize = 12.sp, fontWeight = FontWeight.Bold)
-            Text("→", color = SubtitleGray)
+            Text("\u2192", color = extra.subtitleGray)
             Text("Access Anywhere", color = PrimaryGreen, fontSize = 12.sp, fontWeight = FontWeight.Bold)
         }
     }
@@ -291,59 +218,44 @@ fun Page4Sync() {
 
 @Composable
 fun Page5Name(name: String, onNameChange: (String) -> Unit) {
+    val extra = LocalExtraColors.current
     Column(
-        Modifier
-            .fillMaxSize()
-            .padding(horizontal = 24.dp),
+        Modifier.fillMaxSize().padding(horizontal = 24.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ) {
-        Text("👋", fontSize = 72.sp)
+        Text("\uD83D\uDC4B", fontSize = 72.sp)
         Spacer(Modifier.height(24.dp))
-        Text(
-            "What should we call you?",
-            color = Color.White,
-            fontSize = 28.sp,
-            fontWeight = FontWeight.ExtraBold,
-            textAlign = TextAlign.Center
-        )
+        Text("What should we call you?", color = MaterialTheme.colorScheme.onSurface, fontSize = 28.sp, fontWeight = FontWeight.ExtraBold, textAlign = TextAlign.Center)
         Spacer(Modifier.height(32.dp))
         OutlinedTextField(
             value = name,
-            onValueChange = { 
-                if (it.length <= 30) {
-                    onNameChange(it.trimStart())
-                }
-            },
+            onValueChange = { if (it.length <= 30) onNameChange(it.trimStart()) },
             label = { Text("Your name") },
             placeholder = { Text("e.g. Rahul, Priya...") },
             singleLine = true,
-            keyboardOptions = KeyboardOptions(
-                keyboardType = KeyboardType.Text,
-                capitalization = KeyboardCapitalization.Words
-            ),
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Text, capitalization = KeyboardCapitalization.Words),
             colors = OutlinedTextFieldDefaults.colors(
                 focusedBorderColor = PrimaryGreen,
-                unfocusedBorderColor = Color(0xFF333333),
-                focusedTextColor = Color.White,
-                unfocusedTextColor = Color.White
+                unfocusedBorderColor = MaterialTheme.colorScheme.outline,
+                focusedTextColor = MaterialTheme.colorScheme.onSurface,
+                unfocusedTextColor = MaterialTheme.colorScheme.onSurface
             ),
             modifier = Modifier.fillMaxWidth(),
-            trailingIcon = {
-                Text("${name.length}/30", color = SubtitleGray, fontSize = 11.sp)
-            }
+            trailingIcon = { Text("${name.length}/30", color = extra.subtitleGray, fontSize = 11.sp) }
         )
     }
 }
 
 @Composable
 fun FeaturePill(text: String) {
+    val extra = LocalExtraColors.current
     Box(
         modifier = Modifier
             .clip(RoundedCornerShape(16.dp))
-            .background(Color(0xFF2A2A2A))
+            .background(MaterialTheme.colorScheme.surfaceVariant)
             .padding(horizontal = 12.dp, vertical = 8.dp)
     ) {
-        Text(text, color = Color.White, fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
+        Text(text, color = MaterialTheme.colorScheme.onSurface, fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
     }
 }
