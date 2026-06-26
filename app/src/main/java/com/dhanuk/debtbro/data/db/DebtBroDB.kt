@@ -19,7 +19,7 @@ import com.dhanuk.debtbro.data.db.entity.SplitEntity
 abstract class DebtBroDB : RoomDatabase() {
     abstract fun debtDao(): DebtDao
     abstract fun paymentDao(): PaymentDao
-    abstract fun splitDao(): SplitDao()
+    abstract fun splitDao(): SplitDao
 
     companion object {
         /**
