@@ -302,31 +302,58 @@ fun SettingsScreen(viewModel: SettingsViewModel = hiltViewModel()) {
                 }
             }
 
-            // ── PRIVACY POLICY ───────────────────────────────────────────────
+            // ── LEGAL & SUPPORT SECTION ───────────────────────────────────────
+            item { SectionHeader(LocalizedString.get("legal_and_support"), Icons.Default.Gavel) }
             item {
                 Card(
-                    modifier = Modifier.fillMaxWidth().clickable {
-                        openUrl(context, BuildConfig.PRIVACY_POLICY_URL)
-                    },
                     colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
                     shape = UITokens.ShapeLarge
                 ) {
-                    Row(
-                        modifier = Modifier.padding(UITokens.CardInnerPadding),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(UITokens.SpaceSmall)
-                    ) {
-                        Box(
-                            modifier = Modifier.size(UITokens.AvatarMedium).clip(CircleShape).background(MaterialTheme.colorScheme.surfaceVariant),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Icon(Icons.Default.Policy, LocalizedString.get("privacy_policy"), tint = MaterialTheme.colorScheme.primary)
-                        }
-                        Column(modifier = Modifier.weight(1f)) {
-                            Text(LocalizedString.get("privacy_policy"), color = MaterialTheme.colorScheme.onSurface, fontWeight = FontWeight.Bold)
-                            Text(LocalizedString.get("privacy_policy_desc"), color = extra.subtitleGray, fontSize = UITokens.FontSmall)
-                        }
-                        Icon(Icons.Default.OpenInNew, LocalizedString.get("privacy_policy"), tint = extra.subtitleGray, modifier = Modifier.size(18.dp))
+                    Column(Modifier.padding(UITokens.CardInnerPadding), verticalArrangement = Arrangement.spacedBy(0.dp)) {
+                        LinkRow(
+                            icon = Icons.Default.Policy,
+                            title = LocalizedString.get("privacy_policy"),
+                            subtitle = LocalizedString.get("privacy_policy_desc"),
+                            onClick = { openUrl(context, BuildConfig.PRIVACY_POLICY_URL) }
+                        )
+                        HorizontalDivider(color = extra.divider)
+                        LinkRow(
+                            icon = Icons.Default.Description,
+                            title = LocalizedString.get("terms_and_conditions"),
+                            subtitle = LocalizedString.get("terms_and_conditions"),
+                            onClick = { openUrl(context, BuildConfig.TERMS_OF_SERVICE_URL) }
+                        )
+                        HorizontalDivider(color = extra.divider)
+                        LinkRow(
+                            icon = Icons.Default.HelpOutline,
+                            title = LocalizedString.get("help_and_support"),
+                            subtitle = LocalizedString.get("help_and_support"),
+                            onClick = { openUrl(context, BuildConfig.HELP_URL) }
+                        )
+                        HorizontalDivider(color = extra.divider)
+                        LinkRow(
+                            icon = Icons.Default.Email,
+                            title = LocalizedString.get("contact_us"),
+                            subtitle = "support@dhanuksoftwares.com",
+                            onClick = {
+                                runCatching {
+                                    val intent = android.content.Intent(android.content.Intent.ACTION_SENDTO).apply {
+                                        data = android.net.Uri.parse("mailto:support@dhanuksoftwares.com")
+                                    }
+                                    context.startActivity(intent)
+                                }.onFailure {
+                                    runCatching { android.widget.Toast.makeText(context, LocalizedString.get("no_browser_found"), android.widget.Toast.LENGTH_SHORT).show() }
+                                }
+                            }
+                        )
+                        HorizontalDivider(color = extra.divider)
+                        LinkRow(
+                            icon = Icons.Default.DeleteForever,
+                            title = LocalizedString.get("delete_account"),
+                            subtitle = LocalizedString.get("delete_account"),
+                            tint = MaterialTheme.colorScheme.error,
+                            onClick = { showDeleteConfirm = true }
+                        )
                     }
                 }
             }
@@ -338,7 +365,12 @@ fun SettingsScreen(viewModel: SettingsViewModel = hiltViewModel()) {
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
                     Text("DebtBro v${BuildConfig.VERSION_NAME}", color = extra.subtitleGray, fontSize = UITokens.FontSmall)
-                    Text(LocalizedString.get("made_with_love"), color = extra.subtitleGray.copy(alpha = 0.7f), fontSize = 11.sp)
+                    Text(
+                        if (state.isSignedIn) LocalizedString.get("cloud_backup_active") else LocalizedString.get("data_saved_locally"),
+                        color = extra.subtitleGray.copy(alpha = 0.7f),
+                        fontSize = 11.sp,
+                        textAlign = TextAlign.Center
+                    )
                 }
             }
         }
@@ -566,5 +598,28 @@ fun SettingsActionItem(
             Text(title, color = color, fontWeight = FontWeight.SemiBold)
             Text(subtitle, color = extra.subtitleGray, fontSize = UITokens.FontCaption)
         }
+    }
+}
+
+@Composable
+fun LinkRow(
+    icon: ImageVector,
+    title: String,
+    subtitle: String,
+    tint: androidx.compose.ui.graphics.Color = MaterialTheme.colorScheme.primary,
+    onClick: () -> Unit
+) {
+    val extra = LocalExtraColors.current
+    Row(
+        modifier = Modifier.fillMaxWidth().clickable { onClick() }.padding(vertical = UITokens.SpaceXS),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(UITokens.SpaceSmall)
+    ) {
+        Icon(icon, title, tint = tint)
+        Column(modifier = Modifier.weight(1f)) {
+            Text(title, color = MaterialTheme.colorScheme.onSurface, fontWeight = FontWeight.SemiBold, fontSize = UITokens.FontBody)
+            Text(subtitle, color = extra.subtitleGray, fontSize = UITokens.FontCaption)
+        }
+        Icon(Icons.Default.OpenInNew, title, tint = extra.subtitleGray, modifier = Modifier.size(16.dp))
     }
 }
