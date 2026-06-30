@@ -55,7 +55,7 @@ fun android.content.Context.findActivity(): Activity? {
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun DebtDetailScreen(onBack: () -> Unit, viewModel: DebtDetailViewModel = hiltViewModel()) {
+fun DebtDetailScreen(onBack: () -> Unit, onAuthRequired: () -> Unit = {}, viewModel: DebtDetailViewModel = hiltViewModel()) {
     val extra = LocalExtraColors.current
     var showDeleteConfirm by remember { mutableStateOf(false) }
     val debt by viewModel.debt.collectAsStateWithLifecycle()
@@ -66,6 +66,7 @@ fun DebtDetailScreen(onBack: () -> Unit, viewModel: DebtDetailViewModel = hiltVi
     val showPaymentSheet by viewModel.showAddPaymentSheet.collectAsStateWithLifecycle()
     val showEditSheet by viewModel.showEditDebtSheet.collectAsStateWithLifecycle()
     val showConfetti by viewModel.showConfetti.collectAsStateWithLifecycle()
+    val showAuthPrompt by viewModel.showAuthPrompt.collectAsStateWithLifecycle()
     val context = LocalContext.current
     val showRewardAd by viewModel.showRewardAd.collectAsStateWithLifecycle()
     val remainingFree by viewModel.remainingFree.collectAsStateWithLifecycle()
@@ -422,6 +423,28 @@ fun DebtDetailScreen(onBack: () -> Unit, viewModel: DebtDetailViewModel = hiltVi
                     debt = d,
                     onDismiss = { viewModel.showEditDebtSheet.value = false },
                     onSave = { name, amount, desc, emoji -> viewModel.updateDebt(name, amount, desc, emoji) }
+                )
+            }
+
+            if (showAuthPrompt) {
+                AlertDialog(
+                    onDismissRequest = { viewModel.dismissAuthPrompt() },
+                    title = { Text(com.dhanuk.debtbro.util.LocalizedString.get("sign_in_to_sync")) },
+                    text = { Text(com.dhanuk.debtbro.util.LocalizedString.get("sign_in_to_sync_desc")) },
+                    confirmButton = {
+                        TextButton(onClick = {
+                            viewModel.dismissAuthPrompt()
+                            onAuthRequired()
+                        }) {
+                            Text(com.dhanuk.debtbro.util.LocalizedString.get("sign_in"), color = MaterialTheme.colorScheme.primary)
+                        }
+                    },
+                    dismissButton = {
+                        TextButton(onClick = { viewModel.dismissAuthPrompt() }) {
+                            Text(com.dhanuk.debtbro.util.LocalizedString.get("cancel"), color = extra.subtitleGray)
+                        }
+                    },
+                    containerColor = MaterialTheme.colorScheme.surface
                 )
             }
 

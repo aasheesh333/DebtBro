@@ -65,7 +65,18 @@ class DebtDetailViewModel @Inject constructor(
     private val _exportElapsed = MutableStateFlow(0L)
     val exportElapsed: StateFlow<Long> = _exportElapsed.asStateFlow()
 
+    private val _showAuthPrompt = MutableStateFlow(false)
+    val showAuthPrompt: StateFlow<Boolean> = _showAuthPrompt.asStateFlow()
+
+    fun dismissAuthPrompt() {
+        _showAuthPrompt.value = false
+    }
+
     fun addPayment(amount: Double, note: String) = viewModelScope.launch {
+        if (!prefs.isGoogleSignedIn.first()) {
+            _showAuthPrompt.value = true
+            return@launch
+        }
         paymentRepository.recordPayment(debtId, amount, note)
         val after = debtRepository.getDebtById(debtId)
         if (after?.status == "SETTLED") {
@@ -184,6 +195,10 @@ class DebtDetailViewModel @Inject constructor(
     }
 
     fun markSettled() = viewModelScope.launch {
+        if (!prefs.isGoogleSignedIn.first()) {
+            _showAuthPrompt.value = true
+            return@launch
+        }
         debt.value?.let { d ->
             val remaining = d.amount - d.amountPaid
             if (remaining > 0) {
@@ -208,6 +223,10 @@ class DebtDetailViewModel @Inject constructor(
     }
 
     fun deleteDebt() = viewModelScope.launch {
+        if (!prefs.isGoogleSignedIn.first()) {
+            _showAuthPrompt.value = true
+            return@launch
+        }
         val d = debt.value ?: return@launch
         debtRepository.deleteDebt(d)
         syncIfSignedIn()

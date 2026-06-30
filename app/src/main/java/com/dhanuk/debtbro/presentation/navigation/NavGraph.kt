@@ -27,6 +27,7 @@ import androidx.navigation.navDeepLink
 import com.dhanuk.debtbro.data.datastore.AppPreferences
 import com.dhanuk.debtbro.presentation.screens.adddebt.AddDebtBottomSheet
 import com.dhanuk.debtbro.presentation.screens.analytics.AnalyticsScreen
+import com.dhanuk.debtbro.presentation.screens.auth.AuthScreen
 import com.dhanuk.debtbro.presentation.screens.dashboard.DashboardScreen
 import com.dhanuk.debtbro.presentation.screens.debtdetail.DebtDetailScreen
 import com.dhanuk.debtbro.presentation.screens.debtlist.DebtListScreen
@@ -258,15 +259,24 @@ fun DebtBroNavGraph(appPreferences: AppPreferences) {
                     onDebtClick = { debtId -> navController.navigate(Screen.DebtDetail.createRoute(debtId)) }
                 )
             }
-            composable(Screen.Split.route) { SplitScreen() }
+            composable(Screen.Split.route) { SplitScreen(onAuthRequired = { navController.navigate(Screen.Auth.route) }) }
             composable(Screen.Analytics.route) { AnalyticsScreen() }
             composable(Screen.Settings.route) { SettingsScreen() }
             composable(
                 Screen.DebtDetail.route,
                 arguments = listOf(navArgument("debtId") { type = NavType.IntType }),
                 deepLinks = listOf(navDeepLink { uriPattern = "debtbro://debt/{debtId}" })
-            ) { 
-                DebtDetailScreen(onBack = { navController.popBackStack() }) 
+            ) {
+                DebtDetailScreen(
+                    onBack = { navController.popBackStack() },
+                    onAuthRequired = { navController.navigate(Screen.Auth.route) }
+                )
+            }
+            composable(Screen.Auth.route) {
+                AuthScreen(
+                    onAuthComplete = { navController.popBackStack() },
+                    onSkip = { navController.popBackStack() }
+                )
             }
         }
     }
@@ -274,7 +284,8 @@ fun DebtBroNavGraph(appPreferences: AppPreferences) {
     if (showAddDebt) {
         AddDebtBottomSheet(
             onDismiss = { showAddDebt = false },
-            onDebtAdded = { showAddDebt = false }
+            onDebtAdded = { showAddDebt = false },
+            onSignInRequired = { navController.navigate(Screen.Auth.route) }
         )
     }
 }

@@ -43,6 +43,7 @@ import java.util.*
 fun AddDebtBottomSheet(
     onDismiss: () -> Unit,
     onDebtAdded: () -> Unit,
+    onSignInRequired: () -> Unit = {},
     viewModel: AddDebtViewModel = hiltViewModel()
 ) {
     val extra = LocalExtraColors.current
@@ -50,6 +51,7 @@ fun AddDebtBottomSheet(
     val hapticFeedback = LocalHapticFeedback.current
     val context = LocalContext.current
     val isLoading by viewModel.isLoading.collectAsStateWithLifecycle()
+    val showAuthPrompt by viewModel.showAuthPrompt.collectAsStateWithLifecycle()
 
     var personName by remember { mutableStateOf("") }
     var amount by remember { mutableStateOf("") }
@@ -436,5 +438,28 @@ fun AddDebtBottomSheet(
         ) {
             DatePicker(state = datePickerState)
         }
+    }
+
+    if (showAuthPrompt) {
+        AlertDialog(
+            onDismissRequest = {
+                viewModel.dismissAuthPrompt()
+            },
+            title = { Text(LocalizedString.get("sign_in_to_sync")) },
+            text = { Text(LocalizedString.get("sign_in_to_sync_desc")) },
+            confirmButton = {
+                TextButton(onClick = {
+                    viewModel.dismissAuthPrompt()
+                    onDismiss()
+                    onSignInRequired()
+                }) { Text(LocalizedString.get("sign_in"), color = MaterialTheme.colorScheme.primary) }
+            },
+            dismissButton = {
+                TextButton(onClick = { viewModel.dismissAuthPrompt() }) {
+                    Text(LocalizedString.get("cancel"), color = extra.subtitleGray)
+                }
+            },
+            containerColor = MaterialTheme.colorScheme.surface
+        )
     }
 }

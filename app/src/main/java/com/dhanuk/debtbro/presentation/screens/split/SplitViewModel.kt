@@ -41,6 +41,11 @@ class SplitViewModel @Inject constructor(
     private val _state = MutableStateFlow(SplitUiState())
     val state: StateFlow<SplitUiState> = _state.asStateFlow()
 
+    private val _showAuthPrompt = MutableStateFlow(false)
+    val showAuthPrompt: StateFlow<Boolean> = _showAuthPrompt.asStateFlow()
+
+    fun dismissAuthPrompt() { _showAuthPrompt.value = false }
+
     val pastSplits: StateFlow<List<SplitEntity>> = splits.getAllSplits()
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
@@ -86,6 +91,10 @@ class SplitViewModel @Inject constructor(
     }
 
     fun createSplit(onCreated: (SplitEntity) -> Unit) = viewModelScope.launch {
+        if (!prefs.isGoogleSignedIn.first()) {
+            _showAuthPrompt.value = true
+            return@launch
+        }
         val s = _state.value
         val total = s.totalAmount.toDoubleOrNull() ?: return@launch
         _state.value = s.copy(isLoading = true)

@@ -81,6 +81,29 @@ class AuthManager @Inject constructor(
     }
 
     /**
+     * Create a new account using email + password.
+     * Caller should usually link this to an existing Google account via [linkWithEmailPassword]
+     * or use this for email-only sign up.
+     */
+    suspend fun signUpWithEmailPassword(email: String, password: String): Result<FirebaseUser> = runCatching {
+        val result = auth.createUserWithEmailAndPassword(email, password).await()
+        result.user ?: error("Sign-up returned no user")
+    }.onFailure { e ->
+        android.util.Log.e("AuthManager", "signUpWithEmailPassword failed: ${e.message}", e)
+    }
+
+    /**
+     * Send a password-reset email to [email]. Returns success even if the address is
+     * not registered (Firebase privacy rule) so callers always get a positive UI signal.
+     */
+    suspend fun sendPasswordResetEmail(email: String): Result<Unit> = runCatching {
+        auth.sendPasswordResetEmail(email).await()
+        Unit
+    }.onFailure { e ->
+        android.util.Log.e("AuthManager", "sendPasswordResetEmail failed: ${e.message}", e)
+    }
+
+    /**
      * Re-authenticate with Google (used before account deletion or sensitive operations).
      */
     suspend fun reauthenticateWithGoogle(activity: Activity): Result<Unit> = runCatching {

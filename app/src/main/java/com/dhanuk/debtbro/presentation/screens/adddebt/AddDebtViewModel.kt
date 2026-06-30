@@ -22,9 +22,20 @@ class AddDebtViewModel @Inject constructor(
     private val authManager: AuthManager,
     private val syncManager: SyncManager
 ) : ViewModel() {
-    
+
     private val _isLoading = MutableStateFlow(false)
     val isLoading: StateFlow<Boolean> = _isLoading.asStateFlow()
+
+    private val _showAuthPrompt = MutableStateFlow(false)
+    val showAuthPrompt: StateFlow<Boolean> = _showAuthPrompt.asStateFlow()
+
+    fun dismissAuthPrompt() {
+        _showAuthPrompt.value = false
+    }
+
+    private suspend fun isCloudSyncEnabled(): Boolean {
+        return prefs.isGoogleSignedIn.first()
+    }
 
     fun saveDebt(
         personName: String,
@@ -38,6 +49,10 @@ class AddDebtViewModel @Inject constructor(
         onSaved: () -> Unit
     ) {
         viewModelScope.launch {
+            if (!isCloudSyncEnabled()) {
+                _showAuthPrompt.value = true
+                return@launch
+            }
             _isLoading.value = true
             try {
                 val id = debtRepository.insertDebt(
@@ -52,7 +67,7 @@ class AddDebtViewModel @Inject constructor(
                         notes = notes.ifBlank { null }
                     )
                 )
-                
+
                 // Sync with Firebase if user is logged in
                 authManager.getCurrentUser()?.uid?.let { uid ->
                     val debt = debtRepository.getDebtById(id.toInt())
@@ -60,7 +75,7 @@ class AddDebtViewModel @Inject constructor(
                         runCatching { syncManager.pushNewDebt(uid, debt) }
                     }
                 }
-                
+
                 onSaved()
             } catch (e: Exception) {
                 android.util.Log.e("AddDebtViewModel", "Failed to save debt: ${e.message}", e)
@@ -69,7 +84,7 @@ class AddDebtViewModel @Inject constructor(
             }
         }
     }
-    
+
     suspend fun getDefaultCurrency(): String {
         return prefs.defaultCurrency.first()
     }
