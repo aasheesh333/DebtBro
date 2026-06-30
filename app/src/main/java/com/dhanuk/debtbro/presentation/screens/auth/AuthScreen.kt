@@ -208,7 +208,6 @@ fun AuthScreen(onAuthComplete: () -> Unit, onSkip: () -> Unit) {
                         AuthMode.SIGN_IN -> Text(LocalizedString.get("sign_in"), fontWeight = FontWeight.Bold, fontSize = 16.sp)
                         AuthMode.SIGN_UP -> Text(LocalizedString.get("create_account"), fontWeight = FontWeight.Bold, fontSize = 16.sp)
                         AuthMode.FORGOT_PASSWORD -> {
-                            val remainingAttempts = viewModel.dailyAttemptsRemaining()
                             val countdown = state.resendCountdownSeconds
                             val label = when {
                                 countdown > 0 -> LocalizedString.get("resend_in").replace("{time}", countdown.toString())
@@ -351,11 +350,13 @@ private fun AuthHero(title: String) {
 @Composable
 private fun PasswordStrengthBar(strength: PasswordStrength) {
     val extra = LocalExtraColors.current
-    val (segments, activeColor) = when (strength) {
+    val strengthData = when (strength) {
         PasswordStrength.WEAK -> Triple(1, 3, MaterialTheme.colorScheme.error)
         PasswordStrength.MEDIUM -> Triple(2, 3, MaterialTheme.colorScheme.tertiary)
         PasswordStrength.STRONG -> Triple(3, 3, MaterialTheme.colorScheme.primary)
     }
+    val segments = strengthData.first
+    val activeColor = strengthData.third
     Row(
         modifier = Modifier.fillMaxWidth().height(6.dp),
         horizontalArrangement = Arrangement.spacedBy(4.dp)
