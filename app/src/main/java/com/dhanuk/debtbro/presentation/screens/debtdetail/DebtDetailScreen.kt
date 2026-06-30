@@ -488,7 +488,9 @@ fun DebtDetailScreen(onBack: () -> Unit, viewModel: DebtDetailViewModel = hiltVi
             }
         )
     }
-   }
+    }
+    }
+}
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
