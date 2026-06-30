@@ -41,8 +41,6 @@ fun SplitScreen(onAuthRequired: () -> Unit, viewModel: SplitViewModel = hiltView
     val showAuthPrompt by viewModel.showAuthPrompt.collectAsStateWithLifecycle()
     val extra = LocalExtraColors.current
     var showContactPicker by remember { mutableStateOf(false) }
-    val onAuthRequiredCopy = onAuthRequired // explicit lambda capture
-    val viewModelCopy = viewModel
 
     LazyColumn(
         modifier = Modifier
@@ -183,8 +181,33 @@ fun SplitScreen(onAuthRequired: () -> Unit, viewModel: SplitViewModel = hiltView
                                 Text("🤖", fontSize = 24.sp)
                                 Spacer(Modifier.width(8.dp))
                                 Text(state.aiSummary, color = MaterialTheme.colorScheme.onSurface, fontSize = 13.sp)
-                            }
-                        }
+        }
+    }
+
+    val onAuthRequiredCopy = onAuthRequired // explicit lambda capture
+    val viewModelCopy = viewModel
+
+    if (showAuthPrompt) {
+        AlertDialog(
+            onDismissRequest = { viewModelCopy.dismissAuthPrompt() },
+            title = { Text(LocalizedString.get("sign_in_to_sync")) },
+            text = { Text(LocalizedString.get("sign_in_to_sync_desc")) },
+            confirmButton = {
+                TextButton(onClick = {
+                    viewModelCopy.dismissAuthPrompt()
+                    onAuthRequiredCopy()
+                }) {
+                    Text(LocalizedString.get("sign_in"), color = MaterialTheme.colorScheme.primary)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { viewModelCopy.dismissAuthPrompt() }) {
+                    Text(LocalizedString.get("cancel"), color = extra.subtitleGray)
+                }
+            },
+            containerColor = MaterialTheme.colorScheme.surface
+        )
+    }
                     }
                 }
             }
@@ -367,27 +390,5 @@ fun ContactPickerBottomSheet(
                 Text(LocalizedString.get("pick_contact"), color = MaterialTheme.colorScheme.onPrimary, fontWeight = FontWeight.Bold)
             }
         }
-    }
-
-    if (showAuthPrompt) {
-        AlertDialog(
-            onDismissRequest = { viewModelCopy.dismissAuthPrompt() },
-            title = { Text(LocalizedString.get("sign_in_to_sync")) },
-            text = { Text(LocalizedString.get("sign_in_to_sync_desc")) },
-            confirmButton = {
-                TextButton(onClick = {
-                    viewModelCopy.dismissAuthPrompt()
-                    onAuthRequiredCopy()
-                }) {
-                    Text(LocalizedString.get("sign_in"), color = MaterialTheme.colorScheme.primary)
-                }
-            },
-            dismissButton = {
-                TextButton(onClick = { viewModelCopy.dismissAuthPrompt() }) {
-                    Text(LocalizedString.get("cancel"), color = extra.subtitleGray)
-                }
-            },
-            containerColor = MaterialTheme.colorScheme.surface
-        )
     }
 }
