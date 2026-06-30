@@ -35,12 +35,14 @@ import com.dhanuk.debtbro.util.LocalizedString
 
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
-fun SplitScreen(onAuthRequired: () -> Unit = {}, viewModel: SplitViewModel = hiltViewModel()) {
+fun SplitScreen(onAuthRequired: () -> Unit, viewModel: SplitViewModel = hiltViewModel()) {
     val state by viewModel.state.collectAsStateWithLifecycle()
     val pastSplits by viewModel.pastSplits.collectAsStateWithLifecycle()
     val showAuthPrompt by viewModel.showAuthPrompt.collectAsStateWithLifecycle()
     val extra = LocalExtraColors.current
     var showContactPicker by remember { mutableStateOf(false) }
+    val onAuthRequiredCopy = onAuthRequired // explicit lambda capture
+    val viewModelCopy = viewModel
 
     LazyColumn(
         modifier = Modifier
@@ -369,19 +371,19 @@ fun ContactPickerBottomSheet(
 
     if (showAuthPrompt) {
         AlertDialog(
-            onDismissRequest = { viewModel.dismissAuthPrompt() },
+            onDismissRequest = { viewModelCopy.dismissAuthPrompt() },
             title = { Text(LocalizedString.get("sign_in_to_sync")) },
             text = { Text(LocalizedString.get("sign_in_to_sync_desc")) },
             confirmButton = {
                 TextButton(onClick = {
-                    viewModel.dismissAuthPrompt()
-                    onAuthRequired()
+                    viewModelCopy.dismissAuthPrompt()
+                    onAuthRequiredCopy()
                 }) {
                     Text(LocalizedString.get("sign_in"), color = MaterialTheme.colorScheme.primary)
                 }
             },
             dismissButton = {
-                TextButton(onClick = { viewModel.dismissAuthPrompt() }) {
+                TextButton(onClick = { viewModelCopy.dismissAuthPrompt() }) {
                     Text(LocalizedString.get("cancel"), color = extra.subtitleGray)
                 }
             },

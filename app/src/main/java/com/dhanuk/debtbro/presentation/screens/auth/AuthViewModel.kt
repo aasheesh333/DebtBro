@@ -136,7 +136,7 @@ class AuthViewModel @Inject constructor(
         _state.value = current.copy(isBusy = true, errorRes = null)
         viewModelScope.launch {
             auth.signInWithEmailPassword(current.email, current.password).fold(
-                onSuccess = { user -> onAuthSuccess(user.uid, user.displayName, user.email, null) },
+                onSuccess = { user -> onAuthSuccess(user.uid, user.displayName ?: "", user.email ?: "", "") },
                 onFailure = { e ->
                     _state.value = _state.value.copy(isBusy = false, errorRes = e.message ?: "Sign-in failed")
                 }
@@ -157,7 +157,7 @@ class AuthViewModel @Inject constructor(
         _state.value = current.copy(isBusy = true, errorRes = null)
         viewModelScope.launch {
             auth.signUpWithEmailPassword(current.email, current.password).fold(
-                onSuccess = { user -> onAuthSuccess(user.uid, user.displayName, user.email, null) },
+                onSuccess = { user -> onAuthSuccess(user.uid, user.displayName ?: "", user.email ?: "", "") },
                 onFailure = { e ->
                     _state.value = _state.value.copy(isBusy = false, errorRes = e.message ?: "Sign-up failed")
                 }
@@ -179,7 +179,7 @@ class AuthViewModel @Inject constructor(
             }
             val now = System.currentTimeMillis()
             val lastSent = prefs.forgotPasswordLastSent.first()
-            val secondsSinceLastSend = if (lastSent == 0L) RESEND_COOLDOWN_SECONDS else (now - lastSent) / 1000
+            val secondsSinceLastSend = if (lastSent == 0L) RESEND_COOLDOWN_SECONDS.toLong() else (now - lastSent) / 1000
             if (lastSent > 0 && secondsSinceLastSend < RESEND_COOLDOWN_SECONDS) {
                 val remaining = (RESEND_COOLDOWN_SECONDS - secondsSinceLastSend).toInt().coerceAtLeast(1)
                 startCountdown(remaining)
