@@ -1,12 +1,14 @@
 package com.dhanuk.debtbro.util
 
 import android.content.Context
+import android.content.Intent
 import android.graphics.Bitmap
 import android.graphics.Canvas
 import android.graphics.Color
 import android.webkit.WebSettings
 import android.webkit.WebView
 import android.webkit.WebViewClient
+import android.widget.Toast
 import com.dhanuk.debtbro.data.db.entity.DebtEntity
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.suspendCancellableCoroutine
@@ -385,14 +387,18 @@ object HtmlExporter {
 
     fun shareImage(context: Context, bitmap: Bitmap) {
         val uri = getShareableUri(context, bitmap)
-        val intent = android.content.Intent(android.content.Intent.ACTION_SEND).apply {
+        val intent = Intent(Intent.ACTION_SEND).apply {
             type = "image/jpeg"
-            putExtra(android.content.Intent.EXTRA_STREAM, uri)
-            addFlags(android.content.Intent.FLAG_GRANT_READ_URI_PERMISSION)
-            addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK)
+            putExtra(Intent.EXTRA_STREAM, uri)
+            addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
         }
-        context.startActivity(android.content.Intent.createChooser(intent, "Share DebtBro Card").apply {
-            addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK)
-        })
+        try {
+            context.startActivity(Intent.createChooser(intent, "Share DebtBro Card").apply {
+                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            })
+        } catch (e: Exception) {
+            Toast.makeText(context, "Could not share image", Toast.LENGTH_SHORT).show()
+        }
     }
 }

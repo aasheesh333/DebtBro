@@ -417,8 +417,12 @@ object CanvasExporter {
             addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
             addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
         }
-        context.startActivity(Intent.createChooser(intent, "Share DebtBro card").apply {
-            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-        })
+        try {
+            context.startActivity(Intent.createChooser(intent, "Share DebtBro card").apply {
+                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            })
+        } catch (e: Exception) {
+            android.widget.Toast.makeText(context, "Could not share debt card", android.widget.Toast.LENGTH_SHORT).show()
+        }
     }
 }

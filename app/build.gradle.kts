@@ -39,7 +39,9 @@ android {
         buildConfigField("String", "ONESIGNAL_APP_ID", "\"${escapedProp("ONESIGNAL_APP_ID")}\"")
         buildConfigField("Boolean", "ENABLE_CRASHLYTICS", "true")
         buildConfigField("Boolean", "ENABLE_PERFORMANCE_MONITORING", "true")
-        buildConfigField("String", "PRIVACY_POLICY_URL", "\"${escapedProp("PRIVACY_POLICY_URL")}\"")
+        buildConfigField("String", "PRIVACY_POLICY_URL", "\"${escapedProp("PRIVACY_POLICY_URL").ifEmpty { "https://dhanuk.page.gd/DebtBro/Privacy-Policy.html" }}\"")
+        buildConfigField("String", "TERMS_OF_SERVICE_URL", "\"https://dhanuk.page.gd/DebtBro/Terms-and-Conditions.html\"")
+        buildConfigField("String", "HELP_URL", "\"https://dhanuk.page.gd/DebtBro/Help-and-Support.html\"")
         buildConfigField("String", "ACCOUNT_DELETION_URL", "\"https://dhanuk.page.gd/DebtBro/Delete-Account.html\"")
         // App-level ADMOB_APP_ID is a manifest placeholder only. Real ad unit IDs live in BuildConfig above.
         // The fallback is only used when local.properties / CI is missing config — production builds must ship real IDs.

@@ -29,6 +29,7 @@ import com.dhanuk.debtbro.presentation.components.SUPPORTED_LANGUAGES
 import com.dhanuk.debtbro.presentation.theme.LocalExtraColors
 import com.dhanuk.debtbro.presentation.theme.UITokens
 import com.dhanuk.debtbro.util.LocalizedString
+import com.dhanuk.debtbro.util.openUrl
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -305,11 +306,7 @@ fun SettingsScreen(viewModel: SettingsViewModel = hiltViewModel()) {
             item {
                 Card(
                     modifier = Modifier.fillMaxWidth().clickable {
-                        val url = BuildConfig.PRIVACY_POLICY_URL
-                        if (url.isNotBlank()) {
-                            val intent = android.content.Intent(android.content.Intent.ACTION_VIEW, android.net.Uri.parse(url))
-                            context.startActivity(intent)
-                        }
+                        openUrl(context, BuildConfig.PRIVACY_POLICY_URL)
                     },
                     colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
                     shape = UITokens.ShapeLarge

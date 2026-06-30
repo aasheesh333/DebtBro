@@ -6,6 +6,7 @@ import android.content.Context
 import android.content.Intent
 import android.graphics.Bitmap
 import android.net.Uri
+import android.widget.Toast
 
 fun shareTextToWhatsApp(context: Context, text: String) {
     val intent = Intent(Intent.ACTION_SEND).apply {
@@ -55,7 +56,11 @@ fun shareFile(context: Context, uri: Uri, mimeType: String = "*/*") {
         addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
         addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
     }
-    context.startActivity(Intent.createChooser(intent, "Share Export").apply {
-        addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-    })
+    try {
+        context.startActivity(Intent.createChooser(intent, "Share Export").apply {
+            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+        })
+    } catch (e: Exception) {
+        Toast.makeText(context, "Could not share file", Toast.LENGTH_SHORT).show()
+    }
 }

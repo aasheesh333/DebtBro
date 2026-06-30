@@ -9,9 +9,11 @@ import com.dhanuk.debtbro.data.firebase.RealTimeSyncManager
 import com.dhanuk.debtbro.data.firebase.SyncManager
 import com.dhanuk.debtbro.data.repository.DebtRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
@@ -43,6 +45,8 @@ class DashboardViewModel @Inject constructor(
 ) : ViewModel() {
     
     private val syncMutex = Mutex()
+    private val _isRefreshing = MutableStateFlow(false)
+    val isRefreshing: StateFlow<Boolean> = _isRefreshing.asStateFlow()
 
     val state: StateFlow<DashboardUiState> = combine(
         debts.getAllDebts(),
@@ -93,11 +97,17 @@ class DashboardViewModel @Inject constructor(
     fun dismissPrompt() = viewModelScope.launch { prefs.setHasShownSignInPrompt(true) }
 
     fun refresh() = viewModelScope.launch {
-        syncMutex.withLock {
-            val user = authManager.authStateFlow().first()
-            if (user != null) {
-                runCatching { syncManager.fullSync(user.uid) }
+        if (_isRefreshing.value) return@launch
+        _isRefreshing.value = true
+        try {
+            syncMutex.withLock {
+                val user = authManager.authStateFlow().first()
+                if (user != null) {
+                    runCatching { syncManager.fullSync(user.uid) }
+                }
             }
+        } finally {
+            _isRefreshing.value = false
         }
     }
 }

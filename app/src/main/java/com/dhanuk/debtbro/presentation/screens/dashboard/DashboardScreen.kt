@@ -52,23 +52,18 @@ fun DashboardScreen(
     val state by viewModel.state.collectAsStateWithLifecycle()
     val extra = LocalExtraColors.current
     var showPrompt by remember { mutableStateOf(false) }
-    var isRefreshing by remember { mutableStateOf(false) }
+    val isRefreshing by viewModel.isRefreshing.collectAsStateWithLifecycle()
 
     val pullRefreshState = rememberPullRefreshState(
         refreshing = isRefreshing,
-        onRefresh = {
-            isRefreshing = true
-            viewModel.refresh()
-        }
+        onRefresh = { viewModel.refresh() }
     )
 
-    LaunchedEffect(isRefreshing) {
-        if (isRefreshing) {
-            delay(2000)
-            isRefreshing = false
-        }
+    LaunchedEffect(Unit) {
+        // First-load sync if signed in
+        viewModel.refresh()
     }
-    
+
     LaunchedEffect(state.hasShownSignInPrompt, state.isSignedIn) {
         if (!state.hasShownSignInPrompt && !state.isSignedIn) {
             delay(3000)

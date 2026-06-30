@@ -375,7 +375,13 @@ class SettingsViewModel @Inject constructor(
             val chooser = android.content.Intent.createChooser(shareIntent, "Export CSV").apply {
                 addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK)
             }
-            context.startActivity(chooser)
+            kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Main) {
+                try {
+                    context.startActivity(chooser)
+                } catch (e: Exception) {
+                    android.widget.Toast.makeText(context, "Could not share CSV", android.widget.Toast.LENGTH_SHORT).show()
+                }
+            }
         }.onFailure { e ->
             kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Main) {
                 android.widget.Toast.makeText(context, "Export failed: ${e.message}", android.widget.Toast.LENGTH_LONG).show()

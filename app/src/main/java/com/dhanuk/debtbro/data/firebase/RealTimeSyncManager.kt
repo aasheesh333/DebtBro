@@ -34,7 +34,8 @@ class RealTimeSyncManager @Inject constructor(
     val lastError: StateFlow<String?> = _lastError.asStateFlow()
 
     private var currentUserId: String? = null
-    private var retryAttempt = 0
+    private var debtRetryAttempt = 0
+    private var splitRetryAttempt = 0
 
     fun startListening(userId: String) {
         if (currentUserId == userId) return
@@ -42,16 +43,17 @@ class RealTimeSyncManager @Inject constructor(
         currentUserId = userId
         _isActive.value = true
         _lastError.value = null
+        debtRetryAttempt = 0
+        splitRetryAttempt = 0
 
         scope.launch {
             firebaseRepository.observeDebtsRealTime(userId)
                 .retryWhen { _, cause ->
-                    // Exponential-ish backoff: max 3 retries within ~10s
-                    if (retryAttempt < 3) {
-                        retryAttempt++
+                    if (debtRetryAttempt < 3) {
+                        debtRetryAttempt++
                         val msg = if (cause is Throwable) cause.message else cause.toString()
-                        Log.w("RealTimeSync", "Retrying debt listener (attempt $retryAttempt): $msg")
-                        kotlinx.coroutines.delay(2_000L * retryAttempt)
+                        Log.w("RealTimeSync", "Retrying debt listener (attempt $debtRetryAttempt): $msg")
+                        kotlinx.coroutines.delay(2_000L * debtRetryAttempt)
                         true
                     } else {
                         val msg = if (cause is Throwable) cause.message else cause.toString()
@@ -62,7 +64,7 @@ class RealTimeSyncManager @Inject constructor(
                 }
                 .catch { e -> Log.e("RealTimeSync", "Debt listener error: ${e.message}", e) }
                 .collect { cloudDebts ->
-                    try { mergeDebtsFromCloud(cloudDebts) }
+                    try { mergeDebtsFromCloud(cloudDebts); debtRetryAttempt = 0 }
                     catch (e: Exception) { Log.e("RealTimeSync", "mergeDebts failed: ${e.message}", e) }
                 }
         }
@@ -70,19 +72,22 @@ class RealTimeSyncManager @Inject constructor(
         scope.launch {
             firebaseRepository.observeSplitsRealTime(userId)
                 .retryWhen { _, cause ->
-                    if (retryAttempt < 3) {
-                        retryAttempt++
-                        kotlinx.coroutines.delay(2_000L * retryAttempt)
+                    if (splitRetryAttempt < 3) {
+                        splitRetryAttempt++
+                        val msg = if (cause is Throwable) cause.message else cause.toString()
+                        Log.w("RealTimeSync", "Retrying split listener (attempt $splitRetryAttempt): $msg")
+                        kotlinx.coroutines.delay(2_000L * splitRetryAttempt)
                         true
                     } else {
                         val msg = if (cause is Throwable) cause.message else cause.toString()
                         _lastError.value = "Split listener stopped: $msg"
+                        Log.e("RealTimeSync", "Split listener permanently failed: $msg")
                         false
                     }
                 }
                 .catch { e -> Log.e("RealTimeSync", "Split listener error: ${e.message}", e) }
                 .collect { cloudSplits ->
-                    try { mergeSplitsFromCloud(cloudSplits) }
+                    try { mergeSplitsFromCloud(cloudSplits); splitRetryAttempt = 0 }
                     catch (e: Exception) { Log.e("RealTimeSync", "mergeSplits failed: ${e.message}", e) }
                 }
         }
@@ -92,7 +97,8 @@ class RealTimeSyncManager @Inject constructor(
         scope.coroutineContext.cancelChildren()
         currentUserId = null
         _isActive.value = false
-        retryAttempt = 0
+        debtRetryAttempt = 0
+        splitRetryAttempt = 0
     }
 
     private suspend fun mergeDebtsFromCloud(cloudDebts: List<DebtEntity>) {
