@@ -38,6 +38,7 @@ import com.dhanuk.debtbro.presentation.components.LoadingDotsIndicator
 import com.dhanuk.debtbro.presentation.theme.DangerRed
 import com.dhanuk.debtbro.presentation.theme.PrimaryGreen
 import com.dhanuk.debtbro.presentation.theme.LocalExtraColors
+import com.dhanuk.debtbro.presentation.theme.UITokens
 import com.dhanuk.debtbro.util.copyToClipboard
 import com.dhanuk.debtbro.util.formatCurrency
 import com.dhanuk.debtbro.util.toReadableDate
@@ -87,27 +88,24 @@ fun DebtDetailScreen(onBack: () -> Unit, viewModel: DebtDetailViewModel = hiltVi
         }
     }
 
-    val d = debt ?: return DebtNotFoundScreen(onBack = onBack)
-
-    val remaining = (d.amount - d.amountPaid).coerceAtLeast(0.0)
-    val progress = if (d.amount > 0) (d.amountPaid / d.amount).toFloat().coerceIn(0f, 1f) else 1f
-
     Scaffold(
         topBar = {
             CenterAlignedTopAppBar(
-                title = { Text(d.personName, fontWeight = FontWeight.Bold) },
+                title = { Text(debt?.personName ?: "", fontWeight = FontWeight.Bold) },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
                         Icon(Icons.Default.ArrowBack, contentDescription = LocalizedString.get("nav_back"), tint = MaterialTheme.colorScheme.onSurface)
                     }
                 },
                 actions = {
-                    IconButton(onClick = { viewModel.showEditDebtSheet.value = true }) {
-                        Icon(Icons.Default.Edit, contentDescription = LocalizedString.get("edit_debt"), tint = MaterialTheme.colorScheme.onSurface)
-                    }
+                    if (debt != null) {
+                        IconButton(onClick = { viewModel.showEditDebtSheet.value = true }) {
+                            Icon(Icons.Default.Edit, contentDescription = LocalizedString.get("edit_debt"), tint = MaterialTheme.colorScheme.onSurface)
+                        }
 
-                    IconButton(onClick = { showDeleteConfirm = true }) {
-                        Icon(Icons.Default.Delete, contentDescription = LocalizedString.get("delete_debt"), tint = MaterialTheme.colorScheme.error)
+                        IconButton(onClick = { showDeleteConfirm = true }) {
+                            Icon(Icons.Default.Delete, contentDescription = LocalizedString.get("delete_debt"), tint = MaterialTheme.colorScheme.error)
+                        }
                     }
                 },
                 colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
@@ -118,9 +116,26 @@ fun DebtDetailScreen(onBack: () -> Unit, viewModel: DebtDetailViewModel = hiltVi
         },
         containerColor = MaterialTheme.colorScheme.background
     ) { padding ->
+        val d = debt
+        if (d == null) {
+            Box(modifier = Modifier.fillMaxSize().padding(padding), contentAlignment = Alignment.Center) {
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    Text("📭", fontSize = UITokens.FontEmojiLarge)
+                    Spacer(Modifier.height(16.dp))
+                    Text("Debt not found", color = MaterialTheme.colorScheme.onSurface, fontSize = UITokens.FontSubhead, fontWeight = FontWeight.Bold)
+                    Spacer(Modifier.height(8.dp))
+                    Text("It might have been deleted.", color = extra.subtitleGray, fontSize = UITokens.FontBody)
+                }
+            }
+            return@Scaffold
+        }
+
+        val remaining = (d.amount - d.amountPaid).coerceAtLeast(0.0)
+        val progress = if (d.amount > 0) (d.amountPaid / d.amount).toFloat().coerceIn(0f, 1f) else 1f
+
         Box(modifier = Modifier.padding(padding)) {
             LazyColumn(
-                modifier = Modifier.fillMaxSize().padding(horizontal = 16.dp),
+                modifier = Modifier.fillMaxSize().padding(horizontal = UITokens.ScreenHorizontalPadding),
                 verticalArrangement = Arrangement.spacedBy(20.dp),
                 contentPadding = PaddingValues(bottom = 32.dp)
             ) {
@@ -178,23 +193,23 @@ fun DebtDetailScreen(onBack: () -> Unit, viewModel: DebtDetailViewModel = hiltVi
                 }
 
                 item {
-                    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(UITokens.SpaceSmall)) {
                         Button(
                             onClick = { viewModel.showAddPaymentSheet.value = true },
-                            modifier = Modifier.weight(1f).height(54.dp),
+                            modifier = Modifier.weight(1f).height(UITokens.ButtonHeight),
                             colors = ButtonDefaults.buttonColors(containerColor = PrimaryGreen),
-                            shape = RoundedCornerShape(12.dp),
+                            shape = UITokens.ShapeMedium,
                             enabled = remaining > 0
                         ) {
-                            Icon(Icons.Default.Add, contentDescription = null, tint = Color.Black)
+                            Icon(Icons.Default.Add, contentDescription = LocalizedString.get("add_payment"), tint = Color.Black)
                             Spacer(Modifier.width(8.dp))
                             Text(LocalizedString.get("add_payment"), color = Color.Black, fontWeight = FontWeight.Bold)
                         }
                         
                         OutlinedButton(
                             onClick = { viewModel.markSettled() },
-                            modifier = Modifier.weight(1f).height(54.dp),
-                            shape = RoundedCornerShape(12.dp),
+                            modifier = Modifier.weight(1f).height(UITokens.ButtonHeight),
+                            shape = UITokens.ShapeMedium,
                             border = BorderStroke(1.dp, if (remaining > 0) PrimaryGreen else MaterialTheme.colorScheme.outline),
                             enabled = remaining > 0
                         ) {
@@ -207,14 +222,14 @@ fun DebtDetailScreen(onBack: () -> Unit, viewModel: DebtDetailViewModel = hiltVi
                     Card(
                         modifier = Modifier.fillMaxWidth(),
                         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-                        shape = RoundedCornerShape(16.dp)
+                        shape = UITokens.ShapeLarge
                     ) {
-                        Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                        Column(Modifier.padding(UITokens.CardInnerPadding), verticalArrangement = Arrangement.spacedBy(UITokens.SpaceSmall)) {
                             Row(verticalAlignment = Alignment.CenterVertically) {
                                 Text(LocalizedString.get("nudge"), fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
                                 Spacer(Modifier.weight(1f))
-                                Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                                    listOf("MILD", "MEDIUM", "SAVAGE").forEach { level ->
+                                Row(horizontalArrangement = Arrangement.spacedBy(UITokens.SpaceTiny)) {
+                                    listOf("MILD", "MEDIUM", "SPICY").forEach { level ->
                                         FilterChip(
                                             selected = roastLevel == level,
                                             onClick = { viewModel.setRoastLevel(level) },
@@ -231,9 +246,9 @@ fun DebtDetailScreen(onBack: () -> Unit, viewModel: DebtDetailViewModel = hiltVi
                             Box(
                                 modifier = Modifier
                                     .fillMaxWidth()
-                                    .clip(RoundedCornerShape(12.dp))
+                                    .clip(UITokens.ShapeMedium)
                                     .background(MaterialTheme.colorScheme.surfaceVariant)
-                                    .padding(16.dp)
+                                    .padding(UITokens.CardInnerPadding)
                             ) {
                                 if (isGenerating) {
                                     LoadingDotsIndicator(color = PrimaryGreen)
@@ -247,7 +262,7 @@ fun DebtDetailScreen(onBack: () -> Unit, viewModel: DebtDetailViewModel = hiltVi
                                 }
                             }
 
-Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+ Row(horizontalArrangement = Arrangement.spacedBy(UITokens.SpaceXS)) {
                                   Button(
                                       onClick = {
                                           val activity = context.findActivity()
@@ -270,17 +285,35 @@ Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                                       colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF25D366)),
                                       modifier = Modifier.weight(1f)
                                   ) {
-                                       Icon(Icons.Default.Send, contentDescription = null, modifier = Modifier.size(16.dp))
-                                      Spacer(Modifier.width(8.dp))
+                                       Icon(Icons.Default.Send, contentDescription = LocalizedString.get("share_whatsapp"), modifier = Modifier.size(UITokens.IconSmall))
+                                      Spacer(Modifier.width(UITokens.SpaceXS))
                                       Text("WhatsApp")
                                   }
+                              }
+
+                              TextButton(
+                                  onClick = { viewModel.reportAiMessage() },
+                                  contentPadding = PaddingValues(horizontal = 4.dp, vertical = 0.dp)
+                              ) {
+                                Icon(
+                                       Icons.Default.Flag,
+                                       contentDescription = LocalizedString.get("report_message"),
+                                       modifier = Modifier.size(UITokens.IconSmall),
+                                      tint = extra.subtitleGray
+                                  )
+                                   Spacer(Modifier.width(UITokens.SpaceTiny))
+                                  Text(
+                                      LocalizedString.get("report_message"),
+                                      color = extra.subtitleGray,
+                                      fontSize = 11.sp
+                                  )
                               }
 }
                     }
                 }
 
                 item {
-                    Text(LocalizedString.get("payment_history"), fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface, fontSize = 18.sp)
+                    Text(LocalizedString.get("payment_history"), fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface, fontSize = UITokens.FontSubhead)
                 }
                 
                 if (payments.isEmpty()) {
@@ -292,20 +325,20 @@ Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                         Row(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .clip(RoundedCornerShape(12.dp))
+                                .clip(UITokens.ShapeMedium)
                                 .background(MaterialTheme.colorScheme.surfaceVariant)
-                                .padding(16.dp),
+                                .padding(UITokens.CardInnerPadding),
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             Column(Modifier.weight(1f)) {
                                 Text(formatCurrency(payment.amount, d.currency), color = PrimaryGreen, fontWeight = FontWeight.Bold)
-                                Text(payment.paidAt.toReadableDate(), color = extra.subtitleGray, fontSize = 12.sp)
+                                Text(payment.paidAt.toReadableDate(), color = extra.subtitleGray, fontSize = UITokens.FontCaption)
                                 if (!payment.note.isNullOrBlank()) {
-                                    Text(payment.note, color = MaterialTheme.colorScheme.onSurface, fontSize = 13.sp, modifier = Modifier.padding(top = 4.dp))
+                                    Text(payment.note, color = MaterialTheme.colorScheme.onSurface, fontSize = UITokens.FontSmall, modifier = Modifier.padding(top = UITokens.SpaceTiny))
                                 }
                             }
                             IconButton(onClick = { viewModel.deletePayment(payment.id) }) {
-                                Icon(Icons.Default.Delete, contentDescription = LocalizedString.get("delete"), tint = extra.subtitleGray.copy(alpha = 0.5f), modifier = Modifier.size(20.dp))
+                                Icon(Icons.Default.Delete, contentDescription = LocalizedString.get("delete"), tint = extra.subtitleGray.copy(alpha = 0.5f), modifier = Modifier.size(UITokens.IconMedium))
                             }
                         }
                     }
@@ -319,12 +352,12 @@ Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                             showQuoteEditDialog = true
                         },
                         enabled = !isExportingImage,
-                        modifier = Modifier.fillMaxWidth().height(54.dp),
+                        modifier = Modifier.fillMaxWidth().height(UITokens.ButtonHeight),
                         colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.surface),
-                        shape = RoundedCornerShape(12.dp)
+                        shape = UITokens.ShapeMedium
                     ) {
-                        Icon(Icons.Default.Image, contentDescription = null, tint = MaterialTheme.colorScheme.onSurface)
-                        Spacer(Modifier.width(8.dp))
+                        Icon(Icons.Default.Image, contentDescription = LocalizedString.get("export_image"), tint = MaterialTheme.colorScheme.onSurface)
+                        Spacer(Modifier.width(UITokens.SpaceXS))
                         Text(LocalizedString.get("export_image"), color = MaterialTheme.colorScheme.onSurface)
                     }
                 }
@@ -335,15 +368,15 @@ Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                             viewModel.shareDebtHistoryToWhatsApp(context, d, payments)
                         },
                         enabled = !isExportingImage,
-                        modifier = Modifier.fillMaxWidth().height(54.dp),
+                        modifier = Modifier.fillMaxWidth().height(UITokens.ButtonHeight),
                         colors = ButtonDefaults.outlinedButtonColors(
                             contentColor = Color(0xFF25D366)
                         ),
                         border = BorderStroke(1.dp, Color(0xFF25D366)),
-                        shape = RoundedCornerShape(12.dp)
+                        shape = UITokens.ShapeMedium
                     ) {
-                        Icon(androidx.compose.material.icons.Icons.Filled.Send, contentDescription = null, tint = Color(0xFF25D366))
-                        Spacer(Modifier.width(8.dp))
+                        Icon(androidx.compose.material.icons.Icons.Filled.Send, contentDescription = LocalizedString.get("share_whatsapp"), tint = Color(0xFF25D366))
+                        Spacer(Modifier.width(UITokens.SpaceXS))
                         Text(LocalizedString.get("share_whatsapp"), color = Color(0xFF25D366))
                     }
                 }
@@ -468,8 +501,8 @@ fun AddPaymentDialog(remaining: Double, currency: String, onDismiss: () -> Unit,
     val context = LocalContext.current
 
     ModalBottomSheet(onDismissRequest = onDismiss, containerColor = MaterialTheme.colorScheme.surface) {
-        Column(Modifier.padding(24.dp).padding(bottom = 32.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
-            Text(LocalizedString.get("add_payment"), fontSize = 20.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
+        Column(Modifier.padding(UITokens.SheetContentPadding).padding(bottom = UITokens.SheetBottomPadding), verticalArrangement = Arrangement.spacedBy(UITokens.SpaceMedium)) {
+            Text(LocalizedString.get("add_payment"), fontSize = UITokens.FontTitle, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
                                 OutlinedTextField(
                 value = amount,
                 onValueChange = { if (it.all { c -> c.isDigit() || c == '.' }) amount = it },
@@ -499,7 +532,7 @@ fun AddPaymentDialog(remaining: Double, currency: String, onDismiss: () -> Unit,
                         Toast.makeText(context, "Amount exceeds remaining balance", Toast.LENGTH_SHORT).show()
                     }
                 },
-                modifier = Modifier.fillMaxWidth().height(54.dp),
+                modifier = Modifier.fillMaxWidth().height(UITokens.ButtonHeight),
                 colors = ButtonDefaults.buttonColors(containerColor = PrimaryGreen)
             ) {
                 Text(LocalizedString.get("save_payment"), color = Color.Black, fontWeight = FontWeight.Bold)
@@ -517,8 +550,8 @@ fun EditDebtDialog(debt: DebtEntity, onDismiss: () -> Unit, onSave: (String, Dou
     var emoji by remember { mutableStateOf(debt.personEmoji) }
 
     ModalBottomSheet(onDismissRequest = onDismiss, containerColor = MaterialTheme.colorScheme.surface) {
-        Column(Modifier.padding(24.dp).padding(bottom = 32.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
-            Text(LocalizedString.get("edit_debt"), fontSize = 20.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
+        Column(Modifier.padding(UITokens.SheetContentPadding).padding(bottom = UITokens.SheetBottomPadding), verticalArrangement = Arrangement.spacedBy(UITokens.SpaceMedium)) {
+            Text(LocalizedString.get("edit_debt"), fontSize = UITokens.FontTitle, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
             OutlinedTextField(value = name, onValueChange = { name = it }, label = { Text(LocalizedString.get("person_name")) }, modifier = Modifier.fillMaxWidth())
             OutlinedTextField(value = amount, onValueChange = { amount = it }, label = { Text(LocalizedString.get("total_amount")) }, modifier = Modifier.fillMaxWidth(), keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal))
             OutlinedTextField(value = desc, onValueChange = { desc = it }, label = { Text(LocalizedString.get("description")) }, modifier = Modifier.fillMaxWidth())
@@ -529,7 +562,7 @@ fun EditDebtDialog(debt: DebtEntity, onDismiss: () -> Unit, onSave: (String, Dou
                     val amt = amount.toDoubleOrNull() ?: debt.amount
                     onSave(name, amt, desc, emoji)
                 },
-                modifier = Modifier.fillMaxWidth().height(54.dp),
+                modifier = Modifier.fillMaxWidth().height(UITokens.ButtonHeight),
                 colors = ButtonDefaults.buttonColors(containerColor = PrimaryGreen)
             ) {
                 Text(LocalizedString.get("update_debt"), color = Color.Black, fontWeight = FontWeight.Bold)
@@ -555,11 +588,11 @@ fun QuoteEditDialog(
             Text(LocalizedString.get("edit_ai_quote"), color = MaterialTheme.colorScheme.onSurface, fontWeight = FontWeight.Bold)
         },
         text = {
-            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+            Column(verticalArrangement = Arrangement.spacedBy(UITokens.SpaceSmall)) {
                 Text(
                     LocalizedString.get("edit_ai_quote_desc"),
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    fontSize = 13.sp
+                    fontSize = UITokens.FontSmall
                 )
                 OutlinedTextField(
                     value = text,
@@ -572,7 +605,7 @@ fun QuoteEditDialog(
                         unfocusedTextColor = MaterialTheme.colorScheme.onSurface,
                         cursorColor = PrimaryGreen
                     ),
-                    shape = RoundedCornerShape(12.dp),
+                    shape = UITokens.ShapeMedium,
                     maxLines = 6
                 )
             }
@@ -581,7 +614,7 @@ fun QuoteEditDialog(
             Button(
                 onClick = { onConfirm(text) },
                 colors = ButtonDefaults.buttonColors(containerColor = PrimaryGreen),
-                shape = RoundedCornerShape(12.dp)
+                shape = UITokens.ShapeMedium
             ) {
                 Text(LocalizedString.get("generate_image"), color = Color.Black, fontWeight = FontWeight.Bold)
             }
@@ -612,7 +645,7 @@ private fun DebtNotFoundScreen(onBack: () -> Unit) {
     ) { padding ->
         Box(modifier = Modifier.fillMaxSize().padding(padding), contentAlignment = Alignment.Center) {
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                Text("📭", fontSize = 48.sp)
+                Text("📭", fontSize = UITokens.FontEmojiLarge)
                 Spacer(Modifier.height(16.dp))
                 Text("Debt not found", color = MaterialTheme.colorScheme.onSurface, fontSize = 18.sp, fontWeight = FontWeight.Bold)
                 Spacer(Modifier.height(8.dp))

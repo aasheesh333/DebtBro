@@ -35,6 +35,7 @@ import com.dhanuk.debtbro.presentation.theme.DangerRed
 import com.dhanuk.debtbro.presentation.theme.GoldColor
 import com.dhanuk.debtbro.presentation.theme.LocalExtraColors
 import com.dhanuk.debtbro.presentation.theme.PrimaryGreen
+import com.dhanuk.debtbro.presentation.theme.UITokens
 import com.dhanuk.debtbro.util.formatCurrency
 import com.dhanuk.debtbro.util.LocalizedString
 import kotlinx.coroutines.delay
@@ -79,9 +80,9 @@ fun DashboardScreen(
     Box(modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) {
         Box(modifier = Modifier.fillMaxSize().pullRefresh(pullRefreshState)) {
         LazyColumn(
-            modifier = Modifier.fillMaxSize().padding(horizontal = 16.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp),
-            contentPadding = PaddingValues(top = 24.dp, bottom = 100.dp)
+            modifier = Modifier.fillMaxSize().padding(horizontal = UITokens.ScreenHorizontalPadding),
+            verticalArrangement = Arrangement.spacedBy(UITokens.SpaceMedium),
+            contentPadding = PaddingValues(top = UITokens.ScreenTopPadding, bottom = UITokens.ScreenBottomPadding)
         ) {
             item {
                 Row(
@@ -93,13 +94,13 @@ fun DashboardScreen(
                         Text(
                             "${LocalizedString.get("greeting")} ${state.userName}! \uD83D\uDC4B",
                             color = MaterialTheme.colorScheme.onSurface,
-                            fontSize = 24.sp,
+                            fontSize = UITokens.FontHeadline,
                             fontWeight = FontWeight.Bold
                         )
                         Text(
                             LocalizedString.get("money_memory_subtitle"),
                             color = extra.subtitleGray,
-                            fontSize = 13.sp
+                            fontSize = UITokens.FontSmall
                         )
                     }
                     IconButton(
@@ -122,7 +123,7 @@ fun DashboardScreen(
             item {
                 Row(
                     modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                    horizontalArrangement = Arrangement.spacedBy(UITokens.SpaceSmall)
                 ) {
                     ActionButton(
                         LocalizedString.get("add_debt"),
@@ -180,15 +181,15 @@ fun DashboardScreen(
             containerColor = MaterialTheme.colorScheme.surface
         ) {
             Column(
-                modifier = Modifier.padding(24.dp).padding(bottom = 32.dp),
+                modifier = Modifier.padding(UITokens.SheetContentPadding).padding(bottom = UITokens.SheetBottomPadding),
                 horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.spacedBy(16.dp)
+                verticalArrangement = Arrangement.spacedBy(UITokens.SpaceMedium)
             ) {
-                Text(LocalizedString.get("cloud_sync"), fontSize = 24.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
+                Text(LocalizedString.get("cloud_sync"), fontSize = UITokens.FontHeadline, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
                 Text(LocalizedString.get("cloud_sync_desc"), color = extra.subtitleGray, textAlign = TextAlign.Center)
                 Button(
                     onClick = { showPrompt = false; viewModel.dismissPrompt(); onSettingsClick() },
-                    modifier = Modifier.fillMaxWidth().height(54.dp),
+                    modifier = Modifier.fillMaxWidth().height(UITokens.ButtonHeight),
                     colors = ButtonDefaults.buttonColors(containerColor = PrimaryGreen)
                 ) { Text(LocalizedString.get("go_to_settings"), color = MaterialTheme.colorScheme.onPrimary, fontWeight = FontWeight.Bold) }
                 TextButton(onClick = { showPrompt = false; viewModel.dismissPrompt() }) {
@@ -204,26 +205,26 @@ fun StatsCard(totalOwedToMe: Double, totalIOwe: Double, recoveryRate: Int) {
     val extra = LocalExtraColors.current
     Card(
         modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(24.dp),
+        shape = RoundedCornerShape(UITokens.SpaceXL),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
     ) {
-        Column(modifier = Modifier.padding(20.dp)) {
+        Column(modifier = Modifier.padding(UITokens.SpaceLarge)) {
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                 Column {
-                    Text(LocalizedString.get("total_owed_to_me"), color = extra.subtitleGray, fontSize = 13.sp)
-                    Text(formatCurrency(totalOwedToMe), color = PrimaryGreen, fontSize = 28.sp, fontWeight = FontWeight.ExtraBold)
+                    Text(LocalizedString.get("total_owed_to_me"), color = extra.subtitleGray, fontSize = UITokens.FontSmall)
+                    Text(formatCurrency(totalOwedToMe), color = PrimaryGreen, fontSize = UITokens.FontDisplay, fontWeight = FontWeight.ExtraBold)
                 }
-                Box(
-                    modifier = Modifier.size(48.dp).clip(CircleShape).background(PrimaryGreen.copy(alpha = 0.1f)),
+                    Box(
+                    modifier = Modifier.size(UITokens.AvatarLarge).clip(CircleShape).background(PrimaryGreen.copy(alpha = 0.1f)),
                     contentAlignment = Alignment.Center
-                ) { Icon(Icons.Default.TrendingUp, contentDescription = null, tint = PrimaryGreen) }
+                ) { Icon(Icons.Default.TrendingUp, contentDescription = LocalizedString.get("total_owed_to_me"), tint = PrimaryGreen) }
             }
             Spacer(Modifier.height(20.dp))
             HorizontalDivider(color = extra.divider)
             Spacer(Modifier.height(16.dp))
             Row(modifier = Modifier.fillMaxWidth()) {
                 Column(Modifier.weight(1f)) {
-                    Text(LocalizedString.get("i_owe"), color = extra.subtitleGray, fontSize = 12.sp)
+                    Text(LocalizedString.get("i_owe"), color = extra.subtitleGray, fontSize = UITokens.FontCaption)
                     Text(formatCurrency(totalIOwe), color = DangerRed, fontSize = 16.sp, fontWeight = FontWeight.Bold)
                 }
                 Column(Modifier.weight(1f), horizontalAlignment = Alignment.End) {
@@ -246,7 +247,7 @@ fun StatsCard(totalOwedToMe: Double, totalIOwe: Double, recoveryRate: Int) {
 fun ActionButton(text: String, icon: ImageVector, color: Color, modifier: Modifier, onClick: () -> Unit) {
     Surface(
         modifier = modifier.height(56.dp).clickable { onClick() },
-        shape = RoundedCornerShape(16.dp),
+        shape = UITokens.ShapeLarge,
         color = MaterialTheme.colorScheme.surface,
         border = if (color == PrimaryGreen) null else BorderStroke(1.dp, MaterialTheme.colorScheme.outline)
     ) {
@@ -255,9 +256,9 @@ fun ActionButton(text: String, icon: ImageVector, color: Color, modifier: Modifi
             horizontalArrangement = Arrangement.Center,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Icon(icon, null, tint = color, modifier = Modifier.size(20.dp))
-            Spacer(Modifier.width(8.dp))
-            Text(text, color = MaterialTheme.colorScheme.onSurface, fontWeight = FontWeight.Bold, fontSize = 14.sp)
+            Icon(icon, contentDescription = text, tint = color, modifier = Modifier.size(UITokens.IconMedium))
+            Spacer(Modifier.width(UITokens.SpaceXS))
+            Text(text, color = MaterialTheme.colorScheme.onSurface, fontWeight = FontWeight.Bold, fontSize = UITokens.FontBody)
         }
     }
 }
@@ -269,9 +270,9 @@ fun SectionHeader(title: String, action: String?, onActionClick: () -> Unit = {}
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Text(title, color = MaterialTheme.colorScheme.onSurface, fontSize = 18.sp, fontWeight = FontWeight.Bold)
+        Text(title, color = MaterialTheme.colorScheme.onSurface, fontSize = UITokens.FontSubhead, fontWeight = FontWeight.Bold)
         if (action != null) {
-            Text(action, color = PrimaryGreen, fontSize = 13.sp, modifier = Modifier.clickable { onActionClick() })
+            Text(action, color = PrimaryGreen, fontSize = UITokens.FontSmall, modifier = Modifier.clickable { onActionClick() })
         }
     }
 }
@@ -282,9 +283,9 @@ fun LeaderboardItem(debt: com.dhanuk.debtbro.data.db.entity.DebtEntity, rank: In
     Card(
         modifier = Modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
-        shape = RoundedCornerShape(12.dp)
+        shape = UITokens.ShapeMedium
     ) {
-        Row(modifier = Modifier.padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
+        Row(modifier = Modifier.padding(UITokens.SpaceSmall), verticalAlignment = Alignment.CenterVertically) {
             Text(
                 "#$rank",
                 color = if (rank == 1) GoldColor else extra.subtitleGray,
@@ -292,7 +293,7 @@ fun LeaderboardItem(debt: com.dhanuk.debtbro.data.db.entity.DebtEntity, rank: In
                 modifier = Modifier.width(32.dp)
             )
             Text(debt.personEmoji, fontSize = 20.sp)
-            Spacer(Modifier.width(12.dp))
+            Spacer(Modifier.width(UITokens.SpaceSmall))
             Text(debt.personName, color = MaterialTheme.colorScheme.onSurface, fontWeight = FontWeight.SemiBold, modifier = Modifier.weight(1f))
             Text(formatCurrency(debt.amount - debt.amountPaid, debt.currency), color = PrimaryGreen, fontWeight = FontWeight.Bold)
         }
@@ -306,8 +307,8 @@ fun EmptyState(message: String) {
         modifier = Modifier.fillMaxWidth().padding(32.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        Text("\uD83D\uDCED", fontSize = 48.sp)
-        Spacer(Modifier.height(16.dp))
+        Text("\uD83D\uDCED", fontSize = UITokens.FontEmojiLarge)
+        Spacer(Modifier.height(UITokens.SpaceMedium))
         Text(message, color = extra.subtitleGray, textAlign = TextAlign.Center)
     }
 }

@@ -19,14 +19,9 @@ val CardDark = Color(0xFF222222)
 val OnSurfaceDark = Color(0xFFF0F0F0)
 val SubtitleGrayDark = Color(0xFF888888)
 
-// @Deprecated("Use LocalExtraColors.current.subtitleGray for theme-aware subtitle color")
-val SubtitleGray = SubtitleGrayDark
 val OutlineDark = Color(0xFF333333)
 val DividerDark = Color(0xFF2A2A2A)
 val CardInnerDark = Color(0xFF161616)
-
-// @Deprecated("Use LocalExtraColors.current.divider for theme-aware divider color")
-val DividerColor = DividerDark
 
 // ── Light palette (semantic, theme-aware) ────────────────
 val BackgroundLight = Color(0xFFF7F7F8)

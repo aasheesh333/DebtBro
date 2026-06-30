@@ -24,6 +24,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.dhanuk.debtbro.data.db.entity.DebtEntity
+import com.dhanuk.debtbro.presentation.theme.UITokens
 import com.dhanuk.debtbro.presentation.theme.DangerRed
 import com.dhanuk.debtbro.presentation.theme.PrimaryGreen
 import com.dhanuk.debtbro.presentation.theme.WarningAmber
@@ -34,16 +35,16 @@ import com.dhanuk.debtbro.util.toReadableDate
 @Composable
 fun DebtCard(debt: DebtEntity, isSignedIn: Boolean, onClick: () -> Unit, modifier: Modifier = Modifier) {
     val remaining = (debt.amount - debt.amountPaid).coerceAtLeast(0.0)
-    Card(modifier = modifier.fillMaxWidth().clickable(onClick = onClick), colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface), shape = RoundedCornerShape(8.dp)) {
-        Row(Modifier.padding(14.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-            Box(Modifier.size(48.dp).clip(CircleShape).background(MaterialTheme.colorScheme.primary.copy(alpha = 0.16f)), contentAlignment = Alignment.Center) { Text(debt.personEmoji) }
-            Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+    Card(modifier = modifier.fillMaxWidth().clickable(onClick = onClick), colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface), shape = UITokens.ShapeSmall) {
+        Row(Modifier.padding(14.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(UITokens.SpaceSmall)) {
+            Box(Modifier.size(UITokens.AvatarLarge).clip(CircleShape).background(MaterialTheme.colorScheme.primary.copy(alpha = 0.16f)), contentAlignment = Alignment.Center) { Text(debt.personEmoji) }
+            Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(UITokens.SpaceTiny)) {
                 Text(debt.personName, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
                 Text(debt.description.ifBlank { if (debt.type == "THEY_OWE_ME") "Money lent" else "Money borrowed" }, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 2, overflow = TextOverflow.Ellipsis)
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
+                Row(horizontalArrangement = Arrangement.spacedBy(UITokens.SpaceXS), verticalAlignment = Alignment.CenterVertically) {
                     StatusPill(debt.status)
                     debt.dueDate?.let { DuePill(it) }
-                    if (isSignedIn) Box(Modifier.size(8.dp).background(if (debt.isSynced) PrimaryGreen else DangerRed, CircleShape))
+                    if (isSignedIn) Box(Modifier.size(UITokens.SpaceXS).background(if (debt.isSynced) PrimaryGreen else DangerRed, CircleShape))
                 }
             }
             Text(formatCurrency(remaining, debt.currency), color = if (debt.type == "THEY_OWE_ME") PrimaryGreen else DangerRed, fontWeight = FontWeight.ExtraBold)

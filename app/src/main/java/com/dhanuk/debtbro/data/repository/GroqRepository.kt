@@ -20,6 +20,25 @@ class GroqRepository @Inject constructor(private val api: GroqApiService, privat
     companion object {
         const val MAX_FREE_REGENERATIONS = 5
         private const val API_COOLDOWN_MS = 1000L
+        private val BLOCKED_WORDS = setOf(
+            "fuck", "fucking", "shit", "shithead", "bitch", "bastard", "asshole",
+            "dick", "dickhead", "cunt", "whore", "slut", "nigger", "nigga",
+            "chutiya", "chut", "laude", "lodu", "bhosdi", "bhosda", "bhenchod",
+            "madarchod", "maaderchod", "behenchod", "behnchod", "randi", "gandu",
+            "gand", "lund", "lawda", "lawde", "jhat", "jhantu", "tatte",
+            "bsdk", "bhosdike", "suar", "harami", "kamina", "kutte"
+        )
+    }
+
+    private fun filterProfanity(text: String): String {
+        var filtered = text
+        for (word in BLOCKED_WORDS) {
+            val regex = Regex("\\b${Regex.escape(word)}\\b", RegexOption.IGNORE_CASE)
+            filtered = filtered.replace(regex) { match ->
+                match.value.first() + "*".repeat(match.value.length - 1)
+            }
+        }
+        return filtered
     }
 
     private val rateLimitMutex = Mutex()
@@ -87,7 +106,7 @@ Key rules:
 - Do NOT use hashtags or formal language
 - Do NOT wrap your response in quotation marks
 - Every response must be COMPLETELY DIFFERENT from previous ones — vary phrases, metaphors, and tone"""
-            "SAVAGE" -> """You are a brutally funny Indian debt collector with legendary comedic timing.$debtDirection
+            "SPICY" -> """You are a brutally funny Indian debt collector with legendary comedic timing.$debtDirection
 Key rules:
 - Write 2-3 lines (140-180 characters total, push for longer not shorter)
 - Use Hinglish naturally
@@ -134,6 +153,11 @@ Key rules:
 
 Generate a WhatsApp-style payment reminder. The message MUST reference the actual debt context above — mention what the money was for, the amount, and the person. Be personal. Do NOT make up random scenarios. Keep it 2-3 lines, 140-180 characters. Push for longer, more detailed responses. Do NOT use quotation marks. Make it creative and different each time — never repeat the same phrasing."""
 
+        val temp = when (roastLevel) {
+            "SPICY" -> 0.7f
+            "MEDIUM" -> 0.65f
+            else -> 0.5f
+        }
         val response = api.chat(
             auth = "Bearer $key",
             request = GroqRequest(
@@ -142,11 +166,11 @@ Generate a WhatsApp-style payment reminder. The message MUST reference the actua
                     GroqMessage("system", systemPrompt(roastLevel, prefs.selectedLanguage.first(), debt.type)),
                     GroqMessage("user", userMessage)
                 ),
-                temperature = 0.95,
+                temperature = temp,
                 max_tokens = 200
             )
         )
-        response.choices.first().message.content
+        filterProfanity(response.choices.first().message.content
             .trim()
             .removeSurrounding("\"")
             .removeSurrounding("\u201C", "\u201D")  // curly quotes
@@ -176,7 +200,7 @@ Generate a WhatsApp-style payment reminder. The message MUST reference the actua
         val response = api.chat("Bearer $key", GroqRequest(messages = listOf(
             GroqMessage("system", "$langInstruction\nYou are a funny commentator. One line only. Be creative."),
             GroqMessage("user", "Split: $title, Total: ${currency}$total, $count people, ${currency}$perPerson each. Write ONE funny line about this. Hinglish ok.")
-        ), model = "llama-3.3-70b-versatile", temperature = 1.0, max_tokens = 100))
+        ), model = "llama-3.3-70b-versatile", temperature = 0.7f, max_tokens = 100))
         response.choices.first().message.content.trim()
     }
     suspend fun testConnection(): Boolean {

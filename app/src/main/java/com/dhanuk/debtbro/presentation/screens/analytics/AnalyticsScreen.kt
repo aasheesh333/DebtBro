@@ -25,6 +25,7 @@ import com.dhanuk.debtbro.presentation.components.LoadingDotsIndicator
 import com.dhanuk.debtbro.presentation.theme.DangerRed
 import com.dhanuk.debtbro.presentation.theme.LocalExtraColors
 import com.dhanuk.debtbro.presentation.theme.PrimaryGreen
+import com.dhanuk.debtbro.presentation.theme.UITokens
 import com.dhanuk.debtbro.util.formatCurrency
 import com.dhanuk.debtbro.util.LocalizedString
 import com.patrykandpatrick.vico.compose.cartesian.CartesianChartHost
@@ -64,30 +65,30 @@ fun AnalyticsScreen(viewModel: AnalyticsViewModel = hiltViewModel()) {
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.Center
             ) {
-                Text("📊", fontSize = 48.sp)
+                Text("📊", fontSize = UITokens.FontEmojiLarge)
                 Spacer(Modifier.height(16.dp))
-                Text(LocalizedString.get("no_data_yet"), color = MaterialTheme.colorScheme.onBackground, fontSize = 18.sp, fontWeight = FontWeight.Bold)
+                Text(LocalizedString.get("no_data_yet"), color = MaterialTheme.colorScheme.onBackground, fontSize = UITokens.FontSubhead, fontWeight = FontWeight.Bold)
                 Spacer(Modifier.height(8.dp))
                 Text(LocalizedString.get("add_debts_to_see_stats"), color = extra.subtitleGray, fontSize = 14.sp, textAlign = TextAlign.Center)
             }
         } else {
         LazyColumn(
-            modifier = Modifier.fillMaxSize().padding(horizontal = 16.dp),
-            verticalArrangement = Arrangement.spacedBy(20.dp),
-            contentPadding = PaddingValues(top = 24.dp, bottom = 100.dp)
+            modifier = Modifier.fillMaxSize().padding(horizontal = UITokens.ScreenHorizontalPadding),
+            verticalArrangement = Arrangement.spacedBy(UITokens.SpaceLarge),
+            contentPadding = PaddingValues(top = UITokens.ScreenTopPadding, bottom = UITokens.ScreenBottomPadding)
         ) {
             item {
                 Text(
                     LocalizedString.get("financial_insights"),
                     color = MaterialTheme.colorScheme.onSurface,
-                    fontSize = 28.sp,
+                    fontSize = UITokens.FontDisplay,
                     fontWeight = FontWeight.Bold
                 )
             }
 
             // Stat Cards Grid
             item {
-                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(UITokens.SpaceSmall)) {
                     AnalyticsStatCard(
                         title = LocalizedString.get("owed_to_me"),
                         amount = state.totalOwedToMe,
@@ -108,7 +109,7 @@ fun AnalyticsScreen(viewModel: AnalyticsViewModel = hiltViewModel()) {
             }
 
             item {
-                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(UITokens.SpaceSmall)) {
                     AnalyticsStatCard(
                         title = LocalizedString.get("all_time_settled"),
                         amount = state.totalSettled,
@@ -133,11 +134,11 @@ fun AnalyticsScreen(viewModel: AnalyticsViewModel = hiltViewModel()) {
                 Card(
                     modifier = Modifier.fillMaxWidth(),
                     colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-                    shape = RoundedCornerShape(16.dp)
+                    shape = UITokens.ShapeLarge
                 ) {
-                    Column(Modifier.padding(20.dp)) {
+                    Column(Modifier.padding(UITokens.SpaceLarge)) {
                         Row(verticalAlignment = Alignment.CenterVertically) {
-                            Icon(Icons.Default.Recycling, contentDescription = null, tint = PrimaryGreen, modifier = Modifier.size(20.dp))
+                            Icon(Icons.Default.Recycling, contentDescription = LocalizedString.get("debt_recovery_rate"), tint = PrimaryGreen, modifier = Modifier.size(20.dp))
                             Spacer(Modifier.width(8.dp))
                             Text(LocalizedString.get("debt_recovery_rate"), color = MaterialTheme.colorScheme.onSurface, fontWeight = FontWeight.Bold)
                             Spacer(Modifier.weight(1f))
@@ -159,9 +160,9 @@ fun AnalyticsScreen(viewModel: AnalyticsViewModel = hiltViewModel()) {
                 Card(
                     modifier = Modifier.fillMaxWidth(),
                     colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-                    shape = RoundedCornerShape(16.dp)
+                    shape = UITokens.ShapeLarge
                 ) {
-                    Column(Modifier.padding(20.dp)) {
+                    Column(Modifier.padding(UITokens.SpaceLarge)) {
                         Text(LocalizedString.get("monthly_trend"), color = MaterialTheme.colorScheme.onSurface, fontWeight = FontWeight.Bold)
                         Spacer(Modifier.height(16.dp))
                         
@@ -206,11 +207,11 @@ fun AnalyticsScreen(viewModel: AnalyticsViewModel = hiltViewModel()) {
                 Card(
                     modifier = Modifier.fillMaxWidth(),
                     colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-                    shape = RoundedCornerShape(16.dp)
+                    shape = UITokens.ShapeLarge
                 ) {
-                    Column(Modifier.padding(20.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
+                    Column(Modifier.padding(UITokens.CardInnerPadding), verticalArrangement = Arrangement.spacedBy(UITokens.SpaceMedium)) {
                         Row(verticalAlignment = Alignment.CenterVertically) {
-                            Text(LocalizedString.get("ai_take"), color = MaterialTheme.colorScheme.onSurface, fontWeight = FontWeight.Bold, fontSize = 18.sp)
+                            Text(LocalizedString.get("ai_take"), color = MaterialTheme.colorScheme.onSurface, fontWeight = FontWeight.Bold, fontSize = UITokens.FontSubhead)
                             Spacer(Modifier.weight(1f))
                             IconButton(onClick = { viewModel.loadAiInsight() }) {
                                 Icon(Icons.Default.Refresh, contentDescription = LocalizedString.get("regenerate"), tint = PrimaryGreen)
@@ -220,9 +221,9 @@ fun AnalyticsScreen(viewModel: AnalyticsViewModel = hiltViewModel()) {
                         Box(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .clip(RoundedCornerShape(12.dp))
+                                .clip(UITokens.ShapeMedium)
                                 .background(extra.cardInner)
-                                .padding(16.dp)
+                                .padding(UITokens.CardInnerPadding)
                         ) {
                             if (loading) {
                                 LoadingDotsIndicator(color = PrimaryGreen)
@@ -248,15 +249,15 @@ fun AnalyticsStatCard(title: String, amount: Double, color: Color, icon: ImageVe
     Card(
         modifier = modifier,
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-        shape = RoundedCornerShape(16.dp)
+        shape = UITokens.ShapeLarge
     ) {
-        Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            Icon(icon, contentDescription = title, tint = color, modifier = Modifier.size(20.dp))
-            Text(title, color = extra.subtitleGray, fontSize = 12.sp)
+        Column(Modifier.padding(UITokens.CardInnerPadding), verticalArrangement = Arrangement.spacedBy(UITokens.SpaceXS)) {
+            Icon(icon, contentDescription = title, tint = color, modifier = Modifier.size(UITokens.IconMedium))
+            Text(title, color = extra.subtitleGray, fontSize = UITokens.FontCaption)
             Text(
                 formatCurrency(amount, currency),
                 color = color,
-                fontSize = 18.sp,
+                fontSize = UITokens.FontSubhead,
                 fontWeight = FontWeight.Bold
             )
         }
@@ -268,11 +269,11 @@ fun FunStatItem(label: String, value: String, modifier: Modifier) {
     val extra = LocalExtraColors.current
     Column(
         modifier = modifier
-            .clip(RoundedCornerShape(12.dp))
+            .clip(UITokens.ShapeMedium)
             .background(MaterialTheme.colorScheme.surface)
-            .padding(12.dp)
+            .padding(UITokens.SpaceSmall)
     ) {
-        Text(label, color = extra.subtitleGray, fontSize = 12.sp)
-        Text(value, color = MaterialTheme.colorScheme.onSurface, fontSize = 14.sp, fontWeight = FontWeight.Bold, maxLines = 1)
+        Text(label, color = extra.subtitleGray, fontSize = UITokens.FontCaption)
+        Text(value, color = MaterialTheme.colorScheme.onSurface, fontSize = UITokens.FontBody, fontWeight = FontWeight.Bold, maxLines = 1)
     }
 }

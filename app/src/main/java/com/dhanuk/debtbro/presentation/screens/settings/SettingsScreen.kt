@@ -6,7 +6,6 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
@@ -29,6 +28,7 @@ import com.dhanuk.debtbro.presentation.components.LanguageSelectorGrid
 import com.dhanuk.debtbro.presentation.components.SUPPORTED_LANGUAGES
 import com.dhanuk.debtbro.presentation.theme.LocalExtraColors
 import com.dhanuk.debtbro.presentation.theme.PrimaryGreen
+import com.dhanuk.debtbro.presentation.theme.UITokens
 import com.dhanuk.debtbro.util.LocalizedString
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -42,18 +42,19 @@ fun SettingsScreen(viewModel: SettingsViewModel = hiltViewModel()) {
     var showDeleteConfirm by remember { mutableStateOf(false) }
     var showReauthHint by remember { mutableStateOf(false) }
     var showLinkEmailDialog by remember { mutableStateOf(false) }
+    val showDeletionGraceAlert by viewModel.showDeletionGraceAlert.collectAsStateWithLifecycle()
 
     Box(modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) {
         LazyColumn(
-            modifier = Modifier.fillMaxSize().padding(horizontal = 16.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp),
-            contentPadding = PaddingValues(top = 24.dp, bottom = 100.dp)
+            modifier = Modifier.fillMaxSize().padding(horizontal = UITokens.ScreenHorizontalPadding),
+            verticalArrangement = Arrangement.spacedBy(UITokens.SpaceMedium),
+            contentPadding = PaddingValues(top = UITokens.ScreenTopPadding, bottom = UITokens.ScreenBottomPadding)
         ) {
             item {
                 Text(
                     LocalizedString.get("settings"),
                     color = MaterialTheme.colorScheme.onBackground,
-                    fontSize = 28.sp,
+                    fontSize = UITokens.FontDisplay,
                     fontWeight = FontWeight.Bold,
                     modifier = Modifier.padding(bottom = 8.dp)
                 )
@@ -76,29 +77,31 @@ fun SettingsScreen(viewModel: SettingsViewModel = hiltViewModel()) {
                     onSignOut = { showSignOutConfirm = true },
                     onSync = { viewModel.syncNow() },
                     onDeleteAccount = { showDeleteConfirm = true },
-                    onLinkEmail = { showLinkEmailDialog = true }
+                    onLinkEmail = { showLinkEmailDialog = true },
+                    pendingDeletionTimestamp = state.pendingDeletionTimestamp,
+                    onCancelDeletion = { viewModel.cancelDeletion() }
                 )
             }
 
             // ── THEME SELECTION ──────────────────────────────────────────────
-            item { SectionHeader("Theme", Icons.Default.Palette) }
+            item { SectionHeader(LocalizedString.get("theme"), Icons.Default.Palette) }
             item {
                 Card(
                     colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-                    shape = RoundedCornerShape(16.dp)
+                    shape = UITokens.ShapeLarge
                 ) {
-                    Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Column(Modifier.padding(UITokens.CardInnerPadding), verticalArrangement = Arrangement.spacedBy(UITokens.SpaceSmall)) {
+                        Row(horizontalArrangement = Arrangement.spacedBy(UITokens.SpaceXS)) {
                             listOf("SYSTEM", "LIGHT", "DARK").forEach { mode ->
                                 val label = when (mode) {
-                                    "LIGHT" -> "\u2600\uFE0F Light"
-                                    "DARK" -> "\uD83C\uDF19 Dark"
-                                    else -> "\uD83D\uDD04 System"
+                                    "LIGHT" -> LocalizedString.get("theme_light")
+                                    "DARK" -> LocalizedString.get("theme_dark")
+                                    else -> LocalizedString.get("theme_system")
                                 }
                                 FilterChip(
                                     selected = state.themeMode == mode,
                                     onClick = { viewModel.setThemeMode(mode) },
-                                    label = { Text(label, fontSize = 12.sp) },
+                                    label = { Text(label, fontSize = UITokens.FontCaption) },
                                     colors = FilterChipDefaults.filterChipColors(
                                         selectedContainerColor = PrimaryGreen,
                                         selectedLabelColor = MaterialTheme.colorScheme.onPrimary
@@ -115,9 +118,9 @@ fun SettingsScreen(viewModel: SettingsViewModel = hiltViewModel()) {
             item {
                 Card(
                     colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-                    shape = RoundedCornerShape(16.dp)
+                    shape = UITokens.ShapeLarge
                 ) {
-                    Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
+                    Column(Modifier.padding(UITokens.CardInnerPadding), verticalArrangement = Arrangement.spacedBy(UITokens.SpaceMedium)) {
                         OutlinedTextField(
                             value = state.userName,
                             onValueChange = viewModel::saveUserName,
@@ -129,8 +132,8 @@ fun SettingsScreen(viewModel: SettingsViewModel = hiltViewModel()) {
                             )
                         )
 
-                        Text(LocalizedString.get("default_currency"), color = extra.subtitleGray, fontSize = 13.sp)
-                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Text(LocalizedString.get("default_currency"), color = extra.subtitleGray, fontSize = UITokens.FontSmall)
+                        Row(horizontalArrangement = Arrangement.spacedBy(UITokens.SpaceXS)) {
                             listOf("\u20B9", "$", "\u20AC", "\u00A3", "\u00A5").forEach { c ->
                                 FilterChip(
                                     selected = state.currency == c,
@@ -144,9 +147,9 @@ fun SettingsScreen(viewModel: SettingsViewModel = hiltViewModel()) {
                             }
                         }
 
-                        Text(LocalizedString.get("nudge_roast_level"), color = extra.subtitleGray, fontSize = 13.sp)
-                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                            listOf("MILD", "MEDIUM", "SAVAGE").forEach { r ->
+                        Text(LocalizedString.get("nudge_roast_level"), color = extra.subtitleGray, fontSize = UITokens.FontSmall)
+                        Row(horizontalArrangement = Arrangement.spacedBy(UITokens.SpaceXS)) {
+                            listOf("MILD", "MEDIUM", "SPICY").forEach { r ->
                                 FilterChip(
                                     selected = state.roastLevel == r,
                                     onClick = { viewModel.setRoastLevel(r) },
@@ -161,7 +164,7 @@ fun SettingsScreen(viewModel: SettingsViewModel = hiltViewModel()) {
 
                         HorizontalDivider(color = extra.divider)
 
-                        Text(LocalizedString.get("card_display_options"), color = MaterialTheme.colorScheme.onSurface, fontWeight = FontWeight.Bold, fontSize = 14.sp)
+                        Text(LocalizedString.get("card_display_options"), color = MaterialTheme.colorScheme.onSurface, fontWeight = FontWeight.Bold, fontSize = UITokens.FontBody)
 
                         SettingsToggleItem(
                             title = LocalizedString.get("show_description"),
@@ -188,28 +191,28 @@ fun SettingsScreen(viewModel: SettingsViewModel = hiltViewModel()) {
             }
 
             // ── NOTIFICATIONS SECTION ────────────────────────────────────────
-            item { SectionHeader("Notifications", Icons.Default.Notifications) }
+            item { SectionHeader(LocalizedString.get("notifications"), Icons.Default.Notifications) }
             item {
                 Card(
                     colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-                    shape = RoundedCornerShape(16.dp)
+                    shape = UITokens.ShapeLarge
                 ) {
-                    Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                    Column(Modifier.padding(UITokens.CardInnerPadding), verticalArrangement = Arrangement.spacedBy(UITokens.SpaceSmall)) {
                         SettingsToggleItem(
-                            title = "Daily Reminders",
-                            subtitle = "Get reminded about overdue debts",
+                            title = LocalizedString.get("daily_reminders"),
+                            subtitle = LocalizedString.get("daily_reminders_desc"),
                             checked = state.notifyDailyReminder,
                             onCheckedChange = viewModel::setNotifyDailyReminder
                         )
                         SettingsToggleItem(
-                            title = "Weekly Summary",
-                            subtitle = "Receive a weekly debt summary",
+                            title = LocalizedString.get("weekly_summary"),
+                            subtitle = LocalizedString.get("weekly_summary_desc"),
                             checked = state.notifyWeeklySummary,
                             onCheckedChange = viewModel::setNotifyWeeklySummary
                         )
                         SettingsToggleItem(
-                            title = "Payment Alerts",
-                            subtitle = "Get notified when debts are nearly settled",
+                            title = LocalizedString.get("payment_alerts"),
+                            subtitle = LocalizedString.get("payment_alerts_desc"),
                             checked = state.notifyPaymentAlerts,
                             onCheckedChange = viewModel::setNotifyPaymentAlerts
                         )
@@ -222,18 +225,18 @@ fun SettingsScreen(viewModel: SettingsViewModel = hiltViewModel()) {
                 Card(
                     modifier = Modifier.fillMaxWidth().clickable { showLanguageDialog = true },
                     colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-                    shape = RoundedCornerShape(16.dp)
+                    shape = UITokens.ShapeLarge
                 ) {
                     Row(
-                        modifier = Modifier.padding(16.dp),
+                        modifier = Modifier.padding(UITokens.CardInnerPadding),
                         verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(12.dp)
+                        horizontalArrangement = Arrangement.spacedBy(UITokens.SpaceSmall)
                     ) {
                         Box(
-                            modifier = Modifier.size(40.dp).clip(CircleShape).background(MaterialTheme.colorScheme.surfaceVariant),
+                            modifier = Modifier.size(UITokens.AvatarMedium).clip(CircleShape).background(MaterialTheme.colorScheme.surfaceVariant),
                             contentAlignment = Alignment.Center
                         ) {
-                            Icon(Icons.Default.Language, null, tint = PrimaryGreen)
+                            Icon(Icons.Default.Language, LocalizedString.get("language"), tint = PrimaryGreen)
                         }
                         Column(modifier = Modifier.weight(1f)) {
                             Text(LocalizedString.get("language"), color = MaterialTheme.colorScheme.onSurface, fontWeight = FontWeight.Bold)
@@ -241,10 +244,10 @@ fun SettingsScreen(viewModel: SettingsViewModel = hiltViewModel()) {
                             Text(
                                 currentLang?.nativeName ?: "English",
                                 color = extra.subtitleGray,
-                                fontSize = 13.sp
+                                fontSize = UITokens.FontSmall
                             )
                         }
-                        Icon(Icons.Default.ChevronRight, null, tint = extra.subtitleGray)
+                        Icon(Icons.Default.ChevronRight, LocalizedString.get("language"), tint = extra.subtitleGray)
                     }
                 }
             }
@@ -254,9 +257,9 @@ fun SettingsScreen(viewModel: SettingsViewModel = hiltViewModel()) {
             item {
                 Card(
                     colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-                    shape = RoundedCornerShape(16.dp)
+                    shape = UITokens.ShapeLarge
                 ) {
-                    Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                    Column(Modifier.padding(UITokens.CardInnerPadding), verticalArrangement = Arrangement.spacedBy(UITokens.SpaceSmall)) {
                         SettingsActionItem(
                             title = LocalizedString.get("export_csv"),
                             subtitle = LocalizedString.get("export_csv_subtitle"),
@@ -310,24 +313,24 @@ fun SettingsScreen(viewModel: SettingsViewModel = hiltViewModel()) {
                         }
                     },
                     colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-                    shape = RoundedCornerShape(16.dp)
+                    shape = UITokens.ShapeLarge
                 ) {
                     Row(
-                        modifier = Modifier.padding(16.dp),
+                        modifier = Modifier.padding(UITokens.CardInnerPadding),
                         verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(12.dp)
+                        horizontalArrangement = Arrangement.spacedBy(UITokens.SpaceSmall)
                     ) {
                         Box(
-                            modifier = Modifier.size(40.dp).clip(CircleShape).background(MaterialTheme.colorScheme.surfaceVariant),
+                            modifier = Modifier.size(UITokens.AvatarMedium).clip(CircleShape).background(MaterialTheme.colorScheme.surfaceVariant),
                             contentAlignment = Alignment.Center
                         ) {
-                            Icon(Icons.Default.Policy, null, tint = PrimaryGreen)
+                            Icon(Icons.Default.Policy, LocalizedString.get("privacy_policy"), tint = PrimaryGreen)
                         }
                         Column(modifier = Modifier.weight(1f)) {
-                            Text("Privacy Policy", color = MaterialTheme.colorScheme.onSurface, fontWeight = FontWeight.Bold)
-                            Text("View our data practices", color = extra.subtitleGray, fontSize = 13.sp)
+                            Text(LocalizedString.get("privacy_policy"), color = MaterialTheme.colorScheme.onSurface, fontWeight = FontWeight.Bold)
+                            Text(LocalizedString.get("privacy_policy_desc"), color = extra.subtitleGray, fontSize = UITokens.FontSmall)
                         }
-                        Icon(Icons.Default.OpenInNew, null, tint = extra.subtitleGray, modifier = Modifier.size(18.dp))
+                        Icon(Icons.Default.OpenInNew, LocalizedString.get("privacy_policy"), tint = extra.subtitleGray, modifier = Modifier.size(18.dp))
                     }
                 }
             }
@@ -338,8 +341,8 @@ fun SettingsScreen(viewModel: SettingsViewModel = hiltViewModel()) {
                     modifier = Modifier.fillMaxWidth().padding(vertical = 24.dp),
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
-                    Text("DebtBro v${BuildConfig.VERSION_NAME}", color = extra.subtitleGray, fontSize = 13.sp)
-                    Text("Made with \u2764\uFE0F for financial chaos", color = extra.subtitleGray.copy(alpha = 0.7f), fontSize = 11.sp)
+                    Text("DebtBro v${BuildConfig.VERSION_NAME}", color = extra.subtitleGray, fontSize = UITokens.FontSmall)
+                    Text(LocalizedString.get("made_with_love"), color = extra.subtitleGray.copy(alpha = 0.7f), fontSize = 11.sp)
                 }
             }
         }
@@ -369,8 +372,8 @@ fun SettingsScreen(viewModel: SettingsViewModel = hiltViewModel()) {
         AlertDialog(
             onDismissRequest = { showSignOutConfirm = false },
             containerColor = MaterialTheme.colorScheme.surface,
-            title = { Text("Sign Out?", color = MaterialTheme.colorScheme.onSurface) },
-            text = { Text("Your local data stays on this device. Cloud backups remain on your Google account.", color = MaterialTheme.colorScheme.onSurfaceVariant) },
+            title = { Text(LocalizedString.get("sign_out_question"), color = MaterialTheme.colorScheme.onSurface) },
+            text = { Text(LocalizedString.get("sign_out_desc"), color = MaterialTheme.colorScheme.onSurfaceVariant) },
             confirmButton = {
                 TextButton(
                     onClick = {
@@ -379,13 +382,13 @@ fun SettingsScreen(viewModel: SettingsViewModel = hiltViewModel()) {
                     },
                     enabled = !state.isSigningOut
                 ) {
-                    if (state.isSigningOut) CircularProgressIndicator(modifier = Modifier.size(16.dp), strokeWidth = 2.dp)
-                    Text("Sign Out", color = MaterialTheme.colorScheme.error)
+                    if (state.isSigningOut) CircularProgressIndicator(modifier = Modifier.size(UITokens.IconSmall), strokeWidth = 2.dp)
+                    Text(LocalizedString.get("sign_out"), color = MaterialTheme.colorScheme.error)
                 }
             },
             dismissButton = {
                 TextButton(onClick = { showSignOutConfirm = false }) {
-                    Text("Cancel", color = extra.subtitleGray)
+                    Text(LocalizedString.get("cancel"), color = extra.subtitleGray)
                 }
             }
         )
@@ -396,10 +399,10 @@ fun SettingsScreen(viewModel: SettingsViewModel = hiltViewModel()) {
         AlertDialog(
             onDismissRequest = { showDeleteConfirm = false },
             containerColor = MaterialTheme.colorScheme.surface,
-            title = { Text("Delete Account?", color = MaterialTheme.colorScheme.error) },
+            title = { Text(LocalizedString.get("deletion_requested"), color = MaterialTheme.colorScheme.error) },
             text = {
                 Text(
-                    "This permanently deletes your account and ALL cloud data. This action cannot be undone. Local data on this device will also be cleared.",
+                    LocalizedString.get("deletion_grace_info"),
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             },
@@ -407,21 +410,17 @@ fun SettingsScreen(viewModel: SettingsViewModel = hiltViewModel()) {
                 TextButton(
                     onClick = {
                         showDeleteConfirm = false
-                        viewModel.deleteAccount(
-                            context = context,
-                            onReauthRequired = { showReauthHint = true },
-                            onFailure = {}
-                        )
+                        viewModel.requestAccountDeletion { }
                     },
                     enabled = !state.isDeletingAccount
                 ) {
-                    if (state.isDeletingAccount) CircularProgressIndicator(modifier = Modifier.size(16.dp), strokeWidth = 2.dp)
-                    Text("Delete Forever", color = MaterialTheme.colorScheme.error)
+                    if (state.isDeletingAccount) CircularProgressIndicator(modifier = Modifier.size(UITokens.IconSmall), strokeWidth = 2.dp)
+                    Text(LocalizedString.get("delete"), color = MaterialTheme.colorScheme.error)
                 }
             },
             dismissButton = {
                 TextButton(onClick = { showDeleteConfirm = false }) {
-                    Text("Cancel", color = extra.subtitleGray)
+                    Text(LocalizedString.get("cancel"), color = extra.subtitleGray)
                 }
             }
         )
@@ -432,8 +431,8 @@ fun SettingsScreen(viewModel: SettingsViewModel = hiltViewModel()) {
         AlertDialog(
             onDismissRequest = { showReauthHint = false },
             containerColor = MaterialTheme.colorScheme.surface,
-            title = { Text("Re-authentication required", color = MaterialTheme.colorScheme.onSurface) },
-            text = { Text("For your security, please sign in with Google again before deleting your account.", color = MaterialTheme.colorScheme.onSurfaceVariant) },
+            title = { Text(LocalizedString.get("reauth_required"), color = MaterialTheme.colorScheme.onSurface) },
+            text = { Text(LocalizedString.get("reauth_desc"), color = MaterialTheme.colorScheme.onSurfaceVariant) },
             confirmButton = {
                 TextButton(onClick = {
                     showReauthHint = false
@@ -441,10 +440,30 @@ fun SettingsScreen(viewModel: SettingsViewModel = hiltViewModel()) {
                     if (activity != null) {
                         viewModel.signInWithGoogle(activity)
                     }
-                }) { Text("Sign in again", color = PrimaryGreen) }
+                }) { Text(LocalizedString.get("sign_in_again"), color = PrimaryGreen) }
             },
             dismissButton = {
-                TextButton(onClick = { showReauthHint = false }) { Text("Cancel", color = extra.subtitleGray) }
+                TextButton(onClick = { showReauthHint = false }) { Text(LocalizedString.get("cancel"), color = extra.subtitleGray) }
+            }
+        )
+    }
+
+    // ── Grace Period Login Alert ──────────────────────────────────────────
+    if (showDeletionGraceAlert) {
+        AlertDialog(
+            onDismissRequest = { viewModel.dismissDeletionGraceAlert() },
+            containerColor = MaterialTheme.colorScheme.surface,
+            title = { Text(LocalizedString.get("deletion_grace_title"), color = MaterialTheme.colorScheme.error) },
+            text = { Text(LocalizedString.get("deletion_grace_alert"), color = MaterialTheme.colorScheme.onSurfaceVariant) },
+            confirmButton = {
+                TextButton(onClick = { viewModel.cancelDeletion() }) {
+                    Text(LocalizedString.get("cancel_deletion"), color = PrimaryGreen)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { viewModel.dismissDeletionGraceAlert() }) {
+                    Text(LocalizedString.get("proceed_login"), color = extra.subtitleGray)
+                }
             }
         )
     }
@@ -456,21 +475,21 @@ fun SettingsScreen(viewModel: SettingsViewModel = hiltViewModel()) {
         AlertDialog(
             onDismissRequest = { showLinkEmailDialog = false },
             containerColor = MaterialTheme.colorScheme.surface,
-            title = { Text("Add Email/Password", color = MaterialTheme.colorScheme.onSurface) },
+            title = { Text(LocalizedString.get("add_email_password"), color = MaterialTheme.colorScheme.onSurface) },
             text = {
-                Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                    Text("Link an email so you can sign in without Google.", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 13.sp)
+                Column(verticalArrangement = Arrangement.spacedBy(UITokens.SpaceSmall)) {
+                    Text(LocalizedString.get("link_email_desc"), color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = UITokens.FontSmall)
                     OutlinedTextField(
                         value = email,
                         onValueChange = { email = it },
-                        label = { Text("Email") },
+                        label = { Text(LocalizedString.get("email")) },
                         singleLine = true,
                         modifier = Modifier.fillMaxWidth()
                     )
                     OutlinedTextField(
                         value = password,
                         onValueChange = { password = it },
-                        label = { Text("Password (6+ chars)") },
+                        label = { Text(LocalizedString.get("password_6_chars")) },
                         singleLine = true,
                         visualTransformation = PasswordVisualTransformation(),
                         modifier = Modifier.fillMaxWidth()
@@ -481,10 +500,10 @@ fun SettingsScreen(viewModel: SettingsViewModel = hiltViewModel()) {
                 TextButton(onClick = {
                     showLinkEmailDialog = false
                     viewModel.linkEmailPassword(email, password, context as Activity)
-                }) { Text("Link", color = PrimaryGreen) }
+                }) { Text(LocalizedString.get("link"), color = PrimaryGreen) }
             },
             dismissButton = {
-                TextButton(onClick = { showLinkEmailDialog = false }) { Text("Cancel", color = extra.subtitleGray) }
+                TextButton(onClick = { showLinkEmailDialog = false }) { Text(LocalizedString.get("cancel"), color = extra.subtitleGray) }
             }
         )
     }
@@ -493,12 +512,12 @@ fun SettingsScreen(viewModel: SettingsViewModel = hiltViewModel()) {
 @Composable
 fun SectionHeader(title: String, icon: ImageVector) {
     Row(
-        modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
+        modifier = Modifier.fillMaxWidth().padding(top = UITokens.SpaceXS),
         verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(8.dp)
+        horizontalArrangement = Arrangement.spacedBy(UITokens.SpaceXS)
     ) {
-        Icon(icon, null, tint = PrimaryGreen, modifier = Modifier.size(20.dp))
-        Text(title, color = PrimaryGreen, fontSize = 14.sp, fontWeight = FontWeight.Bold)
+        Icon(icon, LocalizedString.get("settings"), tint = PrimaryGreen, modifier = Modifier.size(UITokens.IconMedium))
+        Text(title, color = PrimaryGreen, fontSize = UITokens.FontBody, fontWeight = FontWeight.Bold)
     }
 }
 
@@ -511,13 +530,13 @@ fun SettingsToggleItem(
 ) {
     val extra = LocalExtraColors.current
     Row(
-        modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
+        modifier = Modifier.fillMaxWidth().padding(vertical = UITokens.SpaceTiny),
         verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(12.dp)
+        horizontalArrangement = Arrangement.spacedBy(UITokens.SpaceSmall)
     ) {
         Column(modifier = Modifier.weight(1f)) {
             Text(title, color = MaterialTheme.colorScheme.onSurface, fontWeight = FontWeight.SemiBold)
-            Text(subtitle, color = extra.subtitleGray, fontSize = 12.sp)
+            Text(subtitle, color = extra.subtitleGray, fontSize = UITokens.FontCaption)
         }
         Switch(
             checked = checked,
@@ -542,14 +561,14 @@ fun SettingsActionItem(
 ) {
     val extra = LocalExtraColors.current
     Row(
-        modifier = Modifier.fillMaxWidth().clickable { onClick() }.padding(vertical = 8.dp),
+        modifier = Modifier.fillMaxWidth().clickable { onClick() }.padding(vertical = UITokens.SpaceXS),
         verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(12.dp)
+        horizontalArrangement = Arrangement.spacedBy(UITokens.SpaceSmall)
     ) {
-        Icon(icon, null, tint = if (color == MaterialTheme.colorScheme.onSurface) extra.subtitleGray else color)
+        Icon(icon, LocalizedString.get("data_export"), tint = if (color == MaterialTheme.colorScheme.onSurface) extra.subtitleGray else color)
         Column {
             Text(title, color = color, fontWeight = FontWeight.SemiBold)
-            Text(subtitle, color = extra.subtitleGray, fontSize = 12.sp)
+            Text(subtitle, color = extra.subtitleGray, fontSize = UITokens.FontCaption)
         }
     }
 }

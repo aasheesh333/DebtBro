@@ -34,6 +34,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.dhanuk.debtbro.presentation.theme.DangerRed
 import com.dhanuk.debtbro.presentation.theme.LocalExtraColors
 import com.dhanuk.debtbro.presentation.theme.PrimaryGreen
+import com.dhanuk.debtbro.presentation.theme.UITokens
 import com.dhanuk.debtbro.util.LocalizedString
 import java.text.SimpleDateFormat
 import java.util.*
@@ -103,10 +104,10 @@ fun AddDebtBottomSheet(
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 20.dp)
-                .padding(bottom = 32.dp)
+                .padding(horizontal = UITokens.SpaceLarge)
+                .padding(bottom = UITokens.SheetBottomPadding)
                 .verticalScroll(rememberScrollState()),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
+            verticalArrangement = Arrangement.spacedBy(UITokens.SpaceMedium)
         ) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
@@ -179,13 +180,13 @@ fun AddDebtBottomSheet(
                     colors = ButtonDefaults.buttonColors(
                         containerColor = if (debtType == "THEY_OWE_ME") PrimaryGreen else MaterialTheme.colorScheme.surfaceVariant
                     ),
-                    shape = RoundedCornerShape(topStart = 12.dp, bottomStart = 12.dp)
+                    shape = RoundedCornerShape(topStart = UITokens.SpaceSmall, bottomStart = UITokens.SpaceSmall)
                 ) {
                     Text(
                         "💰 They Owe Me",
                         color = if (debtType == "THEY_OWE_ME") Color.Black else extra.subtitleGray,
                         fontWeight = FontWeight.SemiBold,
-                        fontSize = 13.sp
+                        fontSize = UITokens.FontSmall
                     )
                 }
                 Button(
@@ -194,13 +195,13 @@ fun AddDebtBottomSheet(
                     colors = ButtonDefaults.buttonColors(
                         containerColor = if (debtType == "I_OWE_THEM") DangerRed else MaterialTheme.colorScheme.surfaceVariant
                     ),
-                    shape = RoundedCornerShape(topEnd = 12.dp, bottomEnd = 12.dp)
+                    shape = RoundedCornerShape(topEnd = UITokens.SpaceSmall, bottomEnd = UITokens.SpaceSmall)
                 ) {
                     Text(
                         "😅 I Owe Them",
                         color = if (debtType == "I_OWE_THEM") Color.White else extra.subtitleGray,
                         fontWeight = FontWeight.SemiBold,
-                        fontSize = 13.sp
+                        fontSize = UITokens.FontSmall
                     )
                 }
             }
@@ -211,17 +212,17 @@ fun AddDebtBottomSheet(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.SpaceBetween
                 ) {
-                    Text("Avatar", color = extra.subtitleGray, fontSize = 13.sp)
+                    Text("Avatar", color = extra.subtitleGray, fontSize = UITokens.FontSmall)
                     TextButton(onClick = { showEmojiPicker = true }) {
-                        Icon(Icons.Default.EmojiEmotions, contentDescription = null, tint = PrimaryGreen, modifier = Modifier.size(16.dp))
-                        Spacer(Modifier.width(4.dp))
-                        Text("From device", color = PrimaryGreen, fontSize = 12.sp)
+                        Icon(Icons.Default.EmojiEmotions, contentDescription = LocalizedString.get("emoji"), tint = PrimaryGreen, modifier = Modifier.size(UITokens.IconSmall))
+                        Spacer(Modifier.width(UITokens.SpaceTiny))
+                        Text("From device", color = PrimaryGreen, fontSize = UITokens.FontCaption)
                     }
                 }
 
                 LazyRow(
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    contentPadding = PaddingValues(vertical = 8.dp)
+                    horizontalArrangement = Arrangement.spacedBy(UITokens.SpaceXS),
+                    contentPadding = PaddingValues(vertical = UITokens.SpaceXS)
                 ) {
                     items(currentEmojis) { emoji ->
                         val isSelected = emoji == selectedEmoji
@@ -249,14 +250,14 @@ fun AddDebtBottomSheet(
                                 Box(
                                     modifier = Modifier
                                         .align(Alignment.BottomEnd)
-                                        .size(16.dp)
+                                        .size(UITokens.IconSmall)
                                         .clip(CircleShape)
                                         .background(PrimaryGreen),
                                     contentAlignment = Alignment.Center
                                 ) {
                                     Icon(
                                         Icons.Default.Check,
-                                        null,
+                                        LocalizedString.get("select_language"),
                                         tint = Color.Black,
                                         modifier = Modifier.size(10.dp)
                                     )
@@ -267,7 +268,7 @@ fun AddDebtBottomSheet(
                 }
             }
 
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            Row(horizontalArrangement = Arrangement.spacedBy(UITokens.SpaceXS)) {
                 listOf("₹", "$", "€", "£", "¥", "₩").forEach { curr ->
                     FilterChip(
                         selected = selectedCurrency == curr,
@@ -332,7 +333,7 @@ fun AddDebtBottomSheet(
                 }
             )
 
-            Spacer(Modifier.height(8.dp))
+            Spacer(Modifier.height(UITokens.SpaceXS))
 
             Button(
                 onClick = {
@@ -370,14 +371,14 @@ fun AddDebtBottomSheet(
                     .fillMaxWidth()
                     .height(60.dp),
                 colors = ButtonDefaults.buttonColors(containerColor = PrimaryGreen),
-                shape = RoundedCornerShape(16.dp),
+                shape = UITokens.ShapeLarge,
                 enabled = !isLoading
             ) {
                 if (isLoading) {
-                    CircularProgressIndicator(color = Color.Black, modifier = Modifier.size(24.dp))
+                    CircularProgressIndicator(color = Color.Black, modifier = Modifier.size(UITokens.IconLarge))
                 } else {
-                    Icon(Icons.Default.Add, null, tint = Color.Black)
-                    Spacer(Modifier.width(8.dp))
+                    Icon(Icons.Default.Add, LocalizedString.get("add_debt"), tint = Color.Black)
+                    Spacer(Modifier.width(UITokens.SpaceXS))
                     Text(
                         "Add Debt",
                         color = Color.Black,

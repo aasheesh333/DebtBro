@@ -17,14 +17,44 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
+data class AccountSettingsState(
+    val userName: String = "",
+    val roastLevel: String = "MEDIUM",
+    val currency: String = "₹",
+    val customAvatarUri: String = "",
+    val selectedLanguage: String = "en",
+    val exportFormat: String = "CSV",
+    val themeMode: String = "SYSTEM"
+)
+
+data class GoogleSignInState(
+    val isSignedIn: Boolean = false,
+    val googleName: String = "",
+    val email: String = "",
+    val userPhoto: String = ""
+)
+
+data class DisplaySettingsState(
+    val showDescription: Boolean = true,
+    val showDueDate: Boolean = true,
+    val showEmoji: Boolean = true
+)
+
+data class NotificationSettingsState(
+    val notifyDailyReminder: Boolean = true,
+    val notifyWeeklySummary: Boolean = true,
+    val notifyPaymentAlerts: Boolean = true
+)
+
 data class SettingsUiState(
     val userName: String = "",
     val roastLevel: String = "MEDIUM",
-    val currency: String = "�",
+    val currency: String = "₹",
     val isSignedIn: Boolean = false,
     val googleName: String = "",
     val email: String = "",
@@ -45,7 +75,8 @@ data class SettingsUiState(
     val exportFormat: String = "CSV",
     val themeMode: String = "SYSTEM",
     val isSigningOut: Boolean = false,
-    val isDeletingAccount: Boolean = false
+    val isDeletingAccount: Boolean = false,
+    val pendingDeletionTimestamp: Long = 0L
 )
 
 @HiltViewModel
@@ -63,53 +94,123 @@ class SettingsViewModel @Inject constructor(
     private val isSigningOut = MutableStateFlow(false)
     private val isDeletingAccount = MutableStateFlow(false)
 
-    val state: StateFlow<SettingsUiState> = combine(
+    init {
+        viewModelScope.launch {
+            val ts = prefs.pendingDeletionTimestamp.first()
+            if (ts > 0L && (System.currentTimeMillis() - ts) >= GRACE_PERIOD_MS) {
+                commitAccountDeletion()
+            }
+        }
+    }
+
+    private suspend fun commitAccountDeletion() {
+        val userId = auth.getUserId()
+        if (userId != null) {
+            try {
+                firebaseRepository.deleteAllUserData(userId)
+                auth.deleteAccount()
+            } catch (_: Exception) { }
+        }
+        prefs.clearPendingDeletion()
+        prefs.clearAll()
+        realTimeSyncManager.stopListening()
+        debts.clearLocalData()
+    }
+
+    private val accountSettingsState = combine(
         prefs.userName,
         prefs.roastLevel,
         prefs.defaultCurrency,
+        prefs.customAvatarUri,
+        prefs.selectedLanguage,
+        prefs.exportFormat,
+        prefs.themeMode
+    ) { userName, roastLevel, currency, customAvatarUri, selectedLanguage, exportFormat, themeMode ->
+        AccountSettingsState(
+            userName = userName,
+            roastLevel = roastLevel,
+            currency = currency,
+            customAvatarUri = customAvatarUri,
+            selectedLanguage = selectedLanguage,
+            exportFormat = exportFormat,
+            themeMode = themeMode
+        )
+    }
+
+    private val googleSignInState = combine(
         prefs.isGoogleSignedIn,
         prefs.googleUserName,
         prefs.googleUserEmail,
-        prefs.googleUserPhoto,
-        prefs.customAvatarUri,
-        prefs.lastSyncedAt,
-        prefs.selectedLanguage,
-        isSyncing,
-        syncMessage,
+        prefs.googleUserPhoto
+    ) { isSignedIn, googleName, email, userPhoto ->
+        GoogleSignInState(
+            isSignedIn = isSignedIn,
+            googleName = googleName,
+            email = email,
+            userPhoto = userPhoto
+        )
+    }
+
+    private val displaySettingsState = combine(
         prefs.showDescription,
         prefs.showDueDate,
-        prefs.showEmoji,
+        prefs.showEmoji
+    ) { showDescription, showDueDate, showEmoji ->
+        DisplaySettingsState(
+            showDescription = showDescription,
+            showDueDate = showDueDate,
+            showEmoji = showEmoji
+        )
+    }
+
+    private val notificationSettingsState = combine(
         prefs.notifyDailyReminder,
         prefs.notifyWeeklySummary,
-        prefs.notifyPaymentAlerts,
-        prefs.exportFormat,
-        prefs.themeMode,
+        prefs.notifyPaymentAlerts
+    ) { daily, weekly, payment ->
+        NotificationSettingsState(
+            notifyDailyReminder = daily,
+            notifyWeeklySummary = weekly,
+            notifyPaymentAlerts = payment
+        )
+    }
+
+    val state: StateFlow<SettingsUiState> = combine(
+        accountSettingsState,
+        googleSignInState,
+        displaySettingsState,
+        notificationSettingsState,
+        prefs.lastSyncedAt,
+        isSyncing,
+        syncMessage,
         isSigningOut,
-        isDeletingAccount
-    ) { v ->
+        isDeletingAccount,
+        prefs.pendingDeletionTimestamp
+    ) { account, google, display, notification, lastSynced, syncing, syncMsg, signingOut, deleting, pendingTs ->
         SettingsUiState(
-            userName = v[0] as String,
-            roastLevel = v[1] as String,
-            currency = v[2] as String,
-            isSignedIn = v[3] as Boolean,
-            googleName = v[4] as String,
-            email = v[5] as String,
-            userPhoto = v[6] as String,
-            customAvatarUri = v[7] as String,
-            lastSynced = v[8] as Long,
-            selectedLanguage = v[9] as String,
-            isSyncing = v[10] as Boolean,
-            syncMessage = v[11] as String,
-            showDescription = v[12] as Boolean,
-            showDueDate = v[13] as Boolean,
-            showEmoji = v[14] as Boolean,
-            notifyDailyReminder = v[15] as Boolean,
-            notifyWeeklySummary = v[16] as Boolean,
-            notifyPaymentAlerts = v[17] as Boolean,
-            exportFormat = v[18] as String,
-            themeMode = v[19] as String,
-            isSigningOut = v[20] as Boolean,
-            isDeletingAccount = v[21] as Boolean,
+            userName = account.userName,
+            roastLevel = account.roastLevel,
+            currency = account.currency,
+            customAvatarUri = account.customAvatarUri,
+            selectedLanguage = account.selectedLanguage,
+            exportFormat = account.exportFormat,
+            themeMode = account.themeMode,
+            isSignedIn = google.isSignedIn,
+            googleName = google.googleName,
+            email = google.email,
+            userPhoto = google.userPhoto,
+            showDescription = display.showDescription,
+            showDueDate = display.showDueDate,
+            showEmoji = display.showEmoji,
+            notifyDailyReminder = notification.notifyDailyReminder,
+            notifyWeeklySummary = notification.notifyWeeklySummary,
+            notifyPaymentAlerts = notification.notifyPaymentAlerts,
+            lastSynced = lastSynced,
+            isSyncing = syncing,
+            syncMessage = syncMsg,
+            isSigningOut = signingOut,
+            isDeletingAccount = deleting,
+            pendingDeletionTimestamp = pendingTs,
             linkedProviders = auth.linkedProviders()
         )
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), SettingsUiState())
@@ -128,7 +229,20 @@ class SettingsViewModel @Inject constructor(
     fun setThemeMode(mode: String) = viewModelScope.launch { prefs.setThemeMode(mode) }
     fun setCustomAvatarUri(uri: String) = viewModelScope.launch { prefs.setCustomAvatarUri(uri) }
 
+    private val _showDeletionGraceAlert = MutableStateFlow(false)
+    val showDeletionGraceAlert: StateFlow<Boolean> = _showDeletionGraceAlert.asStateFlow()
+
     fun signInWithGoogle(activity: Activity) = viewModelScope.launch {
+        val pendingTs = prefs.pendingDeletionTimestamp.first()
+        if (pendingTs > 0) {
+            val elapsed = System.currentTimeMillis() - pendingTs
+            if (elapsed < GRACE_PERIOD_MS) {
+                _showDeletionGraceAlert.value = true
+                return@launch
+            } else {
+                prefs.clearPendingDeletion()
+            }
+        }
         auth.signInWithGoogle(activity).onSuccess { user ->
             prefs.setGoogleSignedIn(true, user.displayName ?: "DebtBro user", user.email ?: "", user.photoUrl?.toString().orEmpty())
             user.uid?.let { uid ->
@@ -145,6 +259,13 @@ class SettingsViewModel @Inject constructor(
                 }
             }
         }
+    }
+
+    fun dismissDeletionGraceAlert() { _showDeletionGraceAlert.value = false }
+
+    fun cancelDeletion() = viewModelScope.launch {
+        prefs.clearPendingDeletion()
+        _showDeletionGraceAlert.value = false
     }
 
     fun signOut() = viewModelScope.launch {
@@ -169,6 +290,15 @@ class SettingsViewModel @Inject constructor(
      * GDPR-compliant account deletion: wipes all cloud data, then deletes the Firebase account.
      * On `FirebaseAuthRecentLoginRequiredException`, surfaces a re-auth requirement.
      */
+    companion object {
+        private const val GRACE_PERIOD_MS = 24 * 60 * 60 * 1000L
+    }
+
+    fun requestAccountDeletion(onSuccess: () -> Unit) = viewModelScope.launch {
+        prefs.setPendingDeletionTimestamp(System.currentTimeMillis())
+        onSuccess()
+    }
+
     fun deleteAccount(context: Context, onReauthRequired: () -> Unit, onFailure: (String) -> Unit) = viewModelScope.launch {
         val userId = auth.getUserId()
         if (userId == null) {
@@ -177,16 +307,11 @@ class SettingsViewModel @Inject constructor(
         }
         isDeletingAccount.value = true
         try {
-            // 1. Remove all cloud docs for this user
             firebaseRepository.deleteAllUserData(userId)
-            // 2. Stop listeners
             realTimeSyncManager.stopListening()
-            // 3. Delete the local room data + prefs
-            debts.clearLocalDebtsOnly()
-            prefs.setGoogleSignedIn(false)
-            // 4. Delete the Firebase auth account
+            debts.clearLocalData()
+            prefs.clearAll()
             auth.deleteAccount().onSuccess {
-                // Account gone — UI handles navigation
             }.onFailure { e ->
                 onFailure(e.message ?: "Account deletion failed")
                 if (e is com.google.firebase.auth.FirebaseAuthRecentLoginRequiredException) {

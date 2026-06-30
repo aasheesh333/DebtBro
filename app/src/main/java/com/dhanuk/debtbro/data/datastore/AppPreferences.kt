@@ -47,15 +47,14 @@ class AppPreferences(@ApplicationContext private val context: Context) {
         // ── Export preferences ────────────────────────────────────────────────
         val EXPORT_FORMAT = stringPreferencesKey("export_format")
         val CUSTOM_AVATAR_URI = stringPreferencesKey("custom_avatar_uri")
+        val PENDING_DELETION_TIMESTAMP = longPreferencesKey("pending_deletion_timestamp")
     }
 
-    enum class ThemeMode { SYSTEM, LIGHT, DARK }
-    enum class ExportFormat { CSV, HTML_CYBERPUNK, HTML_ELEGANT, HTML_INSTA, HTML_SHAME }
 
     val hasCompletedOnboarding: Flow<Boolean> = context.dataStore.data.map { it[Keys.HAS_COMPLETED_ONBOARDING] ?: false }
     val userName: Flow<String> = context.dataStore.data.map { it[Keys.USER_NAME] ?: "" }
     val groqApiKey: Flow<String> = context.dataStore.data.map { it[Keys.GROQ_API_KEY] ?: "" }
-    val roastLevel: Flow<String> = context.dataStore.data.map { it[Keys.ROAST_LEVEL] ?: "MEDIUM" }
+    val roastLevel: Flow<String> = context.dataStore.data.map { it[Keys.ROAST_LEVEL]?.let { v -> if (v == "SAVAGE") "SPICY" else v } ?: "MEDIUM" }
     val defaultCurrency: Flow<String> = context.dataStore.data.map { it[Keys.DEFAULT_CURRENCY] ?: "₹" }
     val isGoogleSignedIn: Flow<Boolean> = context.dataStore.data.map { it[Keys.IS_GOOGLE_SIGNED_IN] ?: false }
     val googleUserName: Flow<String> = context.dataStore.data.map { it[Keys.GOOGLE_USER_NAME] ?: "" }
@@ -75,6 +74,7 @@ class AppPreferences(@ApplicationContext private val context: Context) {
     val notifyPaymentAlerts: Flow<Boolean> = context.dataStore.data.map { it[Keys.NOTIFY_PAYMENT_ALERTS] ?: true }
     val exportFormat: Flow<String> = context.dataStore.data.map { it[Keys.EXPORT_FORMAT] ?: "CSV" }
     val customAvatarUri: Flow<String> = context.dataStore.data.map { it[Keys.CUSTOM_AVATAR_URI] ?: "" }
+    val pendingDeletionTimestamp: Flow<Long> = context.dataStore.data.map { it[Keys.PENDING_DELETION_TIMESTAMP] ?: 0L }
 
     suspend fun setOnboardingComplete(name: String) = context.dataStore.edit {
         it[Keys.HAS_COMPLETED_ONBOARDING] = true
@@ -104,6 +104,8 @@ class AppPreferences(@ApplicationContext private val context: Context) {
     suspend fun setNotifyPaymentAlerts(value: Boolean) = context.dataStore.edit { it[Keys.NOTIFY_PAYMENT_ALERTS] = value }
     suspend fun setExportFormat(format: String) = context.dataStore.edit { it[Keys.EXPORT_FORMAT] = format }
     suspend fun setCustomAvatarUri(uri: String) = context.dataStore.edit { it[Keys.CUSTOM_AVATAR_URI] = uri }
+    suspend fun setPendingDeletionTimestamp(ts: Long) = context.dataStore.edit { it[Keys.PENDING_DELETION_TIMESTAMP] = ts }
+    suspend fun clearPendingDeletion() = context.dataStore.edit { it.remove(Keys.PENDING_DELETION_TIMESTAMP) }
 
     suspend fun saveAiRegenerationCount(count: Int) {
         val today = java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.getDefault()).format(java.util.Date())
@@ -120,4 +122,6 @@ class AppPreferences(@ApplicationContext private val context: Context) {
         val today = java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.getDefault()).format(java.util.Date())
         return if (date != today) 0 else count
     }
+
+    suspend fun clearAll() = context.dataStore.edit { it.clear() }
 }

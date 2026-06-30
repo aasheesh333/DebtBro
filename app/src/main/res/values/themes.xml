@@ -1,19 +1,15 @@
 <resources>
-    <!-- Base application theme. -->
     <style name="Theme.DebtBro" parent="Theme.MaterialComponents.DayNight.NoActionBar">
-        <!-- Customize your theme here. -->
-        <item name="colorPrimary">@color/purple_500</item>
-        <item name="colorOnPrimary">@color/white</item>
-        <item name="colorSecondary">@color/teal_200</item>
+        <item name="colorPrimary">@color/primary_green</item>
+        <item name="colorOnPrimary">@color/black</item>
+        <item name="colorSecondary">@color/primary_green_dark</item>
         <item name="colorOnSecondary">@color/black</item>
-        <item name="android:statusBarColor">@android:color/transparent</item>
-        <item name="android:navigationBarColor">@android:color/transparent</item>
+        <item name="android:statusBarColor">@color/background_dark</item>
+        <item name="android:navigationBarColor">@color/background_dark</item>
     </style>
 
-    <!-- Splash screen theme. -->
     <style name="Theme.DebtBro.Splash" parent="Theme.SplashScreen">
-        <item name="windowSplashScreenBackground">@color/black</item>
-        <!-- Use windowSplashScreenAnimatedIcon to add either a drawable or an animated drawable -->
+        <item name="windowSplashScreenBackground">@color/background_dark</item>
         <item name="windowSplashScreenAnimatedIcon">@drawable/splash_icon</item>
         <item name="postSplashScreenTheme">@style/Theme.DebtBro</item>
     </style>

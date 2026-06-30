@@ -40,6 +40,7 @@ android {
         buildConfigField("Boolean", "ENABLE_CRASHLYTICS", "true")
         buildConfigField("Boolean", "ENABLE_PERFORMANCE_MONITORING", "true")
         buildConfigField("String", "PRIVACY_POLICY_URL", "\"${escapedProp("PRIVACY_POLICY_URL")}\"")
+        buildConfigField("String", "ACCOUNT_DELETION_URL", "\"https://dhanuk.page.gd/DebtBro/Delete-Account.html\"")
         // App-level ADMOB_APP_ID is a manifest placeholder only. Real ad unit IDs live in BuildConfig above.
         // The fallback is only used when local.properties / CI is missing config — production builds must ship real IDs.
         manifestPlaceholders["ADMOB_APP_ID"] = localProp("ADMOB_APP_ID").ifEmpty {
@@ -129,7 +130,6 @@ dependencies {
     implementation(libs.coil)
     implementation(libs.kotlinx.coroutines.android)
     implementation(libs.kotlinx.coroutines.play.services)
-    implementation(libs.accompanist.permissions)
     implementation(libs.androidx.material)
     debugImplementation(libs.androidx.compose.ui.tooling)
 }

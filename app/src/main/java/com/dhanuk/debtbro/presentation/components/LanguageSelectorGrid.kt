@@ -6,7 +6,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
-import androidx.compose.foundation.shape.RoundedCornerShape
+
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Search
@@ -20,6 +20,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.dhanuk.debtbro.presentation.theme.LocalExtraColors
 import com.dhanuk.debtbro.presentation.theme.PrimaryGreen
+import com.dhanuk.debtbro.presentation.theme.UITokens
+import com.dhanuk.debtbro.util.LocalizedString
 
 data class AppLanguage(
     val code: String,
@@ -70,7 +72,7 @@ fun LanguageSelectorGrid(
             value = query,
             onValueChange = { query = it },
             placeholder = { Text("Search language...", color = extra.subtitleGray) },
-            leadingIcon = { Icon(Icons.Default.Search, null, tint = extra.subtitleGray) },
+            leadingIcon = { Icon(Icons.Default.Search, LocalizedString.get("search_debts"), tint = extra.subtitleGray) },
             modifier = Modifier.fillMaxWidth(),
             colors = OutlinedTextFieldDefaults.colors(
                 focusedBorderColor = PrimaryGreen,
@@ -79,7 +81,7 @@ fun LanguageSelectorGrid(
                 unfocusedTextColor = MaterialTheme.colorScheme.onSurface,
                 cursorColor = PrimaryGreen
             ),
-            shape = RoundedCornerShape(12.dp)
+            shape = UITokens.ShapeMedium
         )
         
         Spacer(Modifier.height(12.dp))
@@ -92,8 +94,8 @@ fun LanguageSelectorGrid(
         
         LazyVerticalGrid(
             columns = GridCells.Fixed(2),
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp),
+            horizontalArrangement = Arrangement.spacedBy(UITokens.SpaceXS),
+            verticalArrangement = Arrangement.spacedBy(UITokens.SpaceXS),
             modifier = Modifier.height(320.dp)
         ) {
             items(filtered) { lang ->
@@ -105,17 +107,17 @@ fun LanguageSelectorGrid(
                         .border(
                             width = if (isSelected) 2.dp else 0.dp,
                             color = if (isSelected) PrimaryGreen else androidx.compose.ui.graphics.Color.Transparent,
-                            shape = RoundedCornerShape(12.dp)
+                            shape = UITokens.ShapeMedium
                         ),
                     colors = CardDefaults.cardColors(
                         containerColor = if (isSelected) PrimaryGreen.copy(alpha = 0.15f) else MaterialTheme.colorScheme.surface
                     ),
-                    shape = RoundedCornerShape(12.dp)
+                    shape = UITokens.ShapeMedium
                 ) {
                     Row(
-                        modifier = Modifier.padding(12.dp),
+                        modifier = Modifier.padding(UITokens.SpaceSmall),
                         verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        horizontalArrangement = Arrangement.spacedBy(UITokens.SpaceXS)
                     ) {
                         Text(lang.flag, fontSize = 20.sp)
                         Column {
@@ -123,7 +125,7 @@ fun LanguageSelectorGrid(
                                 lang.nativeName,
                                 color = if (isSelected) PrimaryGreen else MaterialTheme.colorScheme.onSurface,
                                 fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
-                                fontSize = 13.sp,
+                                fontSize = UITokens.FontSmall,
                                 maxLines = 1,
                                 overflow = TextOverflow.Ellipsis
                             )
@@ -131,7 +133,7 @@ fun LanguageSelectorGrid(
                         }
                         if (isSelected) {
                             Spacer(Modifier.weight(1f))
-                            Icon(Icons.Default.CheckCircle, null, tint = PrimaryGreen, modifier = Modifier.size(16.dp))
+                            Icon(Icons.Default.CheckCircle, LocalizedString.get("select_language"), tint = PrimaryGreen, modifier = Modifier.size(UITokens.IconSmall))
                         }
                     }
                 }

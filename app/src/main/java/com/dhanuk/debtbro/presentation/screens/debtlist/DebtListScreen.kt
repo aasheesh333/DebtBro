@@ -8,7 +8,6 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
@@ -30,6 +29,7 @@ import com.dhanuk.debtbro.presentation.components.DebtCard
 import com.dhanuk.debtbro.presentation.components.EmptyStateView
 import com.dhanuk.debtbro.presentation.theme.LocalExtraColors
 import com.dhanuk.debtbro.presentation.theme.PrimaryGreen
+import com.dhanuk.debtbro.presentation.theme.UITokens
 import com.dhanuk.debtbro.util.LocalizedString
 
 @OptIn(ExperimentalFoundationApi::class)
@@ -50,11 +50,11 @@ fun DebtListScreen(
     Box(modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) {
         Column(modifier = Modifier.fillMaxSize()) {
             Row(
-                modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 24.dp),
+                modifier = Modifier.fillMaxWidth().padding(horizontal = UITokens.ScreenHorizontalPadding, vertical = UITokens.ScreenTopPadding),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Text(LocalizedString.get("all_debts"), color = MaterialTheme.colorScheme.onSurface, fontSize = 28.sp, fontWeight = FontWeight.Bold)
+                Text(LocalizedString.get("all_debts"), color = MaterialTheme.colorScheme.onSurface, fontSize = UITokens.FontDisplay, fontWeight = FontWeight.Bold)
                 IconButton(
                     onClick = onAddDebtClick,
                     modifier = Modifier.clip(CircleShape).background(PrimaryGreen)
@@ -67,16 +67,16 @@ fun DebtListScreen(
                 value = searchQuery,
                 onValueChange = { viewModel.searchQuery.value = it },
                 placeholder = { Text(LocalizedString.get("search_debts")) },
-                modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
-                leadingIcon = { Icon(Icons.Default.Search, contentDescription = null, tint = extra.subtitleGray) },
+                modifier = Modifier.fillMaxWidth().padding(horizontal = UITokens.ScreenHorizontalPadding),
+                leadingIcon = { Icon(Icons.Default.Search, LocalizedString.get("search_debts"), tint = extra.subtitleGray) },
                 trailingIcon = {
                     if (searchQuery.isNotEmpty()) {
                         IconButton(onClick = { viewModel.searchQuery.value = "" }) {
-                            Icon(Icons.Default.Clear, contentDescription = null, tint = extra.subtitleGray)
+                            Icon(Icons.Default.Clear, contentDescription = LocalizedString.get("cancel"), tint = extra.subtitleGray)
                         }
                     }
                 },
-                shape = RoundedCornerShape(12.dp),
+                shape = UITokens.ShapeMedium,
                 colors = OutlinedTextFieldDefaults.colors(
                     focusedBorderColor = PrimaryGreen,
                     unfocusedBorderColor = MaterialTheme.colorScheme.outline,
@@ -104,8 +104,8 @@ fun DebtListScreen(
             }
 
             Row(
-                modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 12.dp),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                modifier = Modifier.fillMaxWidth().padding(horizontal = UITokens.ScreenHorizontalPadding, vertical = UITokens.SpaceSmall),
+                horizontalArrangement = Arrangement.spacedBy(UITokens.SpaceXS)
             ) {
                 listOf("ALL", "PENDING", "SETTLED").forEach { status ->
                     FilterChip(
@@ -132,8 +132,8 @@ fun DebtListScreen(
             } else {
                 LazyColumn(
                     modifier = Modifier.fillMaxSize(),
-                    contentPadding = PaddingValues(16.dp),
-                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                    contentPadding = PaddingValues(UITokens.CardInnerPadding),
+                    verticalArrangement = Arrangement.spacedBy(UITokens.SpaceSmall)
                 ) {
                     items(debts, key = { it.id }) { debt ->
                         SwipeableDebtCard(debt, signedIn, { onDebtClick(debt.id) },
@@ -174,12 +174,12 @@ fun SwipeableDebtCard(
         ) {
             if (debt.status != "SETTLED") {
                 DropdownMenuItem(
-                    text = { Text("Mark Settled \u2705", color = MaterialTheme.colorScheme.onSurface) },
+                    text = { Text(LocalizedString.get("mark_settled"), color = MaterialTheme.colorScheme.onSurface) },
                     onClick = { showMenu = false; onSettle(debt) }
                 )
             }
             DropdownMenuItem(
-                text = { Text("Delete \uD83D\uDDD1\uFE0F", color = MaterialTheme.colorScheme.error) },
+                text = { Text(LocalizedString.get("delete_trash"), color = MaterialTheme.colorScheme.error) },
                 onClick = { showMenu = false; onDelete(debt) }
             )
         }

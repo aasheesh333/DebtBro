@@ -7,6 +7,7 @@ import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.ReadOnlyComposable
 import androidx.compose.runtime.staticCompositionLocalOf
+import androidx.compose.ui.graphics.Color
 
 private val DarkColors = darkColorScheme(
     primary = PrimaryGreen,
@@ -28,8 +29,8 @@ private val DarkColors = darkColorScheme(
 )
 
 private val LightColors = lightColorScheme(
-    primary = BrandPrimaryLight,
-    onPrimary = SurfaceLight,
+    primary = PrimaryGreen,
+    onPrimary = Color.Black,
     primaryContainer = SurfaceVariantLight,
     onPrimaryContainer = OnSurfaceLight,
     secondary = PrimaryGreenDark,
@@ -39,7 +40,7 @@ private val LightColors = lightColorScheme(
     onSurface = OnSurfaceLight,
     surfaceVariant = SurfaceVariantLight,
     onSurfaceVariant = SubtitleGrayLight,
-    surfaceTint = BrandPrimaryLight,
+    surfaceTint = PrimaryGreen,
     outline = OutlineLight,
     outlineVariant = DividerLight,
     error = DangerRedLight,
@@ -73,7 +74,7 @@ val LocalExtraColors = staticCompositionLocalOf {
 fun debtBroExtraColors(isDark: Boolean = isSystemInDarkTheme()): DebtBroExtraColors = if (isDark) {
     DebtBroExtraColors(SubtitleGrayDark, DividerDark, CardInnerDark, PrimaryGreen, DangerRed, WarningAmber)
 } else {
-    DebtBroExtraColors(SubtitleGrayLight, DividerLight, CardInnerLight, BrandPrimaryLight, DangerRedLight, WarningAmber)
+    DebtBroExtraColors(SubtitleGrayLight, DividerLight, CardInnerLight, PrimaryGreen, DangerRedLight, WarningAmber)
 }
 
 @Composable

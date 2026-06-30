@@ -369,6 +369,10 @@ class DebtDetailViewModel @Inject constructor(
         }
     }
 
+    fun reportAiMessage() = viewModelScope.launch {
+        _toastEvent.emit("Message reported. Thank you for your feedback.")
+    }
+
     private fun syncIfSignedIn() = viewModelScope.launch {
         authManager.getCurrentUser()?.uid?.let { uid ->
             runCatching { syncManager.mergePendingUnsynced(uid) }

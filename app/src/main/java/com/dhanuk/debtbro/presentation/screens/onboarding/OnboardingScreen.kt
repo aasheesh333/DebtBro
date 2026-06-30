@@ -29,6 +29,8 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.dhanuk.debtbro.presentation.components.LanguageSelectorGrid
 import com.dhanuk.debtbro.presentation.theme.LocalExtraColors
 import com.dhanuk.debtbro.presentation.theme.PrimaryGreen
+import com.dhanuk.debtbro.presentation.theme.UITokens
+import com.dhanuk.debtbro.util.LocalizedString
 import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalFoundationApi::class)
@@ -56,7 +58,7 @@ fun OnboardingScreen(onOnboardingComplete: () -> Unit) {
             ) {
                 if (pagerState.currentPage in 1..3) {
                     TextButton(onClick = { scope.launch { pagerState.animateScrollToPage(4) } }) {
-                        Text("Skip", color = extra.subtitleGray)
+                        Text(LocalizedString.get("skip"), color = extra.subtitleGray)
                     }
                 } else {
                     Spacer(modifier = Modifier.height(48.dp))
@@ -77,12 +79,12 @@ fun OnboardingScreen(onOnboardingComplete: () -> Unit) {
             }
 
             Column(
-                modifier = Modifier.fillMaxWidth().padding(24.dp),
+                modifier = Modifier.fillMaxWidth().padding(UITokens.SheetContentPadding),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
                 Row(
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    modifier = Modifier.padding(bottom = 24.dp)
+                    horizontalArrangement = Arrangement.spacedBy(UITokens.SpaceXS),
+                    modifier = Modifier.padding(bottom = UITokens.SheetBottomPadding)
                 ) {
                     repeat(5) { index ->
                         val isSelected = pagerState.currentPage == index
@@ -109,7 +111,7 @@ fun OnboardingScreen(onOnboardingComplete: () -> Unit) {
                     modifier = Modifier.fillMaxWidth().height(56.dp)
                 ) {
                     Text(
-                        if (pagerState.currentPage < 4) "Next \u2192" else "Let's Go \uD83D\uDE80",
+                        if (pagerState.currentPage < 4) LocalizedString.get("next_arrow") else LocalizedString.get("lets_go"),
                         color = if (pagerState.currentPage < 4 || name.isNotBlank()) MaterialTheme.colorScheme.onPrimary else extra.subtitleGray,
                         fontWeight = FontWeight.Bold,
                         fontSize = 18.sp
@@ -130,9 +132,9 @@ fun Page1Welcome(selectedLanguage: String, onLanguageSelected: (com.dhanuk.debtb
         Spacer(Modifier.height(32.dp))
         Text("\uD83D\uDCB8", fontSize = 80.sp)
         Text("DebtBro", color = PrimaryGreen, fontSize = 48.sp, fontWeight = FontWeight.ExtraBold)
-        Text("Money memory with a sense of humor", color = extra.subtitleGray, fontSize = 16.sp, textAlign = TextAlign.Center)
+        Text(LocalizedString.get("app_tagline"), color = extra.subtitleGray, fontSize = 16.sp, textAlign = TextAlign.Center)
         Spacer(Modifier.height(32.dp))
-        Text("\uD83C\uDF0D Choose your language", color = MaterialTheme.colorScheme.onSurface, fontSize = 18.sp, fontWeight = FontWeight.Bold, modifier = Modifier.padding(bottom = 16.dp))
+        Text(LocalizedString.get("choose_language"), color = MaterialTheme.colorScheme.onSurface, fontSize = UITokens.FontSubhead, fontWeight = FontWeight.Bold, modifier = Modifier.padding(bottom = UITokens.CardInnerPadding))
         LanguageSelectorGrid(selectedCode = selectedLanguage, onLanguageSelected = onLanguageSelected)
     }
 }
@@ -147,14 +149,14 @@ fun Page2Track() {
     ) {
         Text("\uD83D\uDCB8", fontSize = 96.sp)
         Spacer(Modifier.height(24.dp))
-        Text("Track Who Owes You", color = MaterialTheme.colorScheme.onSurface, fontSize = 32.sp, fontWeight = FontWeight.ExtraBold, textAlign = TextAlign.Center)
+        Text(LocalizedString.get("track_who_owes"), color = MaterialTheme.colorScheme.onSurface, fontSize = 32.sp, fontWeight = FontWeight.ExtraBold, textAlign = TextAlign.Center)
         Spacer(Modifier.height(16.dp))
-        Text("Every loan, chai, trip split, and awkward IOU in one clean place.", color = extra.subtitleGray, fontSize = 16.sp, textAlign = TextAlign.Center)
+        Text(LocalizedString.get("track_desc"), color = extra.subtitleGray, fontSize = 16.sp, textAlign = TextAlign.Center)
         Spacer(Modifier.height(32.dp))
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            FeaturePill("\uD83D\uDCB0 They Owe Me")
-            FeaturePill("\uD83D\uDE05 I Owe Them")
-            FeaturePill("\uD83D\uDCCA Analytics")
+            FeaturePill(LocalizedString.get("pill_they_owe"))
+            FeaturePill(LocalizedString.get("pill_i_owe"))
+            FeaturePill(LocalizedString.get("pill_analytics"))
         }
     }
 }
@@ -169,12 +171,12 @@ fun Page3Roasts() {
     ) {
         Text("\uD83E\uDD16", fontSize = 96.sp)
         Spacer(Modifier.height(24.dp))
-        Text("AI Roasts Your Broke Friends", color = MaterialTheme.colorScheme.onSurface, fontSize = 32.sp, fontWeight = FontWeight.ExtraBold, textAlign = TextAlign.Center)
+        Text(LocalizedString.get("ai_roasts_title"), color = MaterialTheme.colorScheme.onSurface, fontSize = 32.sp, fontWeight = FontWeight.ExtraBold, textAlign = TextAlign.Center)
         Spacer(Modifier.height(24.dp))
         Card(
             modifier = Modifier.fillMaxWidth(),
             colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-            shape = RoundedCornerShape(16.dp)
+            shape = UITokens.ShapeLarge)
         ) {
             Text(
                 "Hey bro, still waiting on that \u20B9500 for pizza. Unless you're paying me in exposure?",
@@ -185,9 +187,9 @@ fun Page3Roasts() {
         }
         Spacer(Modifier.height(24.dp))
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            FeaturePill("\uD83D\uDE0A Mild")
-            FeaturePill("\uD83D\uDE0F Medium")
-            FeaturePill("\uD83D\uDD25 Savage")
+            FeaturePill(LocalizedString.get("mild"))
+            FeaturePill(LocalizedString.get("medium"))
+            FeaturePill(LocalizedString.get("savage"))
         }
     }
 }
@@ -202,16 +204,16 @@ fun Page4Sync() {
     ) {
         Text("\u2601\uFE0F", fontSize = 96.sp)
         Spacer(Modifier.height(24.dp))
-        Text("Never Lose Your Data", color = MaterialTheme.colorScheme.onSurface, fontSize = 32.sp, fontWeight = FontWeight.ExtraBold, textAlign = TextAlign.Center)
+        Text(LocalizedString.get("never_lose_data"), color = MaterialTheme.colorScheme.onSurface, fontSize = 32.sp, fontWeight = FontWeight.ExtraBold, textAlign = TextAlign.Center)
         Spacer(Modifier.height(16.dp))
-        Text("Sign in with Google anytime from Settings to sync across all devices.", color = extra.subtitleGray, fontSize = 16.sp, textAlign = TextAlign.Center)
+        Text(LocalizedString.get("sync_settings_desc"), color = extra.subtitleGray, fontSize = 16.sp, textAlign = TextAlign.Center)
         Spacer(Modifier.height(32.dp))
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            Text("Add Debt", color = PrimaryGreen, fontSize = 12.sp, fontWeight = FontWeight.Bold)
+            Text(LocalizedString.get("add_debt"), color = PrimaryGreen, fontSize = 12.sp, fontWeight = FontWeight.Bold)
             Text("\u2192", color = extra.subtitleGray)
-            Text("Auto Sync", color = PrimaryGreen, fontSize = 12.sp, fontWeight = FontWeight.Bold)
+            Text(LocalizedString.get("auto_sync"), color = PrimaryGreen, fontSize = 12.sp, fontWeight = FontWeight.Bold)
             Text("\u2192", color = extra.subtitleGray)
-            Text("Access Anywhere", color = PrimaryGreen, fontSize = 12.sp, fontWeight = FontWeight.Bold)
+            Text(LocalizedString.get("access_anywhere"), color = PrimaryGreen, fontSize = 12.sp, fontWeight = FontWeight.Bold)
         }
     }
 }
@@ -226,13 +228,13 @@ fun Page5Name(name: String, onNameChange: (String) -> Unit) {
     ) {
         Text("\uD83D\uDC4B", fontSize = 72.sp)
         Spacer(Modifier.height(24.dp))
-        Text("What should we call you?", color = MaterialTheme.colorScheme.onSurface, fontSize = 28.sp, fontWeight = FontWeight.ExtraBold, textAlign = TextAlign.Center)
+        Text(LocalizedString.get("what_call_you"), color = MaterialTheme.colorScheme.onSurface, fontSize = 28.sp, fontWeight = FontWeight.ExtraBold, textAlign = TextAlign.Center)
         Spacer(Modifier.height(32.dp))
         OutlinedTextField(
             value = name,
             onValueChange = { if (it.length <= 30) onNameChange(it.trimStart()) },
-            label = { Text("Your name") },
-            placeholder = { Text("e.g. Rahul, Priya...") },
+            label = { Text(LocalizedString.get("your_name_label")) },
+            placeholder = { Text(LocalizedString.get("name_example")) },
             singleLine = true,
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Text, capitalization = KeyboardCapitalization.Words),
             colors = OutlinedTextFieldDefaults.colors(
@@ -252,10 +254,10 @@ fun FeaturePill(text: String) {
     val extra = LocalExtraColors.current
     Box(
         modifier = Modifier
-            .clip(RoundedCornerShape(16.dp))
+            .clip(UITokens.ShapeLarge)
             .background(MaterialTheme.colorScheme.surfaceVariant)
             .padding(horizontal = 12.dp, vertical = 8.dp)
     ) {
-        Text(text, color = MaterialTheme.colorScheme.onSurface, fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
+        Text(text, color = MaterialTheme.colorScheme.onSurface, fontSize = UITokens.FontSmall, fontWeight = FontWeight.SemiBold)
     }
 }
