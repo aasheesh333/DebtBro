@@ -173,9 +173,9 @@ Generate a WhatsApp-style payment reminder. The message MUST reference the actua
         filterProfanity(response.choices.first().message.content
             .trim()
             .removeSurrounding("\"")
-            .removeSurrounding("\u201C", "\u201D")  // curly quotes
-            .removeSurrounding("\u2018", "\u2019")  // single curly quotes
-            .trim()
+            .removeSurrounding("\u201C", "\u201D")
+            .removeSurrounding("\u2018", "\u2019")
+            .trim())
     }
     suspend fun analyzeDebts(totalLent: Double, totalOwed: Double, recoveryRate: Int, worstDebtor: String): Result<String> = runCatching {
         ensureRateLimit()

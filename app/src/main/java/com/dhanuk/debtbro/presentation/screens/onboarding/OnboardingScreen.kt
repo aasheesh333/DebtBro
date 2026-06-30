@@ -176,7 +176,7 @@ fun Page3Roasts() {
         Card(
             modifier = Modifier.fillMaxWidth(),
             colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-            shape = UITokens.ShapeLarge)
+            shape = UITokens.ShapeLarge
         ) {
             Text(
                 "Hey bro, still waiting on that \u20B9500 for pizza. Unless you're paying me in exposure?",
