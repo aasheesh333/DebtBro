@@ -154,9 +154,9 @@ Key rules:
 Generate a WhatsApp-style payment reminder. The message MUST reference the actual debt context above — mention what the money was for, the amount, and the person. Be personal. Do NOT make up random scenarios. Keep it 2-3 lines, 140-180 characters. Push for longer, more detailed responses. Do NOT use quotation marks. Make it creative and different each time — never repeat the same phrasing."""
 
         val temp = when (roastLevel) {
-            "SPICY" -> 0.7f
-            "MEDIUM" -> 0.65f
-            else -> 0.5f
+            "SPICY" -> 0.7
+            "MEDIUM" -> 0.65
+            else -> 0.5
         }
         val response = api.chat(
             auth = "Bearer $key",
@@ -200,7 +200,7 @@ Generate a WhatsApp-style payment reminder. The message MUST reference the actua
         val response = api.chat("Bearer $key", GroqRequest(messages = listOf(
             GroqMessage("system", "$langInstruction\nYou are a funny commentator. One line only. Be creative."),
             GroqMessage("user", "Split: $title, Total: ${currency}$total, $count people, ${currency}$perPerson each. Write ONE funny line about this. Hinglish ok.")
-        ), model = "llama-3.3-70b-versatile", temperature = 0.7f, max_tokens = 100))
+        ), model = "llama-3.3-70b-versatile", temperature = 0.7, max_tokens = 100))
         response.choices.first().message.content.trim()
     }
     suspend fun testConnection(): Boolean {

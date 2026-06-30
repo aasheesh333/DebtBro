@@ -26,8 +26,8 @@ class MainActivity : ComponentActivity() {
     @Inject lateinit var appPreferences: AppPreferences
     override fun onCreate(savedInstanceState: Bundle?) {
         var isThemeReady by mutableStateOf(false)
-        val splashScreen = installSplashScreen()
-        splashScreen.keepOnScreenCondition = { !isThemeReady }
+val splashScreen = installSplashScreen()
+        splashScreen.setKeepOnScreenCondition { !isThemeReady }
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContent {

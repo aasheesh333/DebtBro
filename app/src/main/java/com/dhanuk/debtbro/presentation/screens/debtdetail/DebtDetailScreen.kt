@@ -385,78 +385,76 @@ fun DebtDetailScreen(onBack: () -> Unit, viewModel: DebtDetailViewModel = hiltVi
             ConfettiOverlay(showConfetti) {
                 viewModel.dismissConfetti()
             }
-        }
-    }
 
-    if (showPaymentSheet) {
-        AddPaymentDialog(
-            remaining = remaining,
-            currency = d.currency,
-            onDismiss = { viewModel.showAddPaymentSheet.value = false },
-            onSave = { amount, note -> viewModel.addPayment(amount, note) }
-        )
-    }
-
-    if (showDeleteConfirm) {
-        AlertDialog(
-            onDismissRequest = { showDeleteConfirm = false },
-            containerColor = MaterialTheme.colorScheme.surface,
-            title = { Text(LocalizedString.get("delete_debt"), color = MaterialTheme.colorScheme.onSurface) },
-            text = { Text(LocalizedString.get("delete_confirm"), color = MaterialTheme.colorScheme.onSurfaceVariant) },
-            confirmButton = {
-                TextButton(onClick = {
-                    viewModel.deleteDebt()
-                    showDeleteConfirm = false
-                    onBack()
-                }) {
-                    Text(LocalizedString.get("delete"), color = MaterialTheme.colorScheme.error)
-                }
-            },
-            dismissButton = {
-                TextButton(onClick = { showDeleteConfirm = false }) {
-                    Text(LocalizedString.get("cancel"), color = extra.subtitleGray)
-                }
+            if (showPaymentSheet) {
+                AddPaymentDialog(
+                    remaining = remaining,
+                    currency = d.currency,
+                    onDismiss = { viewModel.showAddPaymentSheet.value = false },
+                    onSave = { amount, note -> viewModel.addPayment(amount, note) }
+                )
             }
-        )
-    }
 
-    if (showEditSheet) {
-        EditDebtDialog(
-            debt = d,
-            onDismiss = { viewModel.showEditDebtSheet.value = false },
-            onSave = { name, amount, desc, emoji -> viewModel.updateDebt(name, amount, desc, emoji) }
-        )
-    }
-
-    if (showRewardAd) {
-        AlertDialog(
-            onDismissRequest = { viewModel.dismissRewardAd() },
-            title = { Text(LocalizedString.get("free_regenerations_used"), color = MaterialTheme.colorScheme.onSurface) },
-            text = { Text(LocalizedString.get("free_regenerations_desc").replace("{count}", MAX_FREE_REGENERATIONS.toString()), color = MaterialTheme.colorScheme.onSurfaceVariant) },
-            confirmButton = {
-                TextButton(onClick = {
-                    val activity = context.findActivity()
-                    if (activity != null) {
-                        viewModel.preloadRewardedAd(activity)
+            if (showDeleteConfirm) {
+                AlertDialog(
+                    onDismissRequest = { showDeleteConfirm = false },
+                    containerColor = MaterialTheme.colorScheme.surface,
+                    title = { Text(LocalizedString.get("delete_debt"), color = MaterialTheme.colorScheme.onSurface) },
+                    text = { Text(LocalizedString.get("delete_confirm"), color = MaterialTheme.colorScheme.onSurfaceVariant) },
+                    confirmButton = {
+                        TextButton(onClick = {
+                            viewModel.deleteDebt()
+                            showDeleteConfirm = false
+                            onBack()
+                        }) {
+                            Text(LocalizedString.get("delete"), color = MaterialTheme.colorScheme.error)
+                        }
+                    },
+                    dismissButton = {
+                        TextButton(onClick = { showDeleteConfirm = false }) {
+                            Text(LocalizedString.get("cancel"), color = extra.subtitleGray)
+                        }
                     }
-                    viewModel.dismissRewardAd()
-                    viewModel.generateRoast(context.findActivity())
-                }) {
-                    Text(LocalizedString.get("watch_ad"), color = PrimaryGreen)
-                }
-            },
-            dismissButton = {
-                TextButton(onClick = { viewModel.dismissRewardAd() }) {
-                    Text(LocalizedString.get("later"), color = extra.subtitleGray)
-                }
-            },
-            containerColor = MaterialTheme.colorScheme.surface
-        )
-    }
+                )
+            }
 
-if (isExportingImage) {
-         val seconds = exportElapsed / 1000
-         AlertDialog(
+            if (showEditSheet) {
+                EditDebtDialog(
+                    debt = d,
+                    onDismiss = { viewModel.showEditDebtSheet.value = false },
+                    onSave = { name, amount, desc, emoji -> viewModel.updateDebt(name, amount, desc, emoji) }
+                )
+            }
+
+            if (showRewardAd) {
+                AlertDialog(
+                    onDismissRequest = { viewModel.dismissRewardAd() },
+                    title = { Text(LocalizedString.get("free_regenerations_used"), color = MaterialTheme.colorScheme.onSurface) },
+                    text = { Text(LocalizedString.get("free_regenerations_desc").replace("{count}", MAX_FREE_REGENERATIONS.toString()), color = MaterialTheme.colorScheme.onSurfaceVariant) },
+                    confirmButton = {
+                        TextButton(onClick = {
+                            val activity = context.findActivity()
+                            if (activity != null) {
+                                viewModel.preloadRewardedAd(activity)
+                            }
+                            viewModel.dismissRewardAd()
+                            viewModel.generateRoast(context.findActivity())
+                        }) {
+                            Text(LocalizedString.get("watch_ad"), color = PrimaryGreen)
+                        }
+                    },
+                    dismissButton = {
+                        TextButton(onClick = { viewModel.dismissRewardAd() }) {
+                            Text(LocalizedString.get("later"), color = extra.subtitleGray)
+                        }
+                    },
+                    containerColor = MaterialTheme.colorScheme.surface
+                )
+            }
+
+            if (isExportingImage) {
+                val seconds = exportElapsed / 1000
+                AlertDialog(
              onDismissRequest = {},
              title = { Text("Preparing image...", color = MaterialTheme.colorScheme.onSurface) },
              text = {
