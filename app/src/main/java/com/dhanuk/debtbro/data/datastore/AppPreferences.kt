@@ -48,6 +48,9 @@ class AppPreferences(@ApplicationContext private val context: Context) {
         val EXPORT_FORMAT = stringPreferencesKey("export_format")
         val CUSTOM_AVATAR_URI = stringPreferencesKey("custom_avatar_uri")
         val PENDING_DELETION_TIMESTAMP = longPreferencesKey("pending_deletion_timestamp")
+        val FORGOT_PASSWORD_LAST_SENT = longPreferencesKey("forgot_password_last_sent")
+        val FORGOT_PASSWORD_DAILY_COUNT = intPreferencesKey("forgot_password_daily_count")
+        val FORGOT_PASSWORD_DAILY_DATE = stringPreferencesKey("forgot_password_daily_date")
     }
 
 
@@ -75,6 +78,8 @@ class AppPreferences(@ApplicationContext private val context: Context) {
     val exportFormat: Flow<String> = context.dataStore.data.map { it[Keys.EXPORT_FORMAT] ?: "CSV" }
     val customAvatarUri: Flow<String> = context.dataStore.data.map { it[Keys.CUSTOM_AVATAR_URI] ?: "" }
     val pendingDeletionTimestamp: Flow<Long> = context.dataStore.data.map { it[Keys.PENDING_DELETION_TIMESTAMP] ?: 0L }
+    val forgotPasswordLastSent: Flow<Long> = context.dataStore.data.map { it[Keys.FORGOT_PASSWORD_LAST_SENT] ?: 0L }
+    val forgotPasswordDailyCount: Flow<Int> = context.dataStore.data.map { it[Keys.FORGOT_PASSWORD_DAILY_COUNT] ?: 0 }
 
     suspend fun setOnboardingComplete(name: String) = context.dataStore.edit {
         it[Keys.HAS_COMPLETED_ONBOARDING] = true
@@ -106,6 +111,21 @@ class AppPreferences(@ApplicationContext private val context: Context) {
     suspend fun setCustomAvatarUri(uri: String) = context.dataStore.edit { it[Keys.CUSTOM_AVATAR_URI] = uri }
     suspend fun setPendingDeletionTimestamp(ts: Long) = context.dataStore.edit { it[Keys.PENDING_DELETION_TIMESTAMP] = ts }
     suspend fun clearPendingDeletion() = context.dataStore.edit { it.remove(Keys.PENDING_DELETION_TIMESTAMP) }
+    suspend fun setForgotPasswordLastSent(ts: Long) = context.dataStore.edit { it[Keys.FORGOT_PASSWORD_LAST_SENT] = ts }
+    suspend fun setForgotPasswordDailyCount(count: Int) {
+        val today = java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.getDefault()).format(java.util.Date())
+        context.dataStore.edit {
+            it[Keys.FORGOT_PASSWORD_DAILY_COUNT] = count
+            it[Keys.FORGOT_PASSWORD_DAILY_DATE] = today
+        }
+    }
+    suspend fun getForgotPasswordDailyCount(): Int {
+        val prefs = context.dataStore.data.first()
+        val count = prefs[Keys.FORGOT_PASSWORD_DAILY_COUNT] ?: 0
+        val date = prefs[Keys.FORGOT_PASSWORD_DAILY_DATE] ?: ""
+        val today = java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.getDefault()).format(java.util.Date())
+        return if (date != today) 0 else count
+    }
 
     suspend fun saveAiRegenerationCount(count: Int) {
         val today = java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.getDefault()).format(java.util.Date())

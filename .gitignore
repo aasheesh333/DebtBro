@@ -13,3 +13,13 @@ captures/
 .jdks/
 .android-sdk/
 .gradle-user/
+.playwright-mcp/
+.superpowers/brainstorm/
+.superpowers/plans/
+.superpowers/specs/
+.superpowers/review/
+.superpowers/refactor/
+.superpowers/test/
+.superpowers/trace/
+.superpowers/cleanup/
+.superpowers/fix/*
