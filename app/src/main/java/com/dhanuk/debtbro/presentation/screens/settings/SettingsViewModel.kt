@@ -16,6 +16,7 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.stateIn
@@ -49,6 +50,18 @@ data class NotificationSettingsState(
     val notifyDailyReminder: Boolean = true,
     val notifyWeeklySummary: Boolean = true,
     val notifyPaymentAlerts: Boolean = true
+)
+
+private data class SyncStateValue(
+    val lastSynced: Long = 0L,
+    val isSyncing: Boolean = false,
+    val syncMessage: String = ""
+)
+
+private data class DeletionStateValue(
+    val signingOut: Boolean = false,
+    val deleting: Boolean = false,
+    val pendingTs: Long = 0L
 )
 
 data class SettingsUiState(
@@ -122,19 +135,25 @@ class SettingsViewModel @Inject constructor(
         prefs.roastLevel,
         prefs.defaultCurrency,
         prefs.customAvatarUri,
-        prefs.selectedLanguage,
-        prefs.exportFormat,
-        prefs.themeMode
-    ) { userName, roastLevel, currency, customAvatarUri, selectedLanguage, exportFormat, themeMode ->
+        prefs.selectedLanguage
+    ) { userName, roastLevel, currency, customAvatarUri, selectedLanguage ->
         AccountSettingsState(
             userName = userName,
             roastLevel = roastLevel,
             currency = currency,
             customAvatarUri = customAvatarUri,
             selectedLanguage = selectedLanguage,
-            exportFormat = exportFormat,
-            themeMode = themeMode
+            exportFormat = "",
+            themeMode = ""
         )
+    }
+
+    private val accountSettingsStateFull = combine(
+        accountSettingsState,
+        prefs.exportFormat,
+        prefs.themeMode
+    ) { account, exportFormat, themeMode ->
+        account.copy(exportFormat = exportFormat, themeMode = themeMode)
     }
 
     private val googleSignInState = combine(
@@ -175,18 +194,35 @@ class SettingsViewModel @Inject constructor(
         )
     }
 
-    val state: StateFlow<SettingsUiState> = combine(
-        accountSettingsState,
-        googleSignInState,
-        displaySettingsState,
-        notificationSettingsState,
+    private val syncState = combine(
         prefs.lastSyncedAt,
         isSyncing,
-        syncMessage,
+        syncMessage
+    ) { lastSynced, syncing, syncMsg ->
+        SyncStateValue(lastSynced, syncing, syncMsg)
+    }
+
+    private val deletionState = combine(
         isSigningOut,
         isDeletingAccount,
         prefs.pendingDeletionTimestamp
-    ) { account, google, display, notification, lastSynced, syncing, syncMsg, signingOut, deleting, pendingTs ->
+    ) { signingOut, deleting, pendingTs ->
+        DeletionStateValue(signingOut, deleting, pendingTs)
+    }
+
+    val state: StateFlow<SettingsUiState> = combine(
+        accountSettingsStateFull,
+        googleSignInState,
+        displaySettingsState,
+        notificationSettingsState,
+        syncState
+    ) { account, google, display, notification, sync ->
+        Pair(account, google) to Pair(Pair(display, notification), sync)
+    }.combine(deletionState) { pairs, deletion ->
+        val (accountGoogle, displayNotifSync) = pairs
+        val (account, google) = accountGoogle
+        val (displayNotif, sync) = displayNotifSync
+        val (display, notification) = displayNotif
         SettingsUiState(
             userName = account.userName,
             roastLevel = account.roastLevel,
@@ -205,12 +241,12 @@ class SettingsViewModel @Inject constructor(
             notifyDailyReminder = notification.notifyDailyReminder,
             notifyWeeklySummary = notification.notifyWeeklySummary,
             notifyPaymentAlerts = notification.notifyPaymentAlerts,
-            lastSynced = lastSynced,
-            isSyncing = syncing,
-            syncMessage = syncMsg,
-            isSigningOut = signingOut,
-            isDeletingAccount = deleting,
-            pendingDeletionTimestamp = pendingTs,
+            lastSynced = sync.lastSynced,
+            isSyncing = sync.isSyncing,
+            syncMessage = sync.syncMessage,
+            isSigningOut = deletion.signingOut,
+            isDeletingAccount = deletion.deleting,
+            pendingDeletionTimestamp = deletion.pendingTs,
             linkedProviders = auth.linkedProviders()
         )
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), SettingsUiState())
