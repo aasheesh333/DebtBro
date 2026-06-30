@@ -19,14 +19,13 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.dhanuk.debtbro.data.db.entity.DebtEntity
 import com.dhanuk.debtbro.presentation.theme.UITokens
 import com.dhanuk.debtbro.presentation.theme.DangerRed
-import com.dhanuk.debtbro.presentation.theme.PrimaryGreen
+import com.dhanuk.debtbro.presentation.theme.LocalExtraColors
 import com.dhanuk.debtbro.presentation.theme.WarningAmber
 import com.dhanuk.debtbro.util.daysUntil
 import com.dhanuk.debtbro.util.formatCurrency
@@ -44,10 +43,10 @@ fun DebtCard(debt: DebtEntity, isSignedIn: Boolean, onClick: () -> Unit, modifie
                 Row(horizontalArrangement = Arrangement.spacedBy(UITokens.SpaceXS), verticalAlignment = Alignment.CenterVertically) {
                     StatusPill(debt.status)
                     debt.dueDate?.let { DuePill(it) }
-                    if (isSignedIn) Box(Modifier.size(UITokens.SpaceXS).background(if (debt.isSynced) PrimaryGreen else DangerRed, CircleShape))
+                    if (isSignedIn) Box(Modifier.size(UITokens.SpaceXS).background(if (debt.isSynced) MaterialTheme.colorScheme.primary else DangerRed, CircleShape))
                 }
             }
-            Text(formatCurrency(remaining, debt.currency), color = if (debt.type == "THEY_OWE_ME") PrimaryGreen else DangerRed, fontWeight = FontWeight.ExtraBold)
+            Text(formatCurrency(remaining, debt.currency), color = if (debt.type == "THEY_OWE_ME") MaterialTheme.colorScheme.primary else DangerRed, fontWeight = FontWeight.ExtraBold)
         }
     }
 }
@@ -60,10 +59,11 @@ private fun StatusPill(status: String) {
 @Composable
 private fun DuePill(dueDate: Long) {
     val days = dueDate.daysUntil()
+    val extra = LocalExtraColors.current
     val color = when {
         days < 0 -> DangerRed
         days <= 2 -> WarningAmber
-        else -> Color.Gray
+        else -> extra.subtitleGray
     }
     Text(if (days < 0) "Overdue ${-days}d" else dueDate.toReadableDate(), Modifier.background(color.copy(alpha = 0.16f), RoundedCornerShape(50)).padding(horizontal = 8.dp, vertical = 3.dp), color = color, style = MaterialTheme.typography.labelSmall)
 }

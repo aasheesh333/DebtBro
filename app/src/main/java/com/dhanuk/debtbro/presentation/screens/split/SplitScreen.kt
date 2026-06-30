@@ -28,9 +28,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import androidx.compose.ui.graphics.Color
 import com.dhanuk.debtbro.presentation.theme.LocalExtraColors
-import com.dhanuk.debtbro.presentation.theme.PrimaryGreen
 import com.dhanuk.debtbro.presentation.theme.UITokens
 import com.dhanuk.debtbro.util.formatCurrency
 import com.dhanuk.debtbro.util.LocalizedString
@@ -76,7 +74,7 @@ fun SplitScreen(viewModel: SplitViewModel = hiltViewModel()) {
                         placeholder = { Text(LocalizedString.get("goa_trip_placeholder")) },
                         modifier = Modifier.fillMaxWidth(),
                         colors = OutlinedTextFieldDefaults.colors(
-                            focusedBorderColor = PrimaryGreen,
+                            focusedBorderColor = MaterialTheme.colorScheme.primary,
                             unfocusedBorderColor = MaterialTheme.colorScheme.outline
                         )
                     )
@@ -86,14 +84,14 @@ fun SplitScreen(viewModel: SplitViewModel = hiltViewModel()) {
                         onValueChange = { if (it.all { c -> c.isDigit() || c == '.' }) viewModel.updateTotal(it) },
                         label = { Text(LocalizedString.get("total_amount")) },
                         placeholder = { Text("0.00") },
-                        prefix = { Text(state.currencySymbol, color = PrimaryGreen, fontWeight = FontWeight.Bold) },
+                        prefix = { Text(state.currencySymbol, color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold) },
                         modifier = Modifier.fillMaxWidth(),
                         keyboardOptions = KeyboardOptions(
                             keyboardType = KeyboardType.Decimal,
                             imeAction = ImeAction.Next
                         ),
                         colors = OutlinedTextFieldDefaults.colors(
-                            focusedBorderColor = PrimaryGreen,
+                            focusedBorderColor = MaterialTheme.colorScheme.primary,
                             unfocusedBorderColor = MaterialTheme.colorScheme.outline
                         )
                     )
@@ -137,7 +135,7 @@ fun SplitScreen(viewModel: SplitViewModel = hiltViewModel()) {
                     // Result
                     Card(
                         modifier = Modifier.fillMaxWidth(),
-                        colors = CardDefaults.cardColors(containerColor = PrimaryGreen.copy(alpha = 0.1f))
+                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.1f))
                     ) {
                         Column(
                             modifier = Modifier.padding(16.dp),
@@ -146,7 +144,7 @@ fun SplitScreen(viewModel: SplitViewModel = hiltViewModel()) {
                             Text(LocalizedString.get("per_person"), color = extra.subtitleGray, fontSize = UITokens.FontCaption)
                             Text(
                                 formatCurrency(state.perPerson),
-                                color = PrimaryGreen,
+                                color = MaterialTheme.colorScheme.primary,
                                 fontSize = 32.sp,
                                 fontWeight = FontWeight.ExtraBold
                             )
@@ -163,14 +161,14 @@ fun SplitScreen(viewModel: SplitViewModel = hiltViewModel()) {
                         modifier = Modifier
                             .fillMaxWidth()
                             .height(UITokens.ButtonHeight),
-                        colors = ButtonDefaults.buttonColors(containerColor = PrimaryGreen),
+                        colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
                         shape = UITokens.ShapeMedium,
                         enabled = state.totalAmount.isNotEmpty() && state.participants.size > 1
                     ) {
                         if (state.isLoading) {
-                            CircularProgressIndicator(color = Color.Black, modifier = Modifier.size(UITokens.IconLarge))
+                            CircularProgressIndicator(color = MaterialTheme.colorScheme.onPrimary, modifier = Modifier.size(UITokens.IconLarge))
                         } else {
-                            Text(LocalizedString.get("create_split"), color = Color.Black, fontWeight = FontWeight.Bold)
+                            Text(LocalizedString.get("create_split"), color = MaterialTheme.colorScheme.onPrimary, fontWeight = FontWeight.Bold)
                         }
                     }
 
@@ -236,13 +234,13 @@ fun AddParticipantRow(
             singleLine = true,
             trailingIcon = {
                 IconButton(onClick = onPickContact) {
-                    Icon(Icons.Default.ContactPage, LocalizedString.get("pick_contact"), tint = PrimaryGreen)
+                    Icon(Icons.Default.ContactPage, LocalizedString.get("pick_contact"), tint = MaterialTheme.colorScheme.primary)
                 }
             },
             keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
             keyboardActions = KeyboardActions(onDone = { onAdd() }),
             colors = OutlinedTextFieldDefaults.colors(
-                focusedBorderColor = PrimaryGreen,
+                focusedBorderColor = MaterialTheme.colorScheme.primary,
                 unfocusedBorderColor = MaterialTheme.colorScheme.outline
             )
         )
@@ -251,9 +249,9 @@ fun AddParticipantRow(
             modifier = Modifier
                 .size(52.dp)
                 .clip(UITokens.ShapeMedium)
-                .background(PrimaryGreen)
+                .background(MaterialTheme.colorScheme.primary)
         ) {
-            Icon(Icons.Default.Add, LocalizedString.get("add_person"), tint = Color.Black)
+            Icon(Icons.Default.Add, LocalizedString.get("add_person"), tint = MaterialTheme.colorScheme.onPrimary)
         }
     }
 }
@@ -269,7 +267,7 @@ fun SplitItemCard(split: com.dhanuk.debtbro.data.db.entity.SplitEntity, onGetAi:
         Column(Modifier.padding(UITokens.CardInnerPadding), verticalArrangement = Arrangement.spacedBy(UITokens.SpaceXS)) {
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                 Text(split.title, color = MaterialTheme.colorScheme.onSurface, fontWeight = FontWeight.Bold, fontSize = 16.sp)
-                Text(formatCurrency(split.totalAmount), color = PrimaryGreen, fontWeight = FontWeight.Bold)
+                Text(formatCurrency(split.totalAmount), color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold)
             }
             Text(
                 "${formatCurrency(split.perPersonAmount)} ${LocalizedString.get("each")}",
@@ -285,14 +283,14 @@ fun SplitItemCard(split: com.dhanuk.debtbro.data.db.entity.SplitEntity, onGetAi:
                         .background(MaterialTheme.colorScheme.surfaceVariant)
                     .padding(UITokens.SpaceXS)
                 ) {
-                    Text("🤖 ${split.aiSummary}", color = Color.LightGray, fontSize = UITokens.FontCaption)
+                    Text("🤖 ${split.aiSummary}", color = extra.subtitleGray, fontSize = UITokens.FontCaption)
                 }
             }
 
             Row(horizontalArrangement = Arrangement.spacedBy(UITokens.SpaceXS), modifier = Modifier.padding(top = UITokens.SpaceTiny)) {
                 TextButton(
                     onClick = { onGetAi(split) },
-                    colors = ButtonDefaults.textButtonColors(contentColor = PrimaryGreen)
+                    colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.primary)
                 ) {
                     Icon(Icons.Default.AutoAwesome, LocalizedString.get("ai_take"), modifier = Modifier.size(UITokens.IconSmall))
                     Spacer(Modifier.width(UITokens.SpaceTiny))
@@ -301,7 +299,7 @@ fun SplitItemCard(split: com.dhanuk.debtbro.data.db.entity.SplitEntity, onGetAi:
 
                 TextButton(
                     onClick = { onCreateDebts(split) },
-                    colors = ButtonDefaults.textButtonColors(contentColor = PrimaryGreen)
+                    colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.primary)
                 ) {
                     Icon(Icons.Default.LibraryAdd, LocalizedString.get("create_debts"), modifier = Modifier.size(UITokens.IconSmall))
                     Spacer(Modifier.width(UITokens.SpaceTiny))
@@ -352,18 +350,18 @@ fun ContactPickerBottomSheet(
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(UITokens.SpaceMedium)
         ) {
-            Icon(Icons.Default.ContactPage, LocalizedString.get("select_contact"), modifier = Modifier.size(UITokens.IconXXL), tint = PrimaryGreen)
+            Icon(Icons.Default.ContactPage, LocalizedString.get("select_contact"), modifier = Modifier.size(UITokens.IconXXL), tint = MaterialTheme.colorScheme.primary)
             Text(LocalizedString.get("select_contact"), color = MaterialTheme.colorScheme.onSurface, fontSize = UITokens.FontTitle, fontWeight = FontWeight.Bold)
             Text(LocalizedString.get("pick_from_contacts_desc"), color = extra.subtitleGray, textAlign = TextAlign.Center)
             Button(
                 onClick = { contactPickerLauncher.launch(null) },
                 modifier = Modifier.fillMaxWidth().height(54.dp),
-                colors = ButtonDefaults.buttonColors(containerColor = PrimaryGreen),
+                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
                 shape = UITokens.ShapeMedium
             ) {
-                Icon(Icons.Default.Contacts, LocalizedString.get("pick_contact"), tint = Color.Black)
+                Icon(Icons.Default.Contacts, LocalizedString.get("pick_contact"), tint = MaterialTheme.colorScheme.onPrimary)
                 Spacer(Modifier.width(8.dp))
-                Text(LocalizedString.get("pick_contact"), color = Color.Black, fontWeight = FontWeight.Bold)
+                Text(LocalizedString.get("pick_contact"), color = MaterialTheme.colorScheme.onPrimary, fontWeight = FontWeight.Bold)
             }
         }
     }

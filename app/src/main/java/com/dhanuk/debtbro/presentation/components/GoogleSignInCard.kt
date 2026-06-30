@@ -34,7 +34,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
 import com.dhanuk.debtbro.presentation.theme.LocalExtraColors
-import com.dhanuk.debtbro.presentation.theme.PrimaryGreen
 import com.dhanuk.debtbro.presentation.theme.UITokens
 import com.dhanuk.debtbro.util.LocalizedString
 import com.dhanuk.debtbro.util.toTimeAgo
@@ -77,7 +76,7 @@ fun GoogleSignInCard(
                         modifier = Modifier
                             .size(UITokens.AvatarMedium)
                             .clip(CircleShape)
-                            .background(PrimaryGreen.copy(alpha = 0.15f)),
+                            .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.15f)),
                         contentAlignment = Alignment.Center
                     ) {
                         val avatarUri = customAvatarUri.ifBlank { userPhoto }
@@ -91,7 +90,7 @@ fun GoogleSignInCard(
                         } else {
                             Text(
                                 name.take(1).ifBlank { "?" },
-                                color = PrimaryGreen,
+                                color = MaterialTheme.colorScheme.primary,
                                 fontWeight = FontWeight.Bold,
                                 fontSize = 18.sp
                             )
@@ -156,7 +155,7 @@ fun GoogleSignInCard(
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                         TextButton(onClick = onCancelDeletion) {
-                            Text(LocalizedString.get("cancel_deletion"), color = PrimaryGreen, fontSize = UITokens.FontCaption)
+                            Text(LocalizedString.get("cancel_deletion"), color = MaterialTheme.colorScheme.primary, fontSize = UITokens.FontCaption)
                         }
                     }
                 }
@@ -185,7 +184,7 @@ fun GoogleSignInCard(
                 ) {
                     if ("password" !in linkedProviders) {
                         TextButton(onClick = onLinkEmail) {
-                            Text(LocalizedString.get("add_email_login"), fontSize = UITokens.FontCaption, color = PrimaryGreen)
+                            Text(LocalizedString.get("add_email_login"), fontSize = UITokens.FontCaption, color = MaterialTheme.colorScheme.primary)
                         }
                     }
                     Spacer(modifier = Modifier.weight(1f))

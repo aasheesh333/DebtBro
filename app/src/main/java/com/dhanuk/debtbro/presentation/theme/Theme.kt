@@ -29,8 +29,8 @@ private val DarkColors = darkColorScheme(
 )
 
 private val LightColors = lightColorScheme(
-    primary = PrimaryGreen,
-    onPrimary = Color.Black,
+    primary = BrandPrimaryLight,
+    onPrimary = Color.White,
     primaryContainer = SurfaceVariantLight,
     onPrimaryContainer = OnSurfaceLight,
     secondary = PrimaryGreenDark,
@@ -40,7 +40,7 @@ private val LightColors = lightColorScheme(
     onSurface = OnSurfaceLight,
     surfaceVariant = SurfaceVariantLight,
     onSurfaceVariant = SubtitleGrayLight,
-    surfaceTint = PrimaryGreen,
+    surfaceTint = BrandPrimaryLight,
     outline = OutlineLight,
     outlineVariant = DividerLight,
     error = DangerRedLight,
@@ -74,7 +74,7 @@ val LocalExtraColors = staticCompositionLocalOf {
 fun debtBroExtraColors(isDark: Boolean = isSystemInDarkTheme()): DebtBroExtraColors = if (isDark) {
     DebtBroExtraColors(SubtitleGrayDark, DividerDark, CardInnerDark, PrimaryGreen, DangerRed, WarningAmber)
 } else {
-    DebtBroExtraColors(SubtitleGrayLight, DividerLight, CardInnerLight, PrimaryGreen, DangerRedLight, WarningAmber)
+    DebtBroExtraColors(SubtitleGrayLight, DividerLight, CardInnerLight, BrandPrimaryLight, DangerRedLight, WarningAmber)
 }
 
 @Composable

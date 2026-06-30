@@ -36,7 +36,6 @@ import com.dhanuk.debtbro.presentation.components.ConfettiOverlay
 import com.dhanuk.debtbro.presentation.components.EmptyStateView
 import com.dhanuk.debtbro.presentation.components.LoadingDotsIndicator
 import com.dhanuk.debtbro.presentation.theme.DangerRed
-import com.dhanuk.debtbro.presentation.theme.PrimaryGreen
 import com.dhanuk.debtbro.presentation.theme.LocalExtraColors
 import com.dhanuk.debtbro.presentation.theme.UITokens
 import com.dhanuk.debtbro.util.copyToClipboard
@@ -161,7 +160,7 @@ fun DebtDetailScreen(onBack: () -> Unit, viewModel: DebtDetailViewModel = hiltVi
                         )
                         Text(
                             formatCurrency(remaining, d.currency),
-                            color = if (remaining > 0) (if (d.type == "THEY_OWE_ME") PrimaryGreen else DangerRed) else MaterialTheme.colorScheme.onSurface,
+                            color = if (remaining > 0) (if (d.type == "THEY_OWE_ME") MaterialTheme.colorScheme.primary else DangerRed) else MaterialTheme.colorScheme.onSurface,
                             fontSize = 42.sp,
                             fontWeight = FontWeight.ExtraBold
                         )
@@ -171,7 +170,7 @@ fun DebtDetailScreen(onBack: () -> Unit, viewModel: DebtDetailViewModel = hiltVi
                         LinearProgressIndicator(
                             progress = progress,
                             modifier = Modifier.fillMaxWidth().height(8.dp).clip(CircleShape),
-                            color = PrimaryGreen,
+                            color = MaterialTheme.colorScheme.primary,
                             trackColor = MaterialTheme.colorScheme.surface
                         )
                         
@@ -197,23 +196,23 @@ fun DebtDetailScreen(onBack: () -> Unit, viewModel: DebtDetailViewModel = hiltVi
                         Button(
                             onClick = { viewModel.showAddPaymentSheet.value = true },
                             modifier = Modifier.weight(1f).height(UITokens.ButtonHeight),
-                            colors = ButtonDefaults.buttonColors(containerColor = PrimaryGreen),
+                            colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
                             shape = UITokens.ShapeMedium,
                             enabled = remaining > 0
                         ) {
-                            Icon(Icons.Default.Add, contentDescription = LocalizedString.get("add_payment"), tint = Color.Black)
-                            Spacer(Modifier.width(8.dp))
-                            Text(LocalizedString.get("add_payment"), color = Color.Black, fontWeight = FontWeight.Bold)
+                            Icon(Icons.Default.Add, contentDescription = LocalizedString.get("add_payment"), tint = MaterialTheme.colorScheme.onPrimary)
+                            Spacer(Modifier.width(UITokens.SpaceXS))
+                            Text(LocalizedString.get("add_payment"), color = MaterialTheme.colorScheme.onPrimary, fontWeight = FontWeight.Bold)
                         }
                         
                         OutlinedButton(
                             onClick = { viewModel.markSettled() },
                             modifier = Modifier.weight(1f).height(UITokens.ButtonHeight),
                             shape = UITokens.ShapeMedium,
-                            border = BorderStroke(1.dp, if (remaining > 0) PrimaryGreen else MaterialTheme.colorScheme.outline),
+                            border = BorderStroke(1.dp, if (remaining > 0) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline),
                             enabled = remaining > 0
                         ) {
-                            Text(LocalizedString.get("settle_all"), color = if (remaining > 0) PrimaryGreen else extra.subtitleGray)
+                            Text(LocalizedString.get("settle_all"), color = if (remaining > 0) MaterialTheme.colorScheme.primary else extra.subtitleGray)
                         }
                     }
                 }
@@ -235,8 +234,8 @@ fun DebtDetailScreen(onBack: () -> Unit, viewModel: DebtDetailViewModel = hiltVi
                                             onClick = { viewModel.setRoastLevel(level) },
                                             label = { Text(level, fontSize = 10.sp) },
                                             colors = FilterChipDefaults.filterChipColors(
-                                                selectedContainerColor = PrimaryGreen,
-                                                selectedLabelColor = Color.Black
+                                                selectedContainerColor = MaterialTheme.colorScheme.primary,
+                                                selectedLabelColor = MaterialTheme.colorScheme.onPrimary
                                             )
                                         )
         }
@@ -251,7 +250,7 @@ fun DebtDetailScreen(onBack: () -> Unit, viewModel: DebtDetailViewModel = hiltVi
                                     .padding(UITokens.CardInnerPadding)
                             ) {
                                 if (isGenerating) {
-                                    LoadingDotsIndicator(color = PrimaryGreen)
+                                    LoadingDotsIndicator(color = MaterialTheme.colorScheme.primary)
                                 } else {
                                     val msg = aiMessage.ifBlank { d.aiRoastGenerated ?: LocalizedString.get("tap_refresh") }
                                     Text(
@@ -268,7 +267,7 @@ fun DebtDetailScreen(onBack: () -> Unit, viewModel: DebtDetailViewModel = hiltVi
                                           val activity = context.findActivity()
                                           viewModel.generateRoast(activity)
                                       },
-                                      colors = ButtonDefaults.buttonColors(containerColor = PrimaryGreen),
+                                      colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
                                       modifier = Modifier.weight(1f)
                                   ) {
                                       if (remainingFree > 0) {
@@ -331,7 +330,7 @@ fun DebtDetailScreen(onBack: () -> Unit, viewModel: DebtDetailViewModel = hiltVi
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             Column(Modifier.weight(1f)) {
-                                Text(formatCurrency(payment.amount, d.currency), color = PrimaryGreen, fontWeight = FontWeight.Bold)
+                                Text(formatCurrency(payment.amount, d.currency), color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold)
                                 Text(payment.paidAt.toReadableDate(), color = extra.subtitleGray, fontSize = UITokens.FontCaption)
                                 if (!payment.note.isNullOrBlank()) {
                                     Text(payment.note, color = MaterialTheme.colorScheme.onSurface, fontSize = UITokens.FontSmall, modifier = Modifier.padding(top = UITokens.SpaceTiny))
@@ -440,7 +439,7 @@ fun DebtDetailScreen(onBack: () -> Unit, viewModel: DebtDetailViewModel = hiltVi
                             viewModel.dismissRewardAd()
                             viewModel.generateRoast(context.findActivity())
                         }) {
-                            Text(LocalizedString.get("watch_ad"), color = PrimaryGreen)
+                            Text(LocalizedString.get("watch_ad"), color = MaterialTheme.colorScheme.primary)
                         }
                     },
                     dismissButton = {
@@ -458,11 +457,11 @@ fun DebtDetailScreen(onBack: () -> Unit, viewModel: DebtDetailViewModel = hiltVi
              onDismissRequest = {},
              title = { Text("Preparing image...", color = MaterialTheme.colorScheme.onSurface) },
              text = {
-                 Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                     LinearProgressIndicator(
-                         modifier = Modifier.fillMaxWidth().height(6.dp).clip(RoundedCornerShape(3.dp)),
-                         color = PrimaryGreen,
-                         trackColor = MaterialTheme.colorScheme.outline
+                     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                         LinearProgressIndicator(
+                             modifier = Modifier.fillMaxWidth().height(6.dp).clip(RoundedCornerShape(3.dp)),
+                             color = MaterialTheme.colorScheme.primary,
+                             trackColor = MaterialTheme.colorScheme.outline
                      )
                      Text("${seconds}s elapsed — rendering your card", color = MaterialTheme.colorScheme.onSurfaceVariant)
                  }
@@ -515,14 +514,14 @@ fun AddPaymentDialog(remaining: Double, currency: String, onDismiss: () -> Unit,
                         Text("Exceeds remaining balance", color = MaterialTheme.colorScheme.error)
                     }
                 },
-                colors = OutlinedTextFieldDefaults.colors(focusedBorderColor = PrimaryGreen)
+                colors = OutlinedTextFieldDefaults.colors(focusedBorderColor = MaterialTheme.colorScheme.primary)
             )
             OutlinedTextField(
                 value = note,
                 onValueChange = { note = it },
                 label = { Text(LocalizedString.get("note_optional")) },
                 modifier = Modifier.fillMaxWidth(),
-                colors = OutlinedTextFieldDefaults.colors(focusedBorderColor = PrimaryGreen)
+                colors = OutlinedTextFieldDefaults.colors(focusedBorderColor = MaterialTheme.colorScheme.primary)
             )
             Button(
                 onClick = {
@@ -533,9 +532,9 @@ fun AddPaymentDialog(remaining: Double, currency: String, onDismiss: () -> Unit,
                     }
                 },
                 modifier = Modifier.fillMaxWidth().height(UITokens.ButtonHeight),
-                colors = ButtonDefaults.buttonColors(containerColor = PrimaryGreen)
+                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
             ) {
-                Text(LocalizedString.get("save_payment"), color = Color.Black, fontWeight = FontWeight.Bold)
+                Text(LocalizedString.get("save_payment"), color = MaterialTheme.colorScheme.onPrimary, fontWeight = FontWeight.Bold)
             }
         }
     }
@@ -563,9 +562,9 @@ fun EditDebtDialog(debt: DebtEntity, onDismiss: () -> Unit, onSave: (String, Dou
                     onSave(name, amt, desc, emoji)
                 },
                 modifier = Modifier.fillMaxWidth().height(UITokens.ButtonHeight),
-                colors = ButtonDefaults.buttonColors(containerColor = PrimaryGreen)
+                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
             ) {
-                Text(LocalizedString.get("update_debt"), color = Color.Black, fontWeight = FontWeight.Bold)
+                Text(LocalizedString.get("update_debt"), color = MaterialTheme.colorScheme.onPrimary, fontWeight = FontWeight.Bold)
             }
         }
     }
@@ -599,11 +598,11 @@ fun QuoteEditDialog(
                     onValueChange = { text = it },
                     modifier = Modifier.fillMaxWidth().heightIn(min = 120.dp),
                     colors = OutlinedTextFieldDefaults.colors(
-                        focusedBorderColor = PrimaryGreen,
+                        focusedBorderColor = MaterialTheme.colorScheme.primary,
                         unfocusedBorderColor = MaterialTheme.colorScheme.outline,
                         focusedTextColor = MaterialTheme.colorScheme.onSurface,
                         unfocusedTextColor = MaterialTheme.colorScheme.onSurface,
-                        cursorColor = PrimaryGreen
+                        cursorColor = MaterialTheme.colorScheme.primary
                     ),
                     shape = UITokens.ShapeMedium,
                     maxLines = 6
@@ -613,10 +612,10 @@ fun QuoteEditDialog(
         confirmButton = {
             Button(
                 onClick = { onConfirm(text) },
-                colors = ButtonDefaults.buttonColors(containerColor = PrimaryGreen),
+                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
                 shape = UITokens.ShapeMedium
             ) {
-                Text(LocalizedString.get("generate_image"), color = Color.Black, fontWeight = FontWeight.Bold)
+                Text(LocalizedString.get("generate_image"), color = MaterialTheme.colorScheme.onPrimary, fontWeight = FontWeight.Bold)
             }
         },
         dismissButton = {

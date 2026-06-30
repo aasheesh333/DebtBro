@@ -27,7 +27,6 @@ import com.dhanuk.debtbro.presentation.components.GoogleSignInCard
 import com.dhanuk.debtbro.presentation.components.LanguageSelectorGrid
 import com.dhanuk.debtbro.presentation.components.SUPPORTED_LANGUAGES
 import com.dhanuk.debtbro.presentation.theme.LocalExtraColors
-import com.dhanuk.debtbro.presentation.theme.PrimaryGreen
 import com.dhanuk.debtbro.presentation.theme.UITokens
 import com.dhanuk.debtbro.util.LocalizedString
 
@@ -103,7 +102,7 @@ fun SettingsScreen(viewModel: SettingsViewModel = hiltViewModel()) {
                                     onClick = { viewModel.setThemeMode(mode) },
                                     label = { Text(label, fontSize = UITokens.FontCaption) },
                                     colors = FilterChipDefaults.filterChipColors(
-                                        selectedContainerColor = PrimaryGreen,
+                                        selectedContainerColor = MaterialTheme.colorScheme.primary,
                                         selectedLabelColor = MaterialTheme.colorScheme.onPrimary
                                     )
                                 )
@@ -127,7 +126,7 @@ fun SettingsScreen(viewModel: SettingsViewModel = hiltViewModel()) {
                             label = { Text(LocalizedString.get("display_name")) },
                             modifier = Modifier.fillMaxWidth(),
                             colors = OutlinedTextFieldDefaults.colors(
-                                focusedBorderColor = PrimaryGreen,
+                                focusedBorderColor = MaterialTheme.colorScheme.primary,
                                 unfocusedBorderColor = MaterialTheme.colorScheme.outline
                             )
                         )
@@ -140,7 +139,7 @@ fun SettingsScreen(viewModel: SettingsViewModel = hiltViewModel()) {
                                     onClick = { viewModel.setCurrency(c) },
                                     label = { Text(c) },
                                     colors = FilterChipDefaults.filterChipColors(
-                                        selectedContainerColor = PrimaryGreen,
+                                        selectedContainerColor = MaterialTheme.colorScheme.primary,
                                         selectedLabelColor = MaterialTheme.colorScheme.onPrimary
                                     )
                                 )
@@ -155,7 +154,7 @@ fun SettingsScreen(viewModel: SettingsViewModel = hiltViewModel()) {
                                     onClick = { viewModel.setRoastLevel(r) },
                                     label = { Text(r) },
                                     colors = FilterChipDefaults.filterChipColors(
-                                        selectedContainerColor = PrimaryGreen,
+                                        selectedContainerColor = MaterialTheme.colorScheme.primary,
                                         selectedLabelColor = MaterialTheme.colorScheme.onPrimary
                                     )
                                 )
@@ -236,7 +235,7 @@ fun SettingsScreen(viewModel: SettingsViewModel = hiltViewModel()) {
                             modifier = Modifier.size(UITokens.AvatarMedium).clip(CircleShape).background(MaterialTheme.colorScheme.surfaceVariant),
                             contentAlignment = Alignment.Center
                         ) {
-                            Icon(Icons.Default.Language, LocalizedString.get("language"), tint = PrimaryGreen)
+                            Icon(Icons.Default.Language, LocalizedString.get("language"), tint = MaterialTheme.colorScheme.primary)
                         }
                         Column(modifier = Modifier.weight(1f)) {
                             Text(LocalizedString.get("language"), color = MaterialTheme.colorScheme.onSurface, fontWeight = FontWeight.Bold)
@@ -324,7 +323,7 @@ fun SettingsScreen(viewModel: SettingsViewModel = hiltViewModel()) {
                             modifier = Modifier.size(UITokens.AvatarMedium).clip(CircleShape).background(MaterialTheme.colorScheme.surfaceVariant),
                             contentAlignment = Alignment.Center
                         ) {
-                            Icon(Icons.Default.Policy, LocalizedString.get("privacy_policy"), tint = PrimaryGreen)
+                            Icon(Icons.Default.Policy, LocalizedString.get("privacy_policy"), tint = MaterialTheme.colorScheme.primary)
                         }
                         Column(modifier = Modifier.weight(1f)) {
                             Text(LocalizedString.get("privacy_policy"), color = MaterialTheme.colorScheme.onSurface, fontWeight = FontWeight.Bold)
@@ -440,7 +439,7 @@ fun SettingsScreen(viewModel: SettingsViewModel = hiltViewModel()) {
                     if (activity != null) {
                         viewModel.signInWithGoogle(activity)
                     }
-                }) { Text(LocalizedString.get("sign_in_again"), color = PrimaryGreen) }
+                }) { Text(LocalizedString.get("sign_in_again"), color = MaterialTheme.colorScheme.primary) }
             },
             dismissButton = {
                 TextButton(onClick = { showReauthHint = false }) { Text(LocalizedString.get("cancel"), color = extra.subtitleGray) }
@@ -457,7 +456,7 @@ fun SettingsScreen(viewModel: SettingsViewModel = hiltViewModel()) {
             text = { Text(LocalizedString.get("deletion_grace_alert"), color = MaterialTheme.colorScheme.onSurfaceVariant) },
             confirmButton = {
                 TextButton(onClick = { viewModel.cancelDeletion() }) {
-                    Text(LocalizedString.get("cancel_deletion"), color = PrimaryGreen)
+                    Text(LocalizedString.get("cancel_deletion"), color = MaterialTheme.colorScheme.primary)
                 }
             },
             dismissButton = {
@@ -500,7 +499,7 @@ fun SettingsScreen(viewModel: SettingsViewModel = hiltViewModel()) {
                 TextButton(onClick = {
                     showLinkEmailDialog = false
                     viewModel.linkEmailPassword(email, password, context as Activity)
-                }) { Text(LocalizedString.get("link"), color = PrimaryGreen) }
+                }) { Text(LocalizedString.get("link"), color = MaterialTheme.colorScheme.primary) }
             },
             dismissButton = {
                 TextButton(onClick = { showLinkEmailDialog = false }) { Text(LocalizedString.get("cancel"), color = extra.subtitleGray) }
@@ -516,8 +515,8 @@ fun SectionHeader(title: String, icon: ImageVector) {
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(UITokens.SpaceXS)
     ) {
-        Icon(icon, LocalizedString.get("settings"), tint = PrimaryGreen, modifier = Modifier.size(UITokens.IconMedium))
-        Text(title, color = PrimaryGreen, fontSize = UITokens.FontBody, fontWeight = FontWeight.Bold)
+        Icon(icon, LocalizedString.get("settings"), tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(UITokens.IconMedium))
+        Text(title, color = MaterialTheme.colorScheme.primary, fontSize = UITokens.FontBody, fontWeight = FontWeight.Bold)
     }
 }
 
@@ -543,7 +542,7 @@ fun SettingsToggleItem(
             onCheckedChange = onCheckedChange,
             colors = SwitchDefaults.colors(
                 checkedThumbColor = MaterialTheme.colorScheme.onPrimary,
-                checkedTrackColor = PrimaryGreen,
+                checkedTrackColor = MaterialTheme.colorScheme.primary,
                 uncheckedThumbColor = extra.subtitleGray,
                 uncheckedTrackColor = MaterialTheme.colorScheme.outline
             )

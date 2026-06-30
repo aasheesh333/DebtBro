@@ -34,7 +34,6 @@ import com.dhanuk.debtbro.presentation.components.DebtCard
 import com.dhanuk.debtbro.presentation.theme.DangerRed
 import com.dhanuk.debtbro.presentation.theme.GoldColor
 import com.dhanuk.debtbro.presentation.theme.LocalExtraColors
-import com.dhanuk.debtbro.presentation.theme.PrimaryGreen
 import com.dhanuk.debtbro.presentation.theme.UITokens
 import com.dhanuk.debtbro.util.formatCurrency
 import com.dhanuk.debtbro.util.LocalizedString
@@ -128,7 +127,7 @@ fun DashboardScreen(
                     ActionButton(
                         LocalizedString.get("add_debt"),
                         Icons.Default.Add,
-                        PrimaryGreen,
+                        MaterialTheme.colorScheme.primary,
                         Modifier.weight(1f),
                         onAddDebtClick
                     )
@@ -171,7 +170,7 @@ fun DashboardScreen(
             state = pullRefreshState,
             modifier = Modifier.align(Alignment.TopCenter),
             backgroundColor = MaterialTheme.colorScheme.surface,
-            contentColor = PrimaryGreen
+            contentColor = MaterialTheme.colorScheme.primary
         )
     }
 
@@ -190,7 +189,7 @@ fun DashboardScreen(
                 Button(
                     onClick = { showPrompt = false; viewModel.dismissPrompt(); onSettingsClick() },
                     modifier = Modifier.fillMaxWidth().height(UITokens.ButtonHeight),
-                    colors = ButtonDefaults.buttonColors(containerColor = PrimaryGreen)
+                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
                 ) { Text(LocalizedString.get("go_to_settings"), color = MaterialTheme.colorScheme.onPrimary, fontWeight = FontWeight.Bold) }
                 TextButton(onClick = { showPrompt = false; viewModel.dismissPrompt() }) {
                     Text(LocalizedString.get("maybe_later"), color = extra.subtitleGray)
@@ -212,12 +211,12 @@ fun StatsCard(totalOwedToMe: Double, totalIOwe: Double, recoveryRate: Int) {
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                 Column {
                     Text(LocalizedString.get("total_owed_to_me"), color = extra.subtitleGray, fontSize = UITokens.FontSmall)
-                    Text(formatCurrency(totalOwedToMe), color = PrimaryGreen, fontSize = UITokens.FontDisplay, fontWeight = FontWeight.ExtraBold)
+                    Text(formatCurrency(totalOwedToMe), color = MaterialTheme.colorScheme.primary, fontSize = UITokens.FontDisplay, fontWeight = FontWeight.ExtraBold)
                 }
                     Box(
-                    modifier = Modifier.size(UITokens.AvatarLarge).clip(CircleShape).background(PrimaryGreen.copy(alpha = 0.1f)),
+                    modifier = Modifier.size(UITokens.AvatarLarge).clip(CircleShape).background(MaterialTheme.colorScheme.primary.copy(alpha = 0.1f)),
                     contentAlignment = Alignment.Center
-                ) { Icon(Icons.Default.TrendingUp, contentDescription = LocalizedString.get("total_owed_to_me"), tint = PrimaryGreen) }
+                ) { Icon(Icons.Default.TrendingUp, contentDescription = LocalizedString.get("total_owed_to_me"), tint = MaterialTheme.colorScheme.primary) }
             }
             Spacer(Modifier.height(20.dp))
             HorizontalDivider(color = extra.divider)
@@ -236,7 +235,7 @@ fun StatsCard(totalOwedToMe: Double, totalIOwe: Double, recoveryRate: Int) {
             LinearProgressIndicator(
                 progress = { recoveryRate / 100f },
                 modifier = Modifier.fillMaxWidth().height(6.dp).clip(CircleShape),
-                color = PrimaryGreen,
+                color = MaterialTheme.colorScheme.primary,
                 trackColor = extra.subtitleGray.copy(alpha = 0.2f)
             )
         }
@@ -249,7 +248,7 @@ fun ActionButton(text: String, icon: ImageVector, color: Color, modifier: Modifi
         modifier = modifier.height(56.dp).clickable { onClick() },
         shape = UITokens.ShapeLarge,
         color = MaterialTheme.colorScheme.surface,
-        border = if (color == PrimaryGreen) null else BorderStroke(1.dp, MaterialTheme.colorScheme.outline)
+        border = if (color == MaterialTheme.colorScheme.primary) null else BorderStroke(1.dp, MaterialTheme.colorScheme.outline)
     ) {
         Row(
             modifier = Modifier.fillMaxSize(),
@@ -272,7 +271,7 @@ fun SectionHeader(title: String, action: String?, onActionClick: () -> Unit = {}
     ) {
         Text(title, color = MaterialTheme.colorScheme.onSurface, fontSize = UITokens.FontSubhead, fontWeight = FontWeight.Bold)
         if (action != null) {
-            Text(action, color = PrimaryGreen, fontSize = UITokens.FontSmall, modifier = Modifier.clickable { onActionClick() })
+            Text(action, color = MaterialTheme.colorScheme.primary, fontSize = UITokens.FontSmall, modifier = Modifier.clickable { onActionClick() })
         }
     }
 }
@@ -295,7 +294,7 @@ fun LeaderboardItem(debt: com.dhanuk.debtbro.data.db.entity.DebtEntity, rank: In
             Text(debt.personEmoji, fontSize = 20.sp)
             Spacer(Modifier.width(UITokens.SpaceSmall))
             Text(debt.personName, color = MaterialTheme.colorScheme.onSurface, fontWeight = FontWeight.SemiBold, modifier = Modifier.weight(1f))
-            Text(formatCurrency(debt.amount - debt.amountPaid, debt.currency), color = PrimaryGreen, fontWeight = FontWeight.Bold)
+            Text(formatCurrency(debt.amount - debt.amountPaid, debt.currency), color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold)
         }
     }
 }

@@ -33,7 +33,6 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.dhanuk.debtbro.presentation.theme.DangerRed
 import com.dhanuk.debtbro.presentation.theme.LocalExtraColors
-import com.dhanuk.debtbro.presentation.theme.PrimaryGreen
 import com.dhanuk.debtbro.presentation.theme.UITokens
 import com.dhanuk.debtbro.util.LocalizedString
 import java.text.SimpleDateFormat
@@ -158,7 +157,7 @@ fun AddDebtBottomSheet(
                 placeholder = { Text("0") },
                 modifier = Modifier.fillMaxWidth(),
                 leadingIcon = {
-                    Text(selectedCurrency, color = PrimaryGreen, fontWeight = FontWeight.Bold)
+                    Text(selectedCurrency, color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold)
                 },
                 keyboardOptions = KeyboardOptions(
                     keyboardType = KeyboardType.Decimal,
@@ -178,13 +177,13 @@ fun AddDebtBottomSheet(
                     onClick = { debtType = "THEY_OWE_ME" },
                     modifier = Modifier.weight(1f).height(48.dp),
                     colors = ButtonDefaults.buttonColors(
-                        containerColor = if (debtType == "THEY_OWE_ME") PrimaryGreen else MaterialTheme.colorScheme.surfaceVariant
+                        containerColor = if (debtType == "THEY_OWE_ME") MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surfaceVariant
                     ),
                     shape = RoundedCornerShape(topStart = UITokens.SpaceSmall, bottomStart = UITokens.SpaceSmall)
                 ) {
                     Text(
                         "💰 They Owe Me",
-                        color = if (debtType == "THEY_OWE_ME") Color.Black else extra.subtitleGray,
+                        color = if (debtType == "THEY_OWE_ME") MaterialTheme.colorScheme.onPrimary else extra.subtitleGray,
                         fontWeight = FontWeight.SemiBold,
                         fontSize = UITokens.FontSmall
                     )
@@ -199,7 +198,7 @@ fun AddDebtBottomSheet(
                 ) {
                     Text(
                         "😅 I Owe Them",
-                        color = if (debtType == "I_OWE_THEM") Color.White else extra.subtitleGray,
+                        color = if (debtType == "I_OWE_THEM") MaterialTheme.colorScheme.onError else extra.subtitleGray,
                         fontWeight = FontWeight.SemiBold,
                         fontSize = UITokens.FontSmall
                     )
@@ -214,9 +213,9 @@ fun AddDebtBottomSheet(
                 ) {
                     Text("Avatar", color = extra.subtitleGray, fontSize = UITokens.FontSmall)
                     TextButton(onClick = { showEmojiPicker = true }) {
-                        Icon(Icons.Default.EmojiEmotions, contentDescription = LocalizedString.get("emoji"), tint = PrimaryGreen, modifier = Modifier.size(UITokens.IconSmall))
+                        Icon(Icons.Default.EmojiEmotions, contentDescription = LocalizedString.get("emoji"), tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(UITokens.IconSmall))
                         Spacer(Modifier.width(UITokens.SpaceTiny))
-                        Text("From device", color = PrimaryGreen, fontSize = UITokens.FontCaption)
+                        Text("From device", color = MaterialTheme.colorScheme.primary, fontSize = UITokens.FontCaption)
                     }
                 }
 
@@ -231,12 +230,12 @@ fun AddDebtBottomSheet(
                                 .size(52.dp)
                                 .clip(CircleShape)
                                 .background(
-                                    if (isSelected) PrimaryGreen.copy(alpha = 0.25f)
+                                    if (isSelected) MaterialTheme.colorScheme.primary.copy(alpha = 0.25f)
                                     else MaterialTheme.colorScheme.surfaceVariant
                                 )
                                 .border(
                                     width = if (isSelected) 2.5.dp else 0.dp,
-                                    color = if (isSelected) PrimaryGreen else Color.Transparent,
+                                    color = if (isSelected) MaterialTheme.colorScheme.primary else Color.Transparent,
                                     shape = CircleShape
                                 )
                                 .clickable {
@@ -252,13 +251,13 @@ fun AddDebtBottomSheet(
                                         .align(Alignment.BottomEnd)
                                         .size(UITokens.IconSmall)
                                         .clip(CircleShape)
-                                        .background(PrimaryGreen),
-                                    contentAlignment = Alignment.Center
-                                ) {
-                                    Icon(
-                                        Icons.Default.Check,
-                                        LocalizedString.get("select_language"),
-                                        tint = Color.Black,
+                                        .background(MaterialTheme.colorScheme.primary),
+                                        contentAlignment = Alignment.Center
+                                    ) {
+                                        Icon(
+                                            Icons.Default.Check,
+                                            LocalizedString.get("select_language"),
+                                            tint = MaterialTheme.colorScheme.onPrimary,
                                         modifier = Modifier.size(10.dp)
                                     )
                                 }
@@ -275,8 +274,8 @@ fun AddDebtBottomSheet(
                         onClick = { selectedCurrency = curr },
                         label = { Text(curr, fontWeight = FontWeight.Bold) },
                         colors = FilterChipDefaults.filterChipColors(
-                            selectedContainerColor = PrimaryGreen,
-                            selectedLabelColor = Color.Black,
+                            selectedContainerColor = MaterialTheme.colorScheme.primary,
+                            selectedLabelColor = MaterialTheme.colorScheme.onPrimary,
                             containerColor = MaterialTheme.colorScheme.surfaceVariant,
                             labelColor = extra.subtitleGray
                         )
@@ -312,7 +311,7 @@ fun AddDebtBottomSheet(
                             }
                         }
                         IconButton(onClick = { showDatePicker = true }) {
-                            Icon(Icons.Default.CalendarMonth, contentDescription = LocalizedString.get("select_due_date"), tint = PrimaryGreen)
+                            Icon(Icons.Default.CalendarMonth, contentDescription = LocalizedString.get("select_due_date"), tint = MaterialTheme.colorScheme.primary)
                         }
                     }
                 },
@@ -370,18 +369,18 @@ fun AddDebtBottomSheet(
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(60.dp),
-                colors = ButtonDefaults.buttonColors(containerColor = PrimaryGreen),
+                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
                 shape = UITokens.ShapeLarge,
                 enabled = !isLoading
             ) {
                 if (isLoading) {
-                    CircularProgressIndicator(color = Color.Black, modifier = Modifier.size(UITokens.IconLarge))
+                    CircularProgressIndicator(color = MaterialTheme.colorScheme.onPrimary, modifier = Modifier.size(UITokens.IconLarge))
                 } else {
-                    Icon(Icons.Default.Add, LocalizedString.get("add_debt"), tint = Color.Black)
+                    Icon(Icons.Default.Add, LocalizedString.get("add_debt"), tint = MaterialTheme.colorScheme.onPrimary)
                     Spacer(Modifier.width(UITokens.SpaceXS))
                     Text(
                         "Add Debt",
-                        color = Color.Black,
+                        color = MaterialTheme.colorScheme.onPrimary,
                         fontWeight = FontWeight.Bold,
                         fontSize = 18.sp
                     )
@@ -409,7 +408,7 @@ fun AddDebtBottomSheet(
             },
             confirmButton = {
                 TextButton(onClick = { showEmojiPicker = false }) {
-                    Text("Done", color = PrimaryGreen)
+                    Text("Done", color = MaterialTheme.colorScheme.primary)
                 }
             },
             containerColor = MaterialTheme.colorScheme.surface
@@ -426,7 +425,7 @@ fun AddDebtBottomSheet(
                 TextButton(onClick = {
                     selectedDate = datePickerState.selectedDateMillis
                     showDatePicker = false
-                }) { Text("OK", color = PrimaryGreen) }
+                }) { Text("OK", color = MaterialTheme.colorScheme.primary) }
             },
             dismissButton = {
                 TextButton(onClick = { showDatePicker = false }) {

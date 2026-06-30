@@ -34,7 +34,6 @@ import com.dhanuk.debtbro.presentation.screens.onboarding.OnboardingScreen
 import com.dhanuk.debtbro.presentation.screens.settings.SettingsScreen
 import com.dhanuk.debtbro.presentation.screens.split.SplitScreen
 import com.dhanuk.debtbro.presentation.theme.LocalExtraColors
-import com.dhanuk.debtbro.presentation.theme.PrimaryGreen
 import com.dhanuk.debtbro.util.LocalizedString
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
@@ -73,7 +72,7 @@ fun DebtBroNavGraph(appPreferences: AppPreferences) {
     
     if (startDestination == null) {
         Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-            CircularProgressIndicator(color = PrimaryGreen)
+            CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
         }
         return
     }
@@ -122,9 +121,9 @@ fun DebtBroNavGraph(appPreferences: AppPreferences) {
                             },
                             label = { Text(LocalizedString.get("nav_home")) },
                             colors = NavigationBarItemDefaults.colors(
-                                selectedIconColor = PrimaryGreen,
-                                selectedTextColor = PrimaryGreen,
-                                indicatorColor = PrimaryGreen.copy(alpha = 0.15f),
+                                selectedIconColor = MaterialTheme.colorScheme.primary,
+                                selectedTextColor = MaterialTheme.colorScheme.primary,
+                                indicatorColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.15f),
                                 unselectedIconColor = extra.subtitleGray,
                                 unselectedTextColor = extra.subtitleGray
                             )
@@ -153,9 +152,9 @@ fun DebtBroNavGraph(appPreferences: AppPreferences) {
                             },
                             label = { Text(LocalizedString.get("nav_debts")) },
                             colors = NavigationBarItemDefaults.colors(
-                                selectedIconColor = PrimaryGreen,
-                                selectedTextColor = PrimaryGreen,
-                                indicatorColor = PrimaryGreen.copy(alpha = 0.15f),
+                                selectedIconColor = MaterialTheme.colorScheme.primary,
+                                selectedTextColor = MaterialTheme.colorScheme.primary,
+                                indicatorColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.15f),
                                 unselectedIconColor = extra.subtitleGray,
                                 unselectedTextColor = extra.subtitleGray
                             )
@@ -182,9 +181,9 @@ fun DebtBroNavGraph(appPreferences: AppPreferences) {
                             },
                             label = { Text(LocalizedString.get("nav_split")) },
                             colors = NavigationBarItemDefaults.colors(
-                                selectedIconColor = PrimaryGreen,
-                                selectedTextColor = PrimaryGreen,
-                                indicatorColor = PrimaryGreen.copy(alpha = 0.15f),
+                                selectedIconColor = MaterialTheme.colorScheme.primary,
+                                selectedTextColor = MaterialTheme.colorScheme.primary,
+                                indicatorColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.15f),
                                 unselectedIconColor = extra.subtitleGray,
                                 unselectedTextColor = extra.subtitleGray
                             )
@@ -213,9 +212,9 @@ fun DebtBroNavGraph(appPreferences: AppPreferences) {
                             },
                             label = { Text(LocalizedString.get("nav_stats")) },
                             colors = NavigationBarItemDefaults.colors(
-                                selectedIconColor = PrimaryGreen,
-                                selectedTextColor = PrimaryGreen,
-                                indicatorColor = PrimaryGreen.copy(alpha = 0.15f),
+                                selectedIconColor = MaterialTheme.colorScheme.primary,
+                                selectedTextColor = MaterialTheme.colorScheme.primary,
+                                indicatorColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.15f),
                                 unselectedIconColor = extra.subtitleGray,
                                 unselectedTextColor = extra.subtitleGray
                             )

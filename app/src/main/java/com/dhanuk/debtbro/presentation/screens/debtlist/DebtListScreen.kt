@@ -28,7 +28,6 @@ import com.dhanuk.debtbro.data.db.entity.DebtEntity
 import com.dhanuk.debtbro.presentation.components.DebtCard
 import com.dhanuk.debtbro.presentation.components.EmptyStateView
 import com.dhanuk.debtbro.presentation.theme.LocalExtraColors
-import com.dhanuk.debtbro.presentation.theme.PrimaryGreen
 import com.dhanuk.debtbro.presentation.theme.UITokens
 import com.dhanuk.debtbro.util.LocalizedString
 
@@ -57,7 +56,7 @@ fun DebtListScreen(
                 Text(LocalizedString.get("all_debts"), color = MaterialTheme.colorScheme.onSurface, fontSize = UITokens.FontDisplay, fontWeight = FontWeight.Bold)
                 IconButton(
                     onClick = onAddDebtClick,
-                    modifier = Modifier.clip(CircleShape).background(PrimaryGreen)
+                    modifier = Modifier.clip(CircleShape).background(MaterialTheme.colorScheme.primary)
                 ) {
                     Icon(Icons.Default.Add, contentDescription = LocalizedString.get("add_debt"), tint = MaterialTheme.colorScheme.onPrimary)
                 }
@@ -78,7 +77,7 @@ fun DebtListScreen(
                 },
                 shape = UITokens.ShapeMedium,
                 colors = OutlinedTextFieldDefaults.colors(
-                    focusedBorderColor = PrimaryGreen,
+                    focusedBorderColor = MaterialTheme.colorScheme.primary,
                     unfocusedBorderColor = MaterialTheme.colorScheme.outline,
                     focusedContainerColor = MaterialTheme.colorScheme.surface,
                     unfocusedContainerColor = MaterialTheme.colorScheme.surface
@@ -88,11 +87,11 @@ fun DebtListScreen(
             TabRow(
                 selectedTabIndex = selectedTab,
                 containerColor = Color.Transparent,
-                contentColor = PrimaryGreen,
+                contentColor = MaterialTheme.colorScheme.primary,
                 indicator = { tabPositions ->
                     TabRowDefaults.Indicator(
                         modifier = Modifier.tabIndicatorOffset(tabPositions[selectedTab]),
-                        color = PrimaryGreen
+                        color = MaterialTheme.colorScheme.primary
                     )
                 },
                 divider = {}
@@ -113,7 +112,7 @@ fun DebtListScreen(
                         onClick = { viewModel.filterStatus.value = status },
                         label = { Text(status.lowercase().replaceFirstChar { it.uppercase() }) },
                         colors = FilterChipDefaults.filterChipColors(
-                            selectedContainerColor = PrimaryGreen,
+                            selectedContainerColor = MaterialTheme.colorScheme.primary,
                             selectedLabelColor = MaterialTheme.colorScheme.onPrimary,
                             containerColor = MaterialTheme.colorScheme.surface,
                             labelColor = extra.subtitleGray

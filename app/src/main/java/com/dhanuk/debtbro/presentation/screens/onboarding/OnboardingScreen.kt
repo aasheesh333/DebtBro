@@ -28,7 +28,6 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.dhanuk.debtbro.presentation.components.LanguageSelectorGrid
 import com.dhanuk.debtbro.presentation.theme.LocalExtraColors
-import com.dhanuk.debtbro.presentation.theme.PrimaryGreen
 import com.dhanuk.debtbro.presentation.theme.UITokens
 import com.dhanuk.debtbro.util.LocalizedString
 import kotlinx.coroutines.launch
@@ -91,7 +90,7 @@ fun OnboardingScreen(onOnboardingComplete: () -> Unit) {
                         val width by animateDpAsState(targetValue = if (isSelected) 24.dp else 8.dp, label = "dotWidth")
                         Box(
                             Modifier.height(8.dp).width(width).clip(CircleShape)
-                                .background(if (isSelected) PrimaryGreen else MaterialTheme.colorScheme.outline)
+                                .background(if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline)
                         )
                     }
                 }
@@ -107,7 +106,7 @@ fun OnboardingScreen(onOnboardingComplete: () -> Unit) {
                     },
                     enabled = pagerState.currentPage < 4 || name.isNotBlank(),
                     shape = RoundedCornerShape(28.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = PrimaryGreen, disabledContainerColor = MaterialTheme.colorScheme.outline),
+                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary, disabledContainerColor = MaterialTheme.colorScheme.outline),
                     modifier = Modifier.fillMaxWidth().height(56.dp)
                 ) {
                     Text(
@@ -131,7 +130,7 @@ fun Page1Welcome(selectedLanguage: String, onLanguageSelected: (com.dhanuk.debtb
     ) {
         Spacer(Modifier.height(32.dp))
         Text("\uD83D\uDCB8", fontSize = 80.sp)
-        Text("DebtBro", color = PrimaryGreen, fontSize = 48.sp, fontWeight = FontWeight.ExtraBold)
+        Text("DebtBro", color = MaterialTheme.colorScheme.primary, fontSize = 48.sp, fontWeight = FontWeight.ExtraBold)
         Text(LocalizedString.get("app_tagline"), color = extra.subtitleGray, fontSize = 16.sp, textAlign = TextAlign.Center)
         Spacer(Modifier.height(32.dp))
         Text(LocalizedString.get("choose_language"), color = MaterialTheme.colorScheme.onSurface, fontSize = UITokens.FontSubhead, fontWeight = FontWeight.Bold, modifier = Modifier.padding(bottom = UITokens.CardInnerPadding))
@@ -209,11 +208,11 @@ fun Page4Sync() {
         Text(LocalizedString.get("sync_settings_desc"), color = extra.subtitleGray, fontSize = 16.sp, textAlign = TextAlign.Center)
         Spacer(Modifier.height(32.dp))
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            Text(LocalizedString.get("add_debt"), color = PrimaryGreen, fontSize = 12.sp, fontWeight = FontWeight.Bold)
+            Text(LocalizedString.get("add_debt"), color = MaterialTheme.colorScheme.primary, fontSize = 12.sp, fontWeight = FontWeight.Bold)
             Text("\u2192", color = extra.subtitleGray)
-            Text(LocalizedString.get("auto_sync"), color = PrimaryGreen, fontSize = 12.sp, fontWeight = FontWeight.Bold)
+            Text(LocalizedString.get("auto_sync"), color = MaterialTheme.colorScheme.primary, fontSize = 12.sp, fontWeight = FontWeight.Bold)
             Text("\u2192", color = extra.subtitleGray)
-            Text(LocalizedString.get("access_anywhere"), color = PrimaryGreen, fontSize = 12.sp, fontWeight = FontWeight.Bold)
+            Text(LocalizedString.get("access_anywhere"), color = MaterialTheme.colorScheme.primary, fontSize = 12.sp, fontWeight = FontWeight.Bold)
         }
     }
 }
@@ -238,7 +237,7 @@ fun Page5Name(name: String, onNameChange: (String) -> Unit) {
             singleLine = true,
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Text, capitalization = KeyboardCapitalization.Words),
             colors = OutlinedTextFieldDefaults.colors(
-                focusedBorderColor = PrimaryGreen,
+                focusedBorderColor = MaterialTheme.colorScheme.primary,
                 unfocusedBorderColor = MaterialTheme.colorScheme.outline,
                 focusedTextColor = MaterialTheme.colorScheme.onSurface,
                 unfocusedTextColor = MaterialTheme.colorScheme.onSurface

@@ -19,7 +19,6 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.dhanuk.debtbro.presentation.theme.LocalExtraColors
-import com.dhanuk.debtbro.presentation.theme.PrimaryGreen
 import com.dhanuk.debtbro.presentation.theme.UITokens
 import com.dhanuk.debtbro.util.LocalizedString
 
@@ -75,11 +74,11 @@ fun LanguageSelectorGrid(
             leadingIcon = { Icon(Icons.Default.Search, LocalizedString.get("search_debts"), tint = extra.subtitleGray) },
             modifier = Modifier.fillMaxWidth(),
             colors = OutlinedTextFieldDefaults.colors(
-                focusedBorderColor = PrimaryGreen,
+                focusedBorderColor = MaterialTheme.colorScheme.primary,
                 unfocusedBorderColor = MaterialTheme.colorScheme.outline,
                 focusedTextColor = MaterialTheme.colorScheme.onSurface,
                 unfocusedTextColor = MaterialTheme.colorScheme.onSurface,
-                cursorColor = PrimaryGreen
+                cursorColor = MaterialTheme.colorScheme.primary
             ),
             shape = UITokens.ShapeMedium
         )
@@ -106,11 +105,11 @@ fun LanguageSelectorGrid(
                         .clickable { onLanguageSelected(lang) }
                         .border(
                             width = if (isSelected) 2.dp else 0.dp,
-                            color = if (isSelected) PrimaryGreen else androidx.compose.ui.graphics.Color.Transparent,
+                            color = if (isSelected) MaterialTheme.colorScheme.primary else androidx.compose.ui.graphics.Color.Transparent,
                             shape = UITokens.ShapeMedium
                         ),
                     colors = CardDefaults.cardColors(
-                        containerColor = if (isSelected) PrimaryGreen.copy(alpha = 0.15f) else MaterialTheme.colorScheme.surface
+                        containerColor = if (isSelected) MaterialTheme.colorScheme.primary.copy(alpha = 0.15f) else MaterialTheme.colorScheme.surface
                     ),
                     shape = UITokens.ShapeMedium
                 ) {
@@ -123,7 +122,7 @@ fun LanguageSelectorGrid(
                         Column {
                             Text(
                                 lang.nativeName,
-                                color = if (isSelected) PrimaryGreen else MaterialTheme.colorScheme.onSurface,
+                                color = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface,
                                 fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
                                 fontSize = UITokens.FontSmall,
                                 maxLines = 1,
@@ -133,7 +132,7 @@ fun LanguageSelectorGrid(
                         }
                         if (isSelected) {
                             Spacer(Modifier.weight(1f))
-                            Icon(Icons.Default.CheckCircle, LocalizedString.get("select_language"), tint = PrimaryGreen, modifier = Modifier.size(UITokens.IconSmall))
+                            Icon(Icons.Default.CheckCircle, LocalizedString.get("select_language"), tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(UITokens.IconSmall))
                         }
                     }
                 }

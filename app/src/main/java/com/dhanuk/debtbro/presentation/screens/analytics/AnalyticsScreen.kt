@@ -24,7 +24,6 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.dhanuk.debtbro.presentation.components.LoadingDotsIndicator
 import com.dhanuk.debtbro.presentation.theme.DangerRed
 import com.dhanuk.debtbro.presentation.theme.LocalExtraColors
-import com.dhanuk.debtbro.presentation.theme.PrimaryGreen
 import com.dhanuk.debtbro.presentation.theme.UITokens
 import com.dhanuk.debtbro.util.formatCurrency
 import com.dhanuk.debtbro.util.LocalizedString
@@ -92,7 +91,7 @@ fun AnalyticsScreen(viewModel: AnalyticsViewModel = hiltViewModel()) {
                     AnalyticsStatCard(
                         title = LocalizedString.get("owed_to_me"),
                         amount = state.totalOwedToMe,
-                        color = PrimaryGreen,
+                        color = MaterialTheme.colorScheme.primary,
                         icon = Icons.Default.ArrowDownward,
                         currency = state.currency,
                         modifier = Modifier.weight(1f)
@@ -121,7 +120,7 @@ fun AnalyticsScreen(viewModel: AnalyticsViewModel = hiltViewModel()) {
                     AnalyticsStatCard(
                         title = LocalizedString.get("net_balance"),
                         amount = state.netBalance,
-                        color = if (state.netBalance >= 0) PrimaryGreen else DangerRed,
+                        color = if (state.netBalance >= 0) MaterialTheme.colorScheme.primary else DangerRed,
                         icon = Icons.Default.AccountBalanceWallet,
                         currency = state.currency,
                         modifier = Modifier.weight(1f)
@@ -138,17 +137,17 @@ fun AnalyticsScreen(viewModel: AnalyticsViewModel = hiltViewModel()) {
                 ) {
                     Column(Modifier.padding(UITokens.SpaceLarge)) {
                         Row(verticalAlignment = Alignment.CenterVertically) {
-                            Icon(Icons.Default.Recycling, contentDescription = LocalizedString.get("debt_recovery_rate"), tint = PrimaryGreen, modifier = Modifier.size(20.dp))
+                            Icon(Icons.Default.Recycling, contentDescription = LocalizedString.get("debt_recovery_rate"), tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(20.dp))
                             Spacer(Modifier.width(8.dp))
                             Text(LocalizedString.get("debt_recovery_rate"), color = MaterialTheme.colorScheme.onSurface, fontWeight = FontWeight.Bold)
                             Spacer(Modifier.weight(1f))
-                            Text("${state.recoveryRate}%", color = PrimaryGreen, fontWeight = FontWeight.Bold)
+                            Text("${state.recoveryRate}%", color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold)
                         }
                         Spacer(Modifier.height(12.dp))
                         LinearProgressIndicator(
                             progress = state.recoveryRate / 100f,
                             modifier = Modifier.fillMaxWidth().height(8.dp).clip(CircleShape),
-                            color = PrimaryGreen,
+                            color = MaterialTheme.colorScheme.primary,
                             trackColor = extra.divider
                         )
                     }
@@ -171,7 +170,7 @@ fun AnalyticsScreen(viewModel: AnalyticsViewModel = hiltViewModel()) {
                                 rememberColumnCartesianLayer(
                                     columnProvider = com.patrykandpatrick.vico.core.cartesian.layer.ColumnCartesianLayer.ColumnProvider.series(
                                         rememberLineComponent(
-                                            color = PrimaryGreen,
+                                            color = MaterialTheme.colorScheme.primary,
                                             thickness = 12.dp,
                                             shape = RoundedCornerShape(topStart = 4.dp, topEnd = 4.dp).toVicoShape()
                                         )
@@ -214,7 +213,7 @@ fun AnalyticsScreen(viewModel: AnalyticsViewModel = hiltViewModel()) {
                             Text(LocalizedString.get("ai_take"), color = MaterialTheme.colorScheme.onSurface, fontWeight = FontWeight.Bold, fontSize = UITokens.FontSubhead)
                             Spacer(Modifier.weight(1f))
                             IconButton(onClick = { viewModel.loadAiInsight() }) {
-                                Icon(Icons.Default.Refresh, contentDescription = LocalizedString.get("regenerate"), tint = PrimaryGreen)
+                                Icon(Icons.Default.Refresh, contentDescription = LocalizedString.get("regenerate"), tint = MaterialTheme.colorScheme.primary)
                             }
                         }
 
@@ -226,7 +225,7 @@ fun AnalyticsScreen(viewModel: AnalyticsViewModel = hiltViewModel()) {
                                 .padding(UITokens.CardInnerPadding)
                         ) {
                             if (loading) {
-                                LoadingDotsIndicator(color = PrimaryGreen)
+                                LoadingDotsIndicator(color = MaterialTheme.colorScheme.primary)
                             } else {
                                 Text(
                                     insight.ifBlank { LocalizedString.get("tap_refresh") },
