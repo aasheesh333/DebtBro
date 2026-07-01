@@ -23,6 +23,7 @@ object CanvasExporter {
     private const val W = 900
     private val H = 1350
 
+    @Volatile
     private var lastStyle = -1
     private fun nextStyle(): Int {
         var s: Int

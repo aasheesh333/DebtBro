@@ -13,16 +13,21 @@ import androidx.work.WorkerParameters
 import com.dhanuk.debtbro.MainActivity
 import com.dhanuk.debtbro.R
 import com.dhanuk.debtbro.data.db.dao.DebtDao
+import com.dhanuk.debtbro.data.datastore.AppPreferences
 import dagger.assisted.Assisted
 import dagger.assisted.AssistedInject
+
+import kotlinx.coroutines.flow.first
 
 @HiltWorker
 class DebtReminderWorker @AssistedInject constructor(
     @Assisted context: Context,
     @Assisted params: WorkerParameters,
-    private val debtDao: DebtDao
+    private val debtDao: DebtDao,
+    private val prefs: com.dhanuk.debtbro.data.datastore.AppPreferences
 ) : CoroutineWorker(context, params) {
     override suspend fun doWork(): Result {
+        if (!prefs.notifyDailyReminder.first()) return Result.success()
         ensureChannel()
         val notificationManager = applicationContext.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N && !notificationManager.areNotificationsEnabled()) {

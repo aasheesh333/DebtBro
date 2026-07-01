@@ -25,9 +25,11 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.dhanuk.debtbro.BuildConfig
 import com.dhanuk.debtbro.presentation.components.GoogleSignInCard
 import com.dhanuk.debtbro.presentation.components.LanguageSelectorGrid
+import com.dhanuk.debtbro.presentation.components.NotificationsPermissionCard
 import com.dhanuk.debtbro.presentation.components.SUPPORTED_LANGUAGES
 import com.dhanuk.debtbro.presentation.theme.LocalExtraColors
 import com.dhanuk.debtbro.presentation.theme.UITokens
+import com.dhanuk.debtbro.util.ActivityFinder
 import com.dhanuk.debtbro.util.LocalizedString
 import com.dhanuk.debtbro.util.openUrl
 
@@ -73,7 +75,7 @@ fun SettingsScreen(viewModel: SettingsViewModel = hiltViewModel()) {
                     isSyncing = state.isSyncing,
                     syncMessage = state.syncMessage,
                     linkedProviders = state.linkedProviders,
-                    onSignIn = { viewModel.signInWithGoogle(context as Activity) },
+                    onSignIn = { ActivityFinder.find(context)?.let { viewModel.signInWithGoogle(it) } },
                     onSignOut = { showSignOutConfirm = true },
                     onSync = { viewModel.syncNow() },
                     onDeleteAccount = { showDeleteConfirm = true },
@@ -192,6 +194,7 @@ fun SettingsScreen(viewModel: SettingsViewModel = hiltViewModel()) {
 
             // ── NOTIFICATIONS SECTION ────────────────────────────────────────
             item { SectionHeader(LocalizedString.get("notifications"), Icons.Default.Notifications) }
+            item { NotificationsPermissionCard() }
             item {
                 Card(
                     colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
@@ -527,7 +530,7 @@ fun SettingsScreen(viewModel: SettingsViewModel = hiltViewModel()) {
             confirmButton = {
                 TextButton(onClick = {
                     showLinkEmailDialog = false
-                    viewModel.linkEmailPassword(email, password, context as Activity)
+                    ActivityFinder.find(context)?.let { viewModel.linkEmailPassword(email, password, it) }
                 }) { Text(LocalizedString.get("link"), color = MaterialTheme.colorScheme.primary) }
             },
             dismissButton = {

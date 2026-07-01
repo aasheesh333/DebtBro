@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ad_services_config>
+    <attribution
+        allowAllToAccess="false"
+        allowAccessToPackage="com.google.android.gms">
+    </attribution>
+    <custom_audiences
+        allowAllToAccess="false"
+        allowAccessToPackage="com.google.android.gms">
+    </custom_audiences>
+    <topics
+        allowAllToAccess="false"
+        allowAccessToPackage="com.google.android.gms">
+    </topics>
+</ad_services_config>

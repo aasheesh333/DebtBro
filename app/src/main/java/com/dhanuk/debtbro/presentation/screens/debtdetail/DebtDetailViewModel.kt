@@ -42,7 +42,9 @@ class DebtDetailViewModel @Inject constructor(
     private val adManager: AdManager
 ) : ViewModel() {
 
-    private val debtId = checkNotNull(savedStateHandle.get<Int>("debtId"))
+    private val debtId: Int = savedStateHandle.get<Int>("debtId")
+        ?: savedStateHandle.get<String>("debtId")?.toIntOrNull()
+        ?: error("debtId is required for DebtDetailViewModel")
 
     val debt: StateFlow<DebtEntity?> = debtRepository.observeDebtById(debtId)
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), null)
@@ -270,7 +272,7 @@ class DebtDetailViewModel @Inject constructor(
                 android.widget.Toast.makeText(context, "New design generated!", android.widget.Toast.LENGTH_SHORT).show()
             }
         } catch (e: Exception) {
-            e.printStackTrace()
+            android.util.Log.e("DebtDetailVM", "shareCard failed: ${e.message}", e)
             kotlinx.coroutines.withContext(Dispatchers.Main) {
                 android.widget.Toast.makeText(context, "Failed to create image: ${e.message}", android.widget.Toast.LENGTH_LONG).show()
             }
@@ -378,7 +380,7 @@ class DebtDetailViewModel @Inject constructor(
                 android.widget.Toast.makeText(context, "New design generated!", android.widget.Toast.LENGTH_SHORT).show()
             }
         } catch (e: Exception) {
-            e.printStackTrace()
+            android.util.Log.e("DebtDetailVM", "shareCard failed: ${e.message}", e)
             kotlinx.coroutines.withContext(Dispatchers.Main) {
                 com.dhanuk.debtbro.util.shareTextToWhatsApp(context, actualMessage)
             }

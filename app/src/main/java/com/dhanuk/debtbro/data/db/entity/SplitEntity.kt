@@ -14,6 +14,7 @@ data class SplitEntity(
     val perPersonAmount: Double,
     val aiSummary: String? = null,
     val createdAt: Long = System.currentTimeMillis(),
+    val updatedAt: Long = System.currentTimeMillis(),
     val isSynced: Boolean = false
 ) {
     @Keep

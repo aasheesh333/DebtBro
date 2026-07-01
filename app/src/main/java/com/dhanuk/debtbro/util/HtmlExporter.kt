@@ -33,6 +33,7 @@ object HtmlExporter {
 
     @Volatile
     private var lastError: String? = null
+    @Volatile
     private var lastTemplateIndex = -1
 
     fun getLastError(): String? = lastError
@@ -299,7 +300,7 @@ object HtmlExporter {
                                 ) { heightStr ->
                                     try {
                                         val contentHeight = heightStr?.replace("\"", "")?.toIntOrNull() ?: 1350
-                                        val actualHeight = maxOf(contentHeight, view.measuredHeight, height)
+                                        val actualHeight = maxOf(contentHeight, view.measuredHeight, height).coerceAtMost(4096)
 
                                         val bitmap = Bitmap.createBitmap(width, actualHeight, Bitmap.Config.ARGB_8888)
                                         val canvas = Canvas(bitmap)
@@ -360,9 +361,9 @@ object HtmlExporter {
         cleanOldCacheFiles(context)
         val cacheDir = File(context.cacheDir, "share_images")
         cacheDir.mkdirs()
-        val file = File(cacheDir, "debtbro-export-${System.currentTimeMillis()}.jpg")
+        val file = File(cacheDir, "debtbro-export-${System.currentTimeMillis()}.png")
         FileOutputStream(file).use { out ->
-            bitmap.compress(Bitmap.CompressFormat.JPEG, 85, out)
+            bitmap.compress(Bitmap.CompressFormat.PNG, 100, out)
         }
         return file
     }
@@ -388,7 +389,7 @@ object HtmlExporter {
     fun shareImage(context: Context, bitmap: Bitmap) {
         val uri = getShareableUri(context, bitmap)
         val intent = Intent(Intent.ACTION_SEND).apply {
-            type = "image/jpeg"
+            type = "image/png"
             putExtra(Intent.EXTRA_STREAM, uri)
             addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
             addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)

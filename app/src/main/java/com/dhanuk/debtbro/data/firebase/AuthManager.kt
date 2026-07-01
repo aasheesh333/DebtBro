@@ -108,7 +108,7 @@ class AuthManager @Inject constructor(
      */
     suspend fun reauthenticateWithGoogle(activity: Activity): Result<Unit> = runCatching {
         val googleIdOption = GetGoogleIdOption.Builder()
-            .setFilterByAuthorizedAccounts(true)
+            .setFilterByAuthorizedAccounts(false)
             .setServerClientId(context.getString(R.string.default_web_client_id))
             .build()
         val request = GetCredentialRequest.Builder()
@@ -129,8 +129,9 @@ class AuthManager @Inject constructor(
      * Re-authenticate with email/password credential.
      */
     suspend fun reauthenticateWithEmailPassword(email: String, password: String): Result<Unit> = runCatching {
+        val currentUser = auth.currentUser ?: error("Cannot reauthenticate: no current user")
         val credential = EmailAuthProvider.getCredential(email, password) as AuthCredential
-        auth.currentUser?.reauthenticate(credential)?.await()
+        currentUser.reauthenticate(credential).await()
         Unit
     }.onFailure { e ->
         android.util.Log.e("AuthManager", "reauthenticateWithEmailPassword failed: ${e.message}", e)
@@ -179,7 +180,14 @@ class AuthManager @Inject constructor(
      */
     suspend fun refreshTokenIfStale(forceRefreshSeconds: Long = 300L): Result<Unit> = runCatching {
         val user = auth.currentUser ?: return@runCatching
-        user.getIdToken(true).await()
+        val meta = user.metadata
+        val lastSignIn = meta?.lastSignInTimestamp ?: 0L
+        val ageMs = System.currentTimeMillis() - lastSignIn
+        if (ageMs > forceRefreshSeconds * 1000L) {
+            user.getIdToken(true).await()
+        } else {
+            user.getIdToken(false).await()
+        }
     }.onFailure { e ->
         android.util.Log.e("AuthManager", "token refresh failed: ${e.message}", e)
     }

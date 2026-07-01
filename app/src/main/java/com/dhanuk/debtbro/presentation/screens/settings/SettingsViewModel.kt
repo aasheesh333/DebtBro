@@ -5,6 +5,10 @@ import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.dhanuk.debtbro.data.datastore.AppPreferences
+import com.dhanuk.debtbro.data.datastore.SecureStorage
+import com.dhanuk.debtbro.data.db.dao.DebtDao
+import com.dhanuk.debtbro.data.db.dao.PaymentDao
+import com.dhanuk.debtbro.data.db.dao.SplitDao
 import com.dhanuk.debtbro.data.firebase.AuthManager
 import com.dhanuk.debtbro.data.firebase.FirebaseRepository
 import com.dhanuk.debtbro.data.firebase.RealTimeSyncManager
@@ -95,12 +99,16 @@ data class SettingsUiState(
 @HiltViewModel
 class SettingsViewModel @Inject constructor(
     private val prefs: AppPreferences,
+    private val secureStorage: SecureStorage,
     private val auth: AuthManager,
     private val sync: SyncManager,
     private val realTimeSyncManager: RealTimeSyncManager,
     private val firebaseRepository: FirebaseRepository,
     private val debts: DebtRepository,
-    private val groq: GroqRepository
+    private val groq: GroqRepository,
+    private val debtDao: DebtDao,
+    private val paymentDao: PaymentDao,
+    private val splitDao: SplitDao
 ) : ViewModel() {
     private val isSyncing = MutableStateFlow(false)
     private val syncMessage = MutableStateFlow("")
@@ -310,6 +318,10 @@ class SettingsViewModel @Inject constructor(
             realTimeSyncManager.stopListening()
             auth.signOut()
             prefs.setGoogleSignedIn(false)
+            secureStorage.clearSensitiveData()
+            debtDao.deleteAll()
+            paymentDao.deleteAll()
+            splitDao.deleteAll()
         } finally {
             isSigningOut.value = false
         }
@@ -343,15 +355,17 @@ class SettingsViewModel @Inject constructor(
         }
         isDeletingAccount.value = true
         try {
-            firebaseRepository.deleteAllUserData(userId)
-            realTimeSyncManager.stopListening()
-            debts.clearLocalData()
-            prefs.clearAll()
             auth.deleteAccount().onSuccess {
+                realTimeSyncManager.stopListening()
+                runCatching { firebaseRepository.deleteAllUserData(userId) }
+                debts.clearLocalData()
+                prefs.clearAll()
+                secureStorage.clearSensitiveData()
             }.onFailure { e ->
-                onFailure(e.message ?: "Account deletion failed")
                 if (e is com.google.firebase.auth.FirebaseAuthRecentLoginRequiredException) {
                     onReauthRequired()
+                } else {
+                    onFailure(e.message ?: "Account deletion failed")
                 }
             }
         } catch (e: Exception) {

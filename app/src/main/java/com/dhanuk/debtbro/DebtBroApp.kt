@@ -4,7 +4,9 @@ import android.app.Application
 import android.util.Log
 import androidx.hilt.work.HiltWorkerFactory
 import androidx.work.Configuration
+import androidx.work.Constraints
 import androidx.work.ExistingPeriodicWorkPolicy
+import androidx.work.NetworkType
 import androidx.work.PeriodicWorkRequestBuilder
 import androidx.work.WorkManager
 import com.google.android.gms.ads.MobileAds
@@ -77,15 +79,24 @@ class DebtBroApp : Application(), Configuration.Provider {
         }
 
         // ── WorkManager ────────────────────────────────────────────────────────
+        val workerConstraints = Constraints.Builder()
+            .setRequiredNetworkType(NetworkType.NOT_REQUIRED)
+            .build()
         WorkManager.getInstance(this).enqueueUniquePeriodicWork(
             "daily-debt-reminders",
             ExistingPeriodicWorkPolicy.UPDATE,
-            PeriodicWorkRequestBuilder<DebtReminderWorker>(1, TimeUnit.DAYS).build()
+            PeriodicWorkRequestBuilder<DebtReminderWorker>(1, TimeUnit.DAYS)
+                .setConstraints(workerConstraints)
+                .setBackoffCriteria(androidx.work.BackoffPolicy.EXPONENTIAL, 10, TimeUnit.MINUTES)
+                .build()
         )
         WorkManager.getInstance(this).enqueueUniquePeriodicWork(
             "weekly-summary",
             ExistingPeriodicWorkPolicy.UPDATE,
-            PeriodicWorkRequestBuilder<WeeklySummaryWorker>(7, TimeUnit.DAYS).build()
+            PeriodicWorkRequestBuilder<WeeklySummaryWorker>(7, TimeUnit.DAYS)
+                .setConstraints(workerConstraints)
+                .setBackoffCriteria(androidx.work.BackoffPolicy.EXPONENTIAL, 10, TimeUnit.MINUTES)
+                .build()
         )
 
         // ── First-launch analytics ─────────────────────────────────────────────

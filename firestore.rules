@@ -1,8 +1,22 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    match /users/{userId}/{document=**} {
+    match /users/{userId}/debts/{debtId} {
       allow read, write: if request.auth != null && request.auth.uid == userId;
+      allow create: if request.auth != null && request.auth.uid == userId
+        && request.resource.data.keys().hasOnly(['personName','personEmoji','amount','currency','description','type','status','dueDate','amountPaid','lastNudgedAt','aiRoastGenerated','notes','createdAt','updatedAt','firebaseId','isSynced','ownerUid']);
+    }
+    match /users/{userId}/debts/{debtId}/payments/{paymentId} {
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+    }
+    match /users/{userId}/splits/{splitId} {
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+    }
+    match /users/{userId}/lastDeletedAt {
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+    }
+    match /users/{userId}/{document=**} {
+      allow read: if request.auth != null && request.auth.uid == userId;
     }
   }
 }

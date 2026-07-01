@@ -17,11 +17,8 @@ object DatabaseModule {
     @Singleton
     fun provideDb(@ApplicationContext context: Context): DebtBroDB =
         Room.databaseBuilder(context, DebtBroDB::class.java, "debtbro.db")
-            // Production: use real migrations. Fallback to destructive only as a last resort
-            // if a future migration is not provided — this is safer for users on stale schemas.
-            .addMigrations(DebtBroDB.MIGRATION_1_2)
+            .addMigrations(*DebtBroDB.ALL_MIGRATIONS.toTypedArray())
             .fallbackToDestructiveMigrationOnDowngrade()
-            .fallbackToDestructiveMigration()
             .build()
 
     @Provides fun provideDebtDao(db: DebtBroDB) = db.debtDao()

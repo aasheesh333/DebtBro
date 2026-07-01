@@ -38,7 +38,8 @@ object CsvExporter {
     }
 
     private fun writeCsv(stream: java.io.OutputStream, debts: List<DebtEntity>) {
-        OutputStreamWriter(stream).use { writer ->
+        OutputStreamWriter(stream, "UTF-8").use { writer ->
+            writer.write("\uFEFF")
             writer.appendLine("Name,Amount,Paid,Remaining,Type,Status,Description,DueDate,CreatedAt")
             debts.forEach { d ->
                 val fields = listOf(
@@ -52,10 +53,17 @@ object CsvExporter {
                         .replace("\"", "\"\"")
                         .replace("\n", " ")
                         .replace("\r", " ")
-                    "\"$escaped\""
+                    "\"${sanitizeCell(escaped)}\""
                 }
                 writer.appendLine(csvLine)
             }
         }
+    }
+
+    private fun sanitizeCell(value: String): String {
+        if (value.startsWith("=") || value.startsWith("+") || value.startsWith("-") || value.startsWith("@") || value.startsWith("\t") || value.startsWith("\r")) {
+            return "'$value"
+        }
+        return value
     }
 }

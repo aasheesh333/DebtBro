@@ -27,7 +27,7 @@ android {
         applicationId = "com.dhanuk.debtbro"
         minSdk = 26
         targetSdk = 35
-        versionCode = 1
+        versionCode = (System.getenv("GITHUB_RUN_NUMBER")?.toIntOrNull() ?: 1)
         versionName = "1.0.0"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
@@ -42,7 +42,7 @@ android {
         buildConfigField("String", "PRIVACY_POLICY_URL", "\"${escapedProp("PRIVACY_POLICY_URL").ifEmpty { "https://dhanuk.page.gd/DebtBro/Privacy-Policy.html" }}\"")
         buildConfigField("String", "TERMS_OF_SERVICE_URL", "\"https://dhanuk.page.gd/DebtBro/Terms-and-Conditions.html\"")
         buildConfigField("String", "HELP_URL", "\"https://dhanuk.page.gd/DebtBro/Help-and-Support.html\"")
-        buildConfigField("String", "ACCOUNT_DELETION_URL", "\"https://dhanuk.page.gd/DebtBro/Delete-Account.html\"")
+        buildConfigField("String", "ACCOUNT_DELETION_URL", "\"${localProp("ACCOUNT_DELETION_URL").ifEmpty { "https://us-central1-${localProp("FIREBASE_PROJECT_ID").ifEmpty { "debtbro-4e3c9" }}.cloudfunctions.net/requestAccountDeletion" }}\"")
         // App-level ADMOB_APP_ID is a manifest placeholder only. Real ad unit IDs live in BuildConfig above.
         // The fallback is only used when local.properties / CI is missing config — production builds must ship real IDs.
         manifestPlaceholders["ADMOB_APP_ID"] = localProp("ADMOB_APP_ID").ifEmpty {
@@ -84,7 +84,10 @@ android {
         targetCompatibility = JavaVersion.VERSION_17
     }
     kotlinOptions { jvmTarget = "17" }
-    packaging { resources { excludes += "/META-INF/{AL2.0,LGPL2.1}" } }
+    packaging {
+        resources { excludes += "/META-INF/{AL2.0,LGPL2.1}" }
+        dex { useLegacyPackaging = false }
+    }
 }
 
 dependencies {
@@ -125,6 +128,8 @@ dependencies {
     implementation(libs.gson)
     implementation(libs.androidx.work.runtime)
     implementation(libs.androidx.datastore)
+    implementation(libs.androidx.security.crypto)
+    implementation(libs.androidx.profileinstaller)
     implementation(libs.admob)
     implementation(libs.onesignal)
     implementation(libs.vico.compose)

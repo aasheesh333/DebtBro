@@ -1,4 +1,6 @@
--keep class com.dhanuk.debtbro.** { *; }
+-keep @androidx.room.Entity class com.dhanuk.debtbro.data.db.entity.** { *; }
+-keep class com.dhanuk.debtbro.data.db.entity.** { *; }
+-keep class com.dhanuk.debtbro.data.firebase.dto.** { *; }
 -keep class retrofit2.** { *; }
 -keep class com.squareup.okhttp3.** { *; }
 -keep class com.google.gson.** { *; }
@@ -7,16 +9,9 @@
 -dontwarn okhttp3.**
 -dontwarn retrofit2.**
 -keep class * extends androidx.room.RoomDatabase
--keep @androidx.room.Entity class *
--keep class com.google.android.gms.** { *; }
--keep class com.google.firebase.** { *; }
--keep class com.onesignal.** { *; }
 -keep @androidx.annotation.Keep class *
 -keepclassmembers class * {
     @androidx.annotation.Keep *;
 }
--keep class androidx.lifecycle.** { *; }
--keep class androidx.activity.** { *; }
--keep class androidx.compose.runtime.** { *; }
--keep class androidx.compose.ui.** { *; }
--keepclassmembers class androidx.lifecycle.** { *; }
+-keep class com.google.firebase.** { *; }
+-dontwarn com.google.android.gms.**
