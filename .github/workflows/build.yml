@@ -23,7 +23,7 @@ jobs:
       - name: Decode Keystore
         run: echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 --decode > app/keystore.jks
       - name: Create google-services.json
-        run: echo "${{ secrets.GOOGLE_SERVICES_JSON_BASE64 }}" | base64 --decode > app/google-services.json
+        run: echo '${{ secrets.GOOGLE_SERVICES_JSON }}' > app/google-services.json
       - name: Validate google-services.json
         run: |
           jq empty app/google-services.json || (echo "Invalid google-services.json" && exit 1)
