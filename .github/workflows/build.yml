@@ -2,9 +2,10 @@ name: DebtBro CI/CD
 
 on:
   push:
-    branches: [ "**" ]
+    branches: ["main"]
+    tags: ["v*"]
   pull_request:
-    branches: [ "**" ]
+    branches: ["main"]
 
 jobs:
   build:
@@ -22,7 +23,11 @@ jobs:
       - name: Decode Keystore
         run: echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 --decode > app/keystore.jks
       - name: Create google-services.json
-        run: echo '${{ secrets.GOOGLE_SERVICES_JSON }}' > app/google-services.json
+        run: echo "${{ secrets.GOOGLE_SERVICES_JSON_BASE64 }}" | base64 --decode > app/google-services.json
+      - name: Validate google-services.json
+        run: |
+          jq empty app/google-services.json || (echo "Invalid google-services.json" && exit 1)
+          grep -q '"package_name": "com.dhanuk.debtbro"' app/google-services.json || (echo "Wrong package name in google-services.json" && exit 1)
       - name: Create local.properties
         run: |
           cat > local.properties << EOF
@@ -33,11 +38,17 @@ jobs:
           ADMOB_INTERSTITIAL_ID=${{ secrets.ADMOB_INTERSTITIAL_ID }}
           ADMOB_REWARDED_ID=${{ secrets.ADMOB_REWARDED_ID }}
           ONESIGNAL_APP_ID=${{ secrets.ONESIGNAL_APP_ID }}
-          ONESIGNAL_API_KEY=${{ secrets.ONESIGNAL_API_KEY }}
           PACKAGE_NAME=${{ secrets.PACKAGE_NAME }}
           KEYSTORE_PASSWORD=${{ secrets.KEYSTORE_PASSWORD }}
           KEY_PASSWORD=${{ secrets.KEY_PASSWORD }}
+          FIREBASE_PROJECT_ID=${{ secrets.FIREBASE_PROJECT_ID }}
+          ACCOUNT_DELETION_URL=${{ secrets.ACCOUNT_DELETION_URL }}
           EOF
+      - name: Echo version info
+        run: |
+          echo "Build #${{ github.run_number }}"
+          echo "SHA: ${{ github.sha }}"
+          echo "Ref: ${{ github.ref }}"
       - name: Grant Gradle permission
         run: chmod +x gradlew
       - name: Build Release APK
@@ -47,13 +58,13 @@ jobs:
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: DebtBro-APK-${{ github.sha }}
+          name: DebtBro-APK-${{ github.run_number }}
           path: app/build/outputs/apk/release/app-release.apk
           retention-days: 30
       - name: Upload AAB
         uses: actions/upload-artifact@v4
         with:
-          name: DebtBro-AAB-${{ github.sha }}
+          name: DebtBro-AAB-${{ github.run_number }}
           path: app/build/outputs/bundle/release/app-release.aab
           retention-days: 30
       - name: Create GitHub Release
