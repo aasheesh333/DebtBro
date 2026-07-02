@@ -530,7 +530,6 @@ object LocalizedString {
             "password_6_chars_min" to "Password (6+ characters)",
             "email_required" to "Email daalna zaroori hai",
             "passwords_dont_match" to "Dono password same nahi hain",
-        ),
             // AI key / error UI (Hindi 2026-07-02)
             // Marathi/Punjabi/Gujarati familyFallback chains route to this map,
             // so hi users + mr/pa/gu users see real Devanagari instead of English.
