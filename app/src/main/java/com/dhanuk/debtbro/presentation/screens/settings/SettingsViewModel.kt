@@ -93,7 +93,8 @@ data class SettingsUiState(
     val themeMode: String = "SYSTEM",
     val isSigningOut: Boolean = false,
     val isDeletingAccount: Boolean = false,
-    val pendingDeletionTimestamp: Long = 0L
+    val pendingDeletionTimestamp: Long = 0L,
+    val geminiApiKey: String = ""
 )
 
 @HiltViewModel
@@ -257,7 +258,8 @@ class SettingsViewModel @Inject constructor(
             pendingDeletionTimestamp = deletion.pendingTs,
             linkedProviders = auth.linkedProviders()
         )
-    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), SettingsUiState())
+    }.combine(prefs.geminiApiKey) { ui, key -> ui.copy(geminiApiKey = key) }
+    .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), SettingsUiState())
 
     fun saveUserName(name: String) = viewModelScope.launch { prefs.saveUserName(name) }
     fun setRoastLevel(level: String) = viewModelScope.launch { prefs.setRoastLevel(level) }
@@ -272,6 +274,7 @@ class SettingsViewModel @Inject constructor(
     fun setExportFormat(format: String) = viewModelScope.launch { prefs.setExportFormat(format) }
     fun setThemeMode(mode: String) = viewModelScope.launch { prefs.setThemeMode(mode) }
     fun setCustomAvatarUri(uri: String) = viewModelScope.launch { prefs.setCustomAvatarUri(uri) }
+    fun saveGeminiKey(key: String) = viewModelScope.launch { prefs.saveGeminiKey(key) }
 
     private val _showDeletionGraceAlert = MutableStateFlow(false)
     val showDeletionGraceAlert: StateFlow<Boolean> = _showDeletionGraceAlert.asStateFlow()
@@ -343,6 +346,14 @@ class SettingsViewModel @Inject constructor(
     }
 
     fun requestAccountDeletion(onSuccess: () -> Unit) = viewModelScope.launch {
+        // Best-effort: post to the configured Cloud Function BEFORE recording
+        // the local 24-hour grace timestamp. If the HTTP fails or the URL is
+        // missing, we still set the local timestamp so the user's experience
+        // (sign-in during grace window cancels deletion) works as designed.
+        val uid = auth.getUserId()
+        if (uid != null) {
+            auth.requestAccountDeletion(uid)
+        }
         prefs.setPendingDeletionTimestamp(System.currentTimeMillis())
         onSuccess()
     }

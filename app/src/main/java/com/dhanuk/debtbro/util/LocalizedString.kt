@@ -306,6 +306,17 @@ object LocalizedString {
             "password_6_chars_min" to "Password (6+ chars)",
             "email_required" to "Email is required",
             "passwords_dont_match" to "Passwords don't match",
+            // ── AI key / error UI (added 2026-07-02) ─────────────────────────────────
+            // Helps Settings show a proper input field for the user's own key, and
+            // helps AnalyticsScreen distinguish "the user hasn't set a key" from
+            // "the API returned an error" — fixes the bug where every Gemini HTTP 400
+            // was being shown as "Add a Gemini API key" regardless of root cause.
+            "no_api_key_message" to "Add a free Gemini API key in Settings → AI Setup to unlock personalized roasts. Get one at aistudio.google.com/app/apikey.",
+            "ai_error_message" to "AI is taking a short break. Pull to refresh in a few seconds, or paste your own key in Settings → AI Setup.",
+            "ai_api_key" to "AI Setup",
+            "ai_api_key_label" to "Gemini API key (optional)",
+            "ai_api_key_hint" to "Paste your key from Google AI Studio…",
+            "ai_api_key_supporting" to "Free-tier keys work. Saved locally — never sent to our servers. Overrides the bundled key for unlimited use.",
         ),
         "hi" to mapOf(
             "nav_home" to "होम",
@@ -519,6 +530,16 @@ object LocalizedString {
             "password_6_chars_min" to "Password (6+ characters)",
             "email_required" to "Email daalna zaroori hai",
             "passwords_dont_match" to "Dono password same nahi hain",
+        ),
+            // AI key / error UI (Hindi 2026-07-02)
+            // Marathi/Punjabi/Gujarati familyFallback chains route to this map,
+            // so hi users + mr/pa/gu users see real Devanagari instead of English.
+            "no_api_key_message" to "Settings → AI Setup में अपनी मुफ़्त Gemini API key जोड़ें ताकि रोस्ट पर्सनलाइज़ हों। मुफ़्त key लें: aistudio.google.com/app/apikey।",
+            "ai_error_message" to "AI थोड़ा ब्रेक पर है। कुछ सेकंड में फिर से refresh करें, या Settings → AI Setup में अपनी key paste करें।",
+            "ai_api_key" to "AI Setup",
+            "ai_api_key_label" to "Gemini API key (वैकल्पिक)",
+            "ai_api_key_hint" to "Google AI Studio से अपनी key paste करें…",
+            "ai_api_key_supporting" to "Free-tier keys चलती हैं। केवल locally सेव — हमारे servers पर नहीं जाती। असीमित उपयोग के लिए bundled key को override करता है।",
         ),
         "es" to mapOf(
             "nav_home" to "Inicio",

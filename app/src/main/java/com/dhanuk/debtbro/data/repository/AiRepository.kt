@@ -1,5 +1,6 @@
 package com.dhanuk.debtbro.data.repository
 
+import android.util.Log
 import com.dhanuk.debtbro.BuildConfig
 import com.dhanuk.debtbro.data.datastore.AppPreferences
 import com.dhanuk.debtbro.data.db.entity.DebtEntity
@@ -8,20 +9,28 @@ import com.dhanuk.debtbro.data.network.GeminiContent
 import com.dhanuk.debtbro.data.network.GeminiRequest
 import com.dhanuk.debtbro.data.network.GeminiPart
 import com.dhanuk.debtbro.data.network.GenerationConfig
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.Job
-import kotlinx.coroutines.channels.Channel
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
+import retrofit2.HttpException
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 import javax.inject.Inject
 import javax.inject.Singleton
+
+/**
+ * Distinct exception type so callers (e.g. AnalyticsViewModel) can branch on
+ * "the user hasn't supplied a key" vs "the API call genuinely failed".
+ *
+ * Before this distinction, every HTTP 400 (e.g. an invalid model name) was
+ * being shown as "Add a Gemini API key in Settings…" — even when the user's
+ * BuildConfig key WAS set but incompatible with the model name we tried.
+ * Detecting the missing-key case separately lets the UI show a friendly
+ * "Add a key" hint for one failure mode, and a generic "AI is busy" hint
+ * for everything else.
+ */
+class NoApiKeyException(message: String = "NO_API_KEY") : Exception(message)
 
 @Singleton
 class AiRepository @Inject constructor(
@@ -31,8 +40,6 @@ class AiRepository @Inject constructor(
     companion object {
         const val MAX_FREE_REGENERATIONS = 5
         private const val API_COOLDOWN_MS = 1000L
-        private const val RPM_LIMIT = 30
-        private const val RPM_WINDOW_MS = 60_000L
         private val BLOCKED_WORDS = setOf(
             "fuck", "fucking", "shit", "shithead", "bitch", "bastard", "asshole",
             "dick", "dickhead", "cunt", "whore", "slut", "nigger", "nigga",
@@ -78,7 +85,66 @@ class AiRepository @Inject constructor(
 
     private suspend fun getRegenerationCount(): Int = prefs.getAiRegenerationCount()
 
-    private suspend fun apiKey(): String = prefs.geminiApiKey.first().ifEmpty { BuildConfig.GEMINI_API_KEY_2_5_FLASH_LITE }
+    /**
+     * Resolution order for the API key:
+     *  1. User-set key in DataStore (Settings → "AI Setup"). Empty by default.
+     *  2. BuildConfig.GEMINI_API_KEY_2_5_FLASH_LITE — the bundled CI key whose
+     *     name matches the user-added GH secret `GEMINI_API_KEY_2_5_FLASH_LITE`.
+     *  3. BuildConfig.GEMINI_API_KEY — legacy slot kept for backwards compat
+     *     with older local.properties configurations.
+     *
+     * Returns null if all three are empty so callers can throw [NoApiKeyException].
+     */
+    private suspend fun apiKey(): String? {
+        val userKey = prefs.geminiApiKey.first()
+        return userKey.ifBlank { BuildConfig.GEMINI_API_KEY_2_5_FLASH_LITE }
+            .ifBlank { BuildConfig.GEMINI_API_KEY }
+            .takeIf { it.isNotBlank() }
+    }
+
+    /**
+     * Calls Gemini with each model from [GeminiApiService.MODEL_CANDIDATES]
+     * until one returns 2xx. Only HTTP 400 (model-not-found / bad-request)
+     * triggers the next candidate — non-400 errors (401 invalid key, 403
+     * forbidden, 429 rate limited, network failure) bubble up unchanged so
+     * callers don't waste time retrying with the wrong reason.
+     */
+    private suspend fun callGeminiWithFallback(
+        apiKey: String,
+        request: GeminiRequest
+    ): Result<com.dhanuk.debtbro.data.network.GeminiResponse> {
+        var lastError: Throwable? = null
+        for ((index, model) in GeminiApiService.MODEL_CANDIDATES.withIndex()) {
+            try {
+                val response = geminiApi.generateContent(
+                    url = GeminiApiService.buildUrl(model),
+                    apiKey = apiKey,
+                    request = request
+                )
+                if (index > 0) {
+                    Log.i("AiRepository", "Gemini model '$model' succeeded after " +
+                        "'${GeminiApiService.MODEL_CANDIDATES.take(index).joinToString(",")}' " +
+                        "were rejected with HTTP 400")
+                }
+                return Result.success(response)
+            } catch (e: HttpException) {
+                lastError = e
+                if (e.code() != 400) {
+                    // Wrong key, forbidden, rate limited, etc. — don't retry.
+                    return Result.failure(e)
+                }
+                Log.w("AiRepository", "Gemini 400 for model '$model': ${e.message?.take(120)}")
+            } catch (e: kotlinx.coroutines.CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                return Result.failure(e)
+            }
+        }
+        Log.w("AiRepository", "All Gemini model candidates failed with HTTP 400. " +
+            "API key may be valid but incompatible with this model family — " +
+            "the user can paste a different key in Settings → AI Setup.")
+        return Result.failure(lastError ?: Exception("All Gemini model candidates failed"))
+    }
 
     private fun buildSystemPrompt(roastLevel: String, selectedLangCode: String, debtType: String?): String {
         val langInstruction = when(selectedLangCode) {
@@ -148,8 +214,7 @@ Key rules:
 
     suspend fun generateRoast(debt: DebtEntity, roastLevel: String): Result<String> = runCatching {
         ensureRateLimit()
-        val key = apiKey()
-        if (key.isEmpty()) return Result.failure(Exception("NO_API_KEY"))
+        val key = apiKey() ?: throw NoApiKeyException()
         val now = System.currentTimeMillis()
         val daysOverdue = if (debt.dueDate != null && debt.dueDate < now) ((now - debt.dueDate) / 86400000).toInt() else 0
         val currency = prefs.defaultCurrency.first()
@@ -177,14 +242,14 @@ Generate a WhatsApp-style payment reminder. The message MUST reference the actua
         val langCode = prefs.selectedLanguage.first()
         val systemText = buildSystemPrompt(roastLevel, langCode, debt.type)
 
-        val response = geminiApi.generateContent(
+        val response = callGeminiWithFallback(
             apiKey = key,
             request = GeminiRequest(
                 contents = listOf(GeminiContent(parts = listOf(GeminiPart(userMessage)), role = "user")),
                 systemInstruction = GeminiContent(parts = listOf(GeminiPart(systemText)), role = "system"),
                 generationConfig = GenerationConfig(temperature = temp, maxOutputTokens = 200)
             )
-        )
+        ).getOrThrow()
 
         val text = response.candidates.firstOrNull()?.content?.parts?.firstOrNull()?.text
             ?: throw Exception("AI response is empty, try again")
@@ -199,65 +264,63 @@ Generate a WhatsApp-style payment reminder. The message MUST reference the actua
 
     suspend fun analyzeDebts(totalLent: Double, totalOwed: Double, recoveryRate: Int, worstDebtor: String): Result<String> = runCatching {
         ensureRateLimit()
-        val key = apiKey()
-        if (key.isEmpty()) return Result.failure(Exception("NO_API_KEY"))
+        val key = apiKey() ?: throw NoApiKeyException()
         val langCode = prefs.selectedLanguage.first()
         val currency = prefs.defaultCurrency.first()
         val langInstruction = buildSystemPrompt("MILD", langCode, null).substringBefore("\n")
 
         val prompt = "Total lent: ${currency}$totalLent to friends. Total I owe: ${currency}$totalOwed. Recovery rate: $recoveryRate%. Worst debtor: $worstDebtor. Give ONE sharp, funny, honest 2-line insight. Hinglish welcome."
 
-        val response = geminiApi.generateContent(
+        val response = callGeminiWithFallback(
             apiKey = key,
             request = GeminiRequest(
                 contents = listOf(GeminiContent(parts = listOf(GeminiPart(prompt)), role = "user")),
                 systemInstruction = GeminiContent(parts = listOf(GeminiPart("$langInstruction\nYou are a funny personal finance analyst. Give ONE sharp 2-line insight. No disclaimers.")), role = "system"),
                 generationConfig = GenerationConfig(temperature = 0.3, maxOutputTokens = 150)
             )
-        )
+        ).getOrThrow()
 
         response.candidates.firstOrNull()?.content?.parts?.firstOrNull()?.text?.trim()
-            ?: return Result.failure(Exception("Empty AI response"))
+            ?: throw Exception("Empty AI response")
     }
 
     suspend fun generateSplitSummary(title: String, total: Double, perPerson: Double, count: Int): Result<String> = runCatching {
         ensureRateLimit()
-        val key = apiKey()
-        if (key.isEmpty()) return Result.failure(Exception("NO_API_KEY"))
+        val key = apiKey() ?: throw NoApiKeyException()
         val langCode = prefs.selectedLanguage.first()
         val currency = prefs.defaultCurrency.first()
         val langInstruction = buildSystemPrompt("MILD", langCode, null).substringBefore("\n")
 
         val prompt = "Split: $title, Total: ${currency}$total, $count people, ${currency}$perPerson each. Write ONE funny line about this. Hinglish ok."
 
-        val response = geminiApi.generateContent(
+        val response = callGeminiWithFallback(
             apiKey = key,
             request = GeminiRequest(
                 contents = listOf(GeminiContent(parts = listOf(GeminiPart(prompt)), role = "user")),
                 systemInstruction = GeminiContent(parts = listOf(GeminiPart("$langInstruction\nYou are a funny commentator. One line only. Be creative.")), role = "system"),
                 generationConfig = GenerationConfig(temperature = 0.7, maxOutputTokens = 100)
             )
-        )
+        ).getOrThrow()
 
         response.candidates.firstOrNull()?.content?.parts?.firstOrNull()?.text?.trim()
-            ?: return Result.failure(Exception("Empty AI response"))
+            ?: throw Exception("Empty AI response")
     }
 
     suspend fun testConnection(): Boolean {
         return try {
             ensureRateLimit()
-            val key = apiKey()
-            if (key.isEmpty()) return false
-            return geminiApi.generateContent(
+            val key = apiKey() ?: return false
+            callGeminiWithFallback(
                 apiKey = key,
                 request = GeminiRequest(
                     contents = listOf(GeminiContent(parts = listOf(GeminiPart("Say OK")), role = "user"))
                 )
-            ).candidates.isNotEmpty()
+            ).fold(
+                onSuccess = { true },
+                onFailure = { false }
+            )
         } catch (e: kotlinx.coroutines.CancellationException) {
             throw e
-        } catch (_: Exception) {
-            return false
         }
     }
 }

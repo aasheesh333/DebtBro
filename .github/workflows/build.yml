@@ -1,56 +1,84 @@
-name: DebtBro CI/CD
+name: DebtBro Release Build
 
 # ─────────────────────────────────────────────────────────────────────────────
-# Single-job workflow: builds the signed release APK + AAB on every push and
-# every PR. All required prod secrets (release keystore, Google services JSON,
-# Gemini + AdMob + OneSignal IDs, etc.) must be configured in repo Settings
-# → Secrets and Actions for the build to succeed.
+# Builds the signed release APK + AAB on every push to main, on `v*` tag
+# pushes, and via manual workflow_dispatch. Requires all prod secrets —
+# see repo Settings → Secrets and Actions for the full inventory.
 #
-# Local builds aren't needed — this workflow is the source of truth for
-# whether the codebase compiles & packages correctly. After pushing a branch,
-# the Actions tab shows a green ✓ for any successful build; a red ✗ surfaces
-# the failing step's stacktrace.
-#
-# Concurrency: cancel any in-progress run for the same branch ref when a new
-# commit lands, so rapid iterative pushes don't stack up wasted CI minutes.
+# PR + feature-branch validation runs in `.github/workflows/pr-check.yml`,
+# which doesn't require any secrets and gives fast type-check / lint /
+# debug-APK feedback for every change — including fork PRs.
 # ─────────────────────────────────────────────────────────────────────────────
-
-concurrency:
-  group: debro-ci-${{ github.ref }}
-  cancel-in-progress: true
 
 on:
   push:
-    branches: ["**"]
+    branches: ["main"]
     tags: ["v*"]
-  pull_request:
-    branches: ["**"]
+  workflow_dispatch:
+
+concurrency:
+  group: debro-release-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   build:
     name: Build Signed Release Artifacts
     runs-on: ubuntu-latest
+    timeout-minutes: 60
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+
       - name: Setup JDK 17
         uses: actions/setup-java@v4
         with:
           java-version: '17'
           distribution: 'temurin'
           cache: gradle
+
+      - name: Setup Android SDK (API 35, build-tools 35.0.0)
+        uses: android-actions/setup-android@v3
+        with:
+          api-level: 35
+          build-tools-version: 35.0.0
+
+      # Fail fast with a clear, actionable message if any required secret is
+      # missing — far better than a 15-minute silent build failure later.
+      - name: Validate required secrets
+        run: |
+          set -e
+          : "${KEYSTORE_BASE64:?ERROR: KEYSTORE_BASE64 secret missing — add it in repo Settings > Secrets.}"
+          : "${GOOGLE_SERVICES_JSON:?ERROR: GOOGLE_SERVICES_JSON secret missing.}"
+          : "${KEYSTORE_PASSWORD:?ERROR: KEYSTORE_PASSWORD secret missing.}"
+          : "${KEY_PASSWORD:?ERROR: KEY_PASSWORD secret missing.}"
+          : "${PACKAGE_NAME:?ERROR: PACKAGE_NAME secret missing.}"
+          : "${VERSION_NAME:?ERROR: VERSION_NAME secret missing.}"
+          : "${GEMINI_API_KEY:?ERROR: GEMINI_API_KEY secret missing.}"
+          : "${ADMOB_APP_ID:?ERROR: ADMOB_APP_ID secret missing.}"
+          : "${ADMOB_BANNER_ID:?ERROR: ADMOB_BANNER_ID secret missing.}"
+          : "${ADMOB_INTERSTITIAL_ID:?ERROR: ADMOB_INTERSTITIAL_ID secret missing.}"
+          : "${ADMOB_REWARDED_ID:?ERROR: ADMOB_REWARDED_ID secret missing.}"
+          : "${ONESIGNAL_APP_ID:?ERROR: ONESIGNAL_APP_ID secret missing.}"
+          : "${ONESIGNAL_API_KEY:?ERROR: ONESIGNAL_API_KEY secret missing.}"
+          : "${FIREBASE_PROJECT_ID:?ERROR: FIREBASE_PROJECT_ID secret missing.}"
+          : "${ACCOUNT_DELETION_URL:?ERROR: ACCOUNT_DELETION_URL secret missing.}"
+          echo "All required secrets present."
+
       - name: Decode Keystore
         run: echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 --decode > app/keystore.jks
+
       - name: Create google-services.json
         run: echo '${{ secrets.GOOGLE_SERVICES_JSON }}' > app/google-services.json
+
       - name: Validate google-services.json
         run: |
           jq empty app/google-services.json || (echo "Invalid google-services.json" && exit 1)
-          grep -q '"package_name": "com.dhanuk.debtbro"' app/google-services.json || (echo "Wrong package name in google-services.json" && exit 1)
+          grep -q '"package_name": "com.dhanuk.debtbro"' app/google-services.json || (echo "Wrong package_name in google-services.json" && exit 1)
+
       - name: Create local.properties
         run: |
           cat > local.properties << EOF
-          sdk.dir=$ANDROID_SDK_ROOT
+          sdk.dir=$ANDROID_HOME
           GEMINI_API_KEY=${{ secrets.GEMINI_API_KEY }}
           GEMINI_API_KEY_2_5_FLASH_LITE=${{ secrets.GEMINI_API_KEY_2_5_FLASH_LITE }}
           ADMOB_APP_ID=${{ secrets.ADMOB_APP_ID }}
@@ -67,29 +95,36 @@ jobs:
           FIREBASE_PROJECT_ID=${{ secrets.FIREBASE_PROJECT_ID }}
           ACCOUNT_DELETION_URL=${{ secrets.ACCOUNT_DELETION_URL }}
           EOF
+
       - name: Echo version info
         run: |
           echo "Build #${{ github.run_number }}"
           echo "SHA: ${{ github.sha }}"
           echo "Ref: ${{ github.ref }}"
+
       - name: Grant Gradle permission
         run: chmod +x gradlew
+
       - name: Build Release APK
         run: ./gradlew assembleRelease --stacktrace
+
       - name: Build Release AAB
         run: ./gradlew bundleRelease --stacktrace
+
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
           name: DebtBro-APK-${{ github.run_number }}
           path: app/build/outputs/apk/release/app-release.apk
           retention-days: 30
+
       - name: Upload AAB
         uses: actions/upload-artifact@v4
         with:
           name: DebtBro-AAB-${{ github.run_number }}
           path: app/build/outputs/bundle/release/app-release.aab
           retention-days: 30
+
       - name: Create GitHub Release
         if: github.ref == 'refs/heads/main'
         uses: softprops/action-gh-release@v2

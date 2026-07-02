@@ -6,6 +6,7 @@ import androidx.credentials.ClearCredentialStateRequest
 import androidx.credentials.CredentialManager
 import androidx.credentials.GetCredentialRequest
 import com.dhanuk.debtbro.R
+import com.dhanuk.debtbro.data.network.AccountDeletionApiService
 import com.google.android.libraries.identity.googleid.GetGoogleIdOption
 import com.google.android.libraries.identity.googleid.GoogleIdTokenCredential
 import com.google.firebase.auth.AuthCredential
@@ -21,12 +22,15 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
 import kotlinx.coroutines.tasks.await
 import javax.inject.Inject
+import javax.inject.Named
 import javax.inject.Singleton
 
 @Singleton
 class AuthManager @Inject constructor(
     private val auth: FirebaseAuth,
     private val credentialManager: CredentialManager,
+    private val accountDeletionApi: AccountDeletionApiService,
+    @Named("accountDeletionUrl") private val accountDeletionUrl: String,
     @ApplicationContext private val context: Context
 ) {
     suspend fun signInWithGoogle(activity: Activity): Result<FirebaseUser> = runCatching {
@@ -149,6 +153,54 @@ class AuthManager @Inject constructor(
         Unit
     }.onFailure { e ->
         android.util.Log.e("AuthManager", "deleteAccount failed: ${e.message}", e)
+    }
+
+    /**
+     * Best-effort POST to the configured Cloud Function (BuildConfig.ACCOUNT_DELETION_URL)
+     * to record an account-deletion request server-side and kick off the 24-hour GDPR
+     * grace window. Returns silently without throwing if the URL is missing, malformed,
+     * points outside the trusted Google Cloud host set, or HTTP fails — local-only
+     * deletion bookkeeping continues regardless.
+     *
+     * SSRF guard: parse the URL with OkHttp's HttpUrl (no scheme/host can sneak
+     * past) and refuse any host outside the `*.cloudfunctions.net` / `*.googleapis.com`
+     * family. This protects against a tampered local.properties or compromised CI
+     * secret pointing at an attacker-controlled HTTPS endpoint that would otherwise
+     * receive the user's Firebase UID.
+     *
+     * The URL comes from the GH secret `ACCOUNT_DELETION_URL` (wired via build.yml →
+     * buildConfigField → NetworkModule's @Named("accountDeletionUrl") provider).
+     */
+    suspend fun requestAccountDeletion(uid: String): Result<Unit> = runCatching {
+        if (accountDeletionUrl.isBlank()) return@runCatching
+        val parsed = accountDeletionUrl.toHttpUrlOrNull() ?: run {
+            android.util.Log.w("AuthManager", "requestAccountDeletion: URL is malformed, skipping — $accountDeletionUrl")
+            return@runCatching
+        }
+        if (parsed.scheme != "https") {
+            android.util.Log.w("AuthManager", "requestAccountDeletion: non-HTTPS scheme '${parsed.scheme}', skipping")
+            return@runCatching
+        }
+        val host = parsed.host.lowercase()
+        val isTrustedHost = host == "cloudfunctions.net" ||
+            host.endsWith(".cloudfunctions.net") ||
+            host.endsWith(".googleapis.com")
+        if (!isTrustedHost) {
+            android.util.Log.w("AuthManager", "requestAccountDeletion: untrusted host '$host', refusing to POST. " +
+                "ACCOUNT_DELETION_URL must point to a *.cloudfunctions.net or *.googleapis.com endpoint.")
+            return@runCatching
+        }
+        accountDeletionApi.requestDeletion(
+            url = accountDeletionUrl,
+            request = AccountDeletionRequest(uid)
+        )
+        Unit
+    }.onFailure { e ->
+        android.util.Log.w(
+            "AuthManager",
+            "requestAccountDeletion HTTP failed (continuing with local-only deletion) — ${e.message}",
+            e
+        )
     }
 
     /**

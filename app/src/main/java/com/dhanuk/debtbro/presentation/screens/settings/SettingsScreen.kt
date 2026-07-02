@@ -193,6 +193,51 @@ fun SettingsScreen(viewModel: SettingsViewModel = hiltViewModel()) {
             }
 
             // ── NOTIFICATIONS SECTION ────────────────────────────────────────
+            // ── AI SETUP ──────────────────────────────────────────────────────────
+            // Optional: paste your own Gemini API key to override the bundled CI key.
+            // Free-tier keys from aistudio.google.com/app/apikey work fine. Saved
+            // locally only via DataStore — never sent to our servers.
+            item {
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                    shape = UITokens.ShapeLarge
+                ) {
+                    Column(
+                        Modifier.padding(UITokens.CardInnerPadding),
+                        verticalArrangement = Arrangement.spacedBy(UITokens.SpaceSmall)
+                    ) {
+                        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(UITokens.SpaceSmall)) {
+                            Icon(Icons.Default.AutoAwesome, contentDescription = LocalizedString.get("ai_api_key"), tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(UITokens.IconMedium))
+                            Text(
+                                LocalizedString.get("ai_api_key"),
+                                color = MaterialTheme.colorScheme.onSurface,
+                                fontWeight = FontWeight.Bold,
+                                fontSize = UITokens.FontBody
+                            )
+                        }
+                        Text(
+                            LocalizedString.get("ai_api_key_supporting"),
+                            color = extra.subtitleGray,
+                            fontSize = UITokens.FontCaption
+                        )
+                        OutlinedTextField(
+                            value = state.geminiApiKey,
+                            onValueChange = viewModel::saveGeminiKey,
+                            label = { Text(LocalizedString.get("ai_api_key_label")) },
+                            placeholder = { Text(LocalizedString.get("ai_api_key_hint")) },
+                            singleLine = true,
+                            visualTransformation = PasswordVisualTransformation(),
+                            modifier = Modifier.fillMaxWidth(),
+                            colors = OutlinedTextFieldDefaults.colors(
+                                focusedBorderColor = MaterialTheme.colorScheme.primary,
+                                unfocusedBorderColor = MaterialTheme.colorScheme.outline
+                            )
+                        )
+                    }
+                }
+            }
+
             item { SectionHeader(LocalizedString.get("notifications"), Icons.Default.Notifications) }
             item { NotificationsPermissionCard() }
             item {

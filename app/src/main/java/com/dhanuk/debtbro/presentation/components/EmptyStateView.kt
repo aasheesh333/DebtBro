@@ -33,7 +33,11 @@ fun EmptyStateView(
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(10.dp)
     ) {
-        Text(emoji, fontSize = 54.sp)
+        Text(
+            emoji,
+            fontSize = 48.sp,
+            lineHeight = 56.sp,
+        )
         Text(
             title,
             style = MaterialTheme.typography.titleLarge,
