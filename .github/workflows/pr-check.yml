@@ -95,8 +95,14 @@ jobs:
       # clean step, a classpath with a phantom-symbol error like
       # `Unresolved reference: Foo in Bar.kt` can surface even when Bar.kt
       # is no longer in the repo.
+      #
+      # `--rerun-tasks` further defeats Gradle's build cache (the
+      # `~/.gradle/caches/build-cache-1/` layer preserved by the
+      # `setup-java cache: gradle` step) so no task can be served from a
+      # cached output of a previous branch state. Cost: ~1 minute extra
+      # vs incremental, acceptable for fast PR feedback.
       - name: Assemble Debug APK
-        run: ./gradlew :app:clean :app:assembleDebug --no-daemon --stacktrace --warning-mode=summary
+        run: ./gradlew :app:clean :app:assembleDebug --rerun-tasks --no-daemon --stacktrace --warning-mode=summary
 
       - name: Lint Debug
         id: lint
