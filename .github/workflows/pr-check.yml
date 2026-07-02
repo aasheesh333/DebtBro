@@ -48,6 +48,12 @@ jobs:
       # google-services.json at *config* time. We write a stub that satisfies
       # the well-known package_name check but contains no real API keys.
       # This is fine because assembleDebug is unsigned + non-prod.
+      #
+      # The build declares `applicationIdSuffix ".debug"` on the debug
+      # build type, so the plugin looks for BOTH `com.dhanuk.debtbro` and
+      # `com.dhanuk.debtbro.debug` clients at config time. Missing either
+      # one fails the build with `No matching client found for package
+      # name 'com.dhanuk.debtbro.debug'`. Both are stubbed here.
       - name: Stub google-services.json
         run: |
           cat > app/google-services.json << 'STUB_JSON'
@@ -60,6 +66,16 @@ jobs:
               "client_info": {
                 "mobilesdk_app_id": "1:000000000000:android:0000000000000000",
                 "android_client_info": { "package_name": "com.dhanuk.debtbro" }
+              },
+              "oauth_client": [],
+              "api_key": [{ "current_key": "AIzaSyCI-stub-not-real" }],
+              "services": {
+                "appinvite_service": { "other_platform_oauth_client": [] }
+              }
+            }, {
+              "client_info": {
+                "mobilesdk_app_id": "1:000000000000:android:0000000000000001",
+                "android_client_info": { "package_name": "com.dhanuk.debtbro.debug" }
               },
               "oauth_client": [],
               "api_key": [{ "current_key": "AIzaSyCI-stub-not-real" }],
