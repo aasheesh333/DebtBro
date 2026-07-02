@@ -1553,7 +1553,7 @@ object LocalizedString {
             "email_required" to "ईमेल आवश्यक आहे",
             "passwords_dont_match" to "पासवर्ड्स जुळत नाहीत",
         ),
-        // ── Punjabi (pa) ─────────────────────────────────────────────────────────--
+        // ── Punjabi (pa) ──────────────────────────────────────────────────────────
         // Gurmukhi users typically read Hindi too. We use Hindi base for readability.
         "pa" to mapOf(
             "nav_home" to "ਘਰ",
