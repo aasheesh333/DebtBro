@@ -38,9 +38,9 @@ androidx-material = { group = "com.google.android.material", name = "material", 
 androidx-compose-bom = { group = "androidx.compose", name = "compose-bom", version.ref = "composeBom" }
 androidx-compose-ui = { group = "androidx.compose.ui", name = "ui" }
 androidx-compose-foundation = { group = "androidx.compose.foundation", name = "foundation" }
+androidx-compose-animation = { group = "androidx.compose.animation", name = "animation" }
 androidx-compose-ui-tooling = { group = "androidx.compose.ui", name = "ui-tooling" }
 androidx-compose-ui-tooling-preview = { group = "androidx.compose.ui", name = "ui-tooling-preview" }
-androidx-compose-animation-tooling = { group = "androidx.compose.animation", name = "animation-tooling" }
 androidx-compose-material3 = { group = "androidx.compose.material3", name = "material3", version.ref = "composeMaterial" }
 androidx-compose-material = { group = "androidx.compose.material", name = "material" }
 androidx-compose-material-icons = { group = "androidx.compose.material", name = "material-icons-extended" }
