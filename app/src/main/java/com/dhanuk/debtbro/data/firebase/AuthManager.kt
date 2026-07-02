@@ -7,6 +7,8 @@ import androidx.credentials.CredentialManager
 import androidx.credentials.GetCredentialRequest
 import com.dhanuk.debtbro.R
 import com.dhanuk.debtbro.data.network.AccountDeletionApiService
+import com.dhanuk.debtbro.data.network.AccountDeletionRequest
+import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
 import com.google.android.libraries.identity.googleid.GetGoogleIdOption
 import com.google.android.libraries.identity.googleid.GoogleIdTokenCredential
 import com.google.firebase.auth.AuthCredential

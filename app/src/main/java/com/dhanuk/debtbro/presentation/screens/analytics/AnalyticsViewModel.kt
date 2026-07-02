@@ -7,6 +7,7 @@ import com.dhanuk.debtbro.data.db.entity.DebtEntity
 import com.dhanuk.debtbro.data.repository.DebtRepository
 import com.dhanuk.debtbro.data.repository.NoApiKeyException
 import com.dhanuk.debtbro.data.repository.AiRepository
+import com.dhanuk.debtbro.util.LocalizedString
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
