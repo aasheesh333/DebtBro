@@ -9,6 +9,7 @@ import android.webkit.WebSettings
 import android.webkit.WebView
 import android.webkit.WebViewClient
 import android.widget.Toast
+import com.dhanuk.debtbro.BuildConfig
 import com.dhanuk.debtbro.data.db.entity.DebtEntity
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.suspendCancellableCoroutine
@@ -381,7 +382,7 @@ object HtmlExporter {
         val file = saveBitmap(context, bitmap)
         return androidx.core.content.FileProvider.getUriForFile(
             context,
-            "${context.packageName}.fileprovider",
+            "${BuildConfig.PACKAGE_NAME}.fileprovider",
             file
         )
     }

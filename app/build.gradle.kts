@@ -27,8 +27,8 @@ android {
         applicationId = "com.dhanuk.debtbro"
         minSdk = 26
         targetSdk = 35
-        versionCode = (System.getenv("GITHUB_RUN_NUMBER")?.toIntOrNull() ?: 1)
-        versionName = "1.0.0"
+        versionCode = (System.getenv("GITHUB_RUN_NUMBER")?.toIntOrNull() ?: localProp("VERSION_CODE").toIntOrNull() ?: 1)
+        versionName = localProp("VERSION_NAME").ifEmpty { "1.0.0" }
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
         buildConfigField("String", "GROQ_API_KEY", "\"${escapedProp("GROQ_API_KEY")}\"")
@@ -37,6 +37,8 @@ android {
         buildConfigField("String", "ADMOB_INTERSTITIAL_ID", "\"${escapedProp("ADMOB_INTERSTITIAL_ID")}\"")
         buildConfigField("String", "ADMOB_REWARDED_ID", "\"${escapedProp("ADMOB_REWARDED_ID")}\"")
         buildConfigField("String", "ONESIGNAL_APP_ID", "\"${escapedProp("ONESIGNAL_APP_ID")}\"")
+        buildConfigField("String", "ONESIGNAL_API_KEY", "\"${escapedProp("ONESIGNAL_API_KEY")}\"")
+        buildConfigField("String", "PACKAGE_NAME", "\"${escapedProp("PACKAGE_NAME").ifEmpty { "com.dhanuk.debtbro" }}\"")
         buildConfigField("Boolean", "ENABLE_CRASHLYTICS", "true")
         buildConfigField("Boolean", "ENABLE_PERFORMANCE_MONITORING", "true")
         buildConfigField("String", "PRIVACY_POLICY_URL", "\"${escapedProp("PRIVACY_POLICY_URL").ifEmpty { "https://dhanuk.page.gd/DebtBro/Privacy-Policy.html" }}\"")

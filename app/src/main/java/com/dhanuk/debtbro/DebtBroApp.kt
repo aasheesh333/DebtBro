@@ -75,6 +75,14 @@ class DebtBroApp : Application(), Configuration.Provider {
         if (BuildConfig.ONESIGNAL_APP_ID.isNotBlank()) {
             OneSignal.Debug.logLevel = LogLevel.NONE
             OneSignal.initWithContext(this, BuildConfig.ONESIGNAL_APP_ID)
+            // REST/API key is required for any server-to-server OneSignal calls
+            // (e.g. transactional push via Cloud Functions). Stored as BuildConfig
+            // so it can be rotated per environment without rebuilding native code.
+            if (BuildConfig.ONESIGNAL_API_KEY.isNotBlank() && BuildConfig.DEBUG) {
+                val masked = BuildConfig.ONESIGNAL_API_KEY.take(6) + "…" +
+                    BuildConfig.ONESIGNAL_API_KEY.takeLast(4)
+                Log.d("DebtBroApp", "OneSignal REST API key loaded (preview=$masked)")
+            }
             CoroutineScope(Dispatchers.IO).launch { OneSignal.Notifications.requestPermission(false) }
         }
 

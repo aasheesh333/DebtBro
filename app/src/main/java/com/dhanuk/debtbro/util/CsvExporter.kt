@@ -6,6 +6,7 @@ import android.os.Build
 import android.os.Environment
 import android.provider.MediaStore
 import androidx.core.content.FileProvider
+import com.dhanuk.debtbro.BuildConfig
 import com.dhanuk.debtbro.data.db.entity.DebtEntity
 import java.io.File
 import java.io.IOException
@@ -33,7 +34,7 @@ object CsvExporter {
             if (!downloadsDir.exists()) downloadsDir.mkdirs()
             val file = File(downloadsDir, fileName)
             file.outputStream().use { writeCsv(it, debts) }
-            FileProvider.getUriForFile(context, "${context.packageName}.fileprovider", file)
+            FileProvider.getUriForFile(context, "${BuildConfig.PACKAGE_NAME}.fileprovider", file)
         }
     }
 

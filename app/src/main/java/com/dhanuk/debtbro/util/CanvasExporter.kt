@@ -14,6 +14,7 @@ import android.text.Layout
 import android.text.StaticLayout
 import android.text.TextPaint
 import androidx.core.content.FileProvider
+import com.dhanuk.debtbro.BuildConfig
 import com.dhanuk.debtbro.data.db.entity.DebtEntity
 import java.io.File
 import java.text.SimpleDateFormat
@@ -398,7 +399,7 @@ object CanvasExporter {
         cacheDir.mkdirs()
         val file = File(cacheDir, "debtbro-card-${System.currentTimeMillis()}.png")
         file.outputStream().use { bitmap.compress(Bitmap.CompressFormat.PNG, 100, it) }
-        return FileProvider.getUriForFile(context, "${context.packageName}.fileprovider", file)
+        return FileProvider.getUriForFile(context, "${BuildConfig.PACKAGE_NAME}.fileprovider", file)
     }
 
     private fun cleanOldCacheFiles(context: Context, maxAgeMs: Long = 24 * 60 * 60 * 1000L) {
