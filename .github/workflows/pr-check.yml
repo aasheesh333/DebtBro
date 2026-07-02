@@ -87,8 +87,16 @@ jobs:
       # Full debug build catches more than just `:app:compileDebugKotlin`:
       # exercises Hilt + Room KSP, resource processing, manifest merging,
       # and AGP configuration. Costs ~1-2 minutes extra vs a pure typecheck.
+      #
+      # `:app:clean` BEFORE `:app:assembleDebug` forces a fresh `app/build/`
+      # wipe every run — defends against stale Kotlin incremental-compilation
+      # metadata that can reference source files deleted in a previous
+      # branch state but still lingering in the build directory. Without the
+      # clean step, a classpath with a phantom-symbol error like
+      # `Unresolved reference: Foo in Bar.kt` can surface even when Bar.kt
+      # is no longer in the repo.
       - name: Assemble Debug APK
-        run: ./gradlew :app:assembleDebug --no-daemon --stacktrace --warning-mode=summary
+        run: ./gradlew :app:clean :app:assembleDebug --no-daemon --stacktrace --warning-mode=summary
 
       - name: Lint Debug
         id: lint
