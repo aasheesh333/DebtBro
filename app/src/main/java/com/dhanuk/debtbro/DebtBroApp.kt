@@ -67,7 +67,7 @@ class DebtBroApp : Application(), Configuration.Provider {
         // ── OneSignal (must initialize BEFORE Ads) ─────────────────────────────
         if (BuildConfig.ONESIGNAL_APP_ID.isNotBlank()) {
             OneSignal.Debug.logLevel = if (BuildConfig.DEBUG) LogLevel.VERBOSE else LogLevel.NONE
-            OneSignal.initWithEnvironment(this, BuildConfig.ONESIGNAL_APP_ID)
+            OneSignal.initWithContext(this, BuildConfig.ONESIGNAL_APP_ID)
             // Defer notification permission request to first UI screen
             // (POST_NOTIFICATIONS runtime permission should be requested with user gesture)
         }

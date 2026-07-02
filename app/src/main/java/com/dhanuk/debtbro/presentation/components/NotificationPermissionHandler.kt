@@ -9,6 +9,7 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 import androidx.compose.material.icons.Icons
+import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -110,7 +111,7 @@ private fun NotificationRationaleDialog(onAllow: () -> Unit, onDeny: () -> Unit)
                 imageVector = Icons.Default.Notifications,
                 contentDescription = null,
                 tint = MaterialTheme.colorScheme.primary,
-                modifier = androidx.compose.ui.Modifier.size(40.dp)
+                modifier = Modifier.size(40.dp)
             )
         },
         title = { Text(LocalizedString.get("notification_permission_title"), fontWeight = FontWeight.Bold) },
@@ -147,7 +148,7 @@ private fun NotificationSettingsDialog(onDismiss: () -> Unit) {
     AlertDialog(
         onDismissRequest = onDismiss,
         icon = {
-            Icon(Icons.Default.Notifications, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = androidx.compose.ui.Modifier.size(40.dp))
+            Icon(Icons.Default.Notifications, contentDescription = null, tint = MaterialTheme.colorScheme.primary,                modifier = Modifier.size(40.dp))
         },
         title = { Text("Notifications Blocked", fontWeight = FontWeight.Bold) },
         text = {
