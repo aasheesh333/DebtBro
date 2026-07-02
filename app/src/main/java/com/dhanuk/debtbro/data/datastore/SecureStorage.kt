@@ -17,7 +17,7 @@ import javax.inject.Singleton
 class SecureStorage @Inject constructor(@ApplicationContext private val context: Context) {
 
     private object Keys {
-        const val GROQ_API_KEY = "groq_api_key"
+        const val GEMINI_API_KEY = "gemini_api_key"
         const val GOOGLE_USER_NAME = "google_user_name"
         const val GOOGLE_USER_EMAIL = "google_user_email"
         const val GOOGLE_USER_PHOTO = "google_user_photo"
@@ -43,19 +43,19 @@ class SecureStorage @Inject constructor(@ApplicationContext private val context:
         }
     }
 
-    private val _groqApiKey = MutableStateFlow(prefs.getString(Keys.GROQ_API_KEY, "") ?: "")
+    private val _geminiApiKey = MutableStateFlow(prefs.getString(Keys.GEMINI_API_KEY, "") ?: "")
     private val _googleUserName = MutableStateFlow(prefs.getString(Keys.GOOGLE_USER_NAME, "") ?: "")
     private val _googleUserEmail = MutableStateFlow(prefs.getString(Keys.GOOGLE_USER_EMAIL, "") ?: "")
     private val _googleUserPhoto = MutableStateFlow(prefs.getString(Keys.GOOGLE_USER_PHOTO, "") ?: "")
 
-    val groqApiKey: Flow<String> = _groqApiKey
+    val geminiApiKey: Flow<String> = _geminiApiKey
     val googleUserName: Flow<String> = _googleUserName
     val googleUserEmail: Flow<String> = _googleUserEmail
     val googleUserPhoto: Flow<String> = _googleUserPhoto
 
-    suspend fun saveGroqApiKey(key: String) = withContext(Dispatchers.IO) {
-        prefs.edit().putString(Keys.GROQ_API_KEY, key.trim()).apply()
-        _groqApiKey.value = key.trim()
+    suspend fun saveGeminiApiKey(key: String) = withContext(Dispatchers.IO) {
+        prefs.edit().putString(Keys.GEMINI_API_KEY, key.trim()).apply()
+        _geminiApiKey.value = key.trim()
     }
 
     suspend fun saveGoogleUserName(name: String) = withContext(Dispatchers.IO) {
@@ -75,12 +75,12 @@ class SecureStorage @Inject constructor(@ApplicationContext private val context:
 
     suspend fun clearSensitiveData() = withContext(Dispatchers.IO) {
         prefs.edit()
-            .remove(Keys.GROQ_API_KEY)
+            .remove(Keys.GEMINI_API_KEY)
             .remove(Keys.GOOGLE_USER_NAME)
             .remove(Keys.GOOGLE_USER_EMAIL)
             .remove(Keys.GOOGLE_USER_PHOTO)
             .apply()
-        _groqApiKey.value = ""
+        _geminiApiKey.value = ""
         _googleUserName.value = ""
         _googleUserEmail.value = ""
         _googleUserPhoto.value = ""

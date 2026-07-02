@@ -3,10 +3,18 @@ package com.dhanuk.debtbro.data.repository
 import com.dhanuk.debtbro.BuildConfig
 import com.dhanuk.debtbro.data.datastore.AppPreferences
 import com.dhanuk.debtbro.data.db.entity.DebtEntity
-import com.dhanuk.debtbro.data.network.GroqApiService
-import com.dhanuk.debtbro.data.network.GroqMessage
-import com.dhanuk.debtbro.data.network.GroqRequest
+import com.dhanuk.debtbro.data.network.GeminiApiService
+import com.dhanuk.debtbro.data.network.GeminiContent
+import com.dhanuk.debtbro.data.network.GeminiRequest
+import com.dhanuk.debtbro.data.network.GeminiPart
+import com.dhanuk.debtbro.data.network.GenerationConfig
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import java.text.SimpleDateFormat
@@ -16,10 +24,15 @@ import javax.inject.Inject
 import javax.inject.Singleton
 
 @Singleton
-class GroqRepository @Inject constructor(private val api: GroqApiService, private val prefs: AppPreferences) {
+class AiRepository @Inject constructor(
+    private val geminiApi: GeminiApiService,
+    private val prefs: AppPreferences
+) {
     companion object {
         const val MAX_FREE_REGENERATIONS = 5
         private const val API_COOLDOWN_MS = 1000L
+        private const val RPM_LIMIT = 30
+        private const val RPM_WINDOW_MS = 60_000L
         private val BLOCKED_WORDS = setOf(
             "fuck", "fucking", "shit", "shithead", "bitch", "bastard", "asshole",
             "dick", "dickhead", "cunt", "whore", "slut", "nigger", "nigga",
@@ -65,8 +78,9 @@ class GroqRepository @Inject constructor(private val api: GroqApiService, privat
 
     private suspend fun getRegenerationCount(): Int = prefs.getAiRegenerationCount()
 
-    private suspend fun apiKey(): String = prefs.groqApiKey.first().ifEmpty { BuildConfig.GROQ_API_KEY }
-    private fun systemPrompt(roastLevel: String, selectedLangCode: String, debtType: String?): String {
+    private suspend fun apiKey(): String = prefs.geminiApiKey.first().ifEmpty { BuildConfig.GEMINI_API_KEY_2_5_FLASH_LITE }
+
+    private fun buildSystemPrompt(roastLevel: String, selectedLangCode: String, debtType: String?): String {
         val langInstruction = when(selectedLangCode) {
             "hi" -> "Respond ONLY in Hindi (Devanagari script). Use Hinglish if needed."
             "es" -> "Respond ONLY in Spanish."
@@ -131,6 +145,7 @@ Key rules:
         }
         return "$langInstruction\n$prompt"
     }
+
     suspend fun generateRoast(debt: DebtEntity, roastLevel: String): Result<String> = runCatching {
         ensureRateLimit()
         val key = apiKey()
@@ -158,57 +173,87 @@ Generate a WhatsApp-style payment reminder. The message MUST reference the actua
             "MEDIUM" -> 0.65
             else -> 0.5
         }
-        val response = api.chat(
-            auth = "Bearer $key",
-            request = GroqRequest(
-                model = "llama-3.3-70b-versatile",
-                messages = listOf(
-                    GroqMessage("system", systemPrompt(roastLevel, prefs.selectedLanguage.first(), debt.type)),
-                    GroqMessage("user", userMessage)
-                ),
-                temperature = temp,
-                max_tokens = 200
+
+        val langCode = prefs.selectedLanguage.first()
+        val systemText = buildSystemPrompt(roastLevel, langCode, debt.type)
+
+        val response = geminiApi.generateContent(
+            apiKey = key,
+            request = GeminiRequest(
+                contents = listOf(GeminiContent(parts = listOf(GeminiPart(userMessage)), role = "user")),
+                systemInstruction = GeminiContent(parts = listOf(GeminiPart(systemText)), role = "system"),
+                generationConfig = GenerationConfig(temperature = temp, maxOutputTokens = 200)
             )
         )
-        filterProfanity(response.choices.first().message.content
-            .trim()
+
+        val text = response.candidates.firstOrNull()?.content?.parts?.firstOrNull()?.text
+            ?: throw Exception("AI response is empty, try again")
+
+        filterProfanity(text.trim()
             .removeSurrounding("\"")
             .removeSurrounding("\u201C", "\u201D")
             .removeSurrounding("\u2018", "\u2019")
-            .trim())
+            .trim()
+        )
     }
+
     suspend fun analyzeDebts(totalLent: Double, totalOwed: Double, recoveryRate: Int, worstDebtor: String): Result<String> = runCatching {
         ensureRateLimit()
         val key = apiKey()
         if (key.isEmpty()) return Result.failure(Exception("NO_API_KEY"))
         val langCode = prefs.selectedLanguage.first()
         val currency = prefs.defaultCurrency.first()
-        val langInstruction = systemPrompt("MILD", langCode, null).substringBefore("\n")
-        val response = api.chat("Bearer $key", GroqRequest(messages = listOf(
-            GroqMessage("system", "$langInstruction\nYou are a funny personal finance analyst. Give ONE sharp 2-line insight. No disclaimers."),
-            GroqMessage("user", "Total lent: ${currency}$totalLent to friends. Total I owe: ${currency}$totalOwed. Recovery rate: $recoveryRate%. Worst debtor: $worstDebtor. Give ONE sharp, funny, honest 2-line insight. Hinglish welcome.")
-        ), model = "llama-3.3-70b-versatile", temperature = 0.3, max_tokens = 150))
-        response.choices.first().message.content.trim()
+        val langInstruction = buildSystemPrompt("MILD", langCode, null).substringBefore("\n")
+
+        val prompt = "Total lent: ${currency}$totalLent to friends. Total I owe: ${currency}$totalOwed. Recovery rate: $recoveryRate%. Worst debtor: $worstDebtor. Give ONE sharp, funny, honest 2-line insight. Hinglish welcome."
+
+        val response = geminiApi.generateContent(
+            apiKey = key,
+            request = GeminiRequest(
+                contents = listOf(GeminiContent(parts = listOf(GeminiPart(prompt)), role = "user")),
+                systemInstruction = GeminiContent(parts = listOf(GeminiPart("$langInstruction\nYou are a funny personal finance analyst. Give ONE sharp 2-line insight. No disclaimers.")), role = "system"),
+                generationConfig = GenerationConfig(temperature = 0.3, maxOutputTokens = 150)
+            )
+        )
+
+        response.candidates.firstOrNull()?.content?.parts?.firstOrNull()?.text?.trim()
+            ?: return Result.failure(Exception("Empty AI response"))
     }
+
     suspend fun generateSplitSummary(title: String, total: Double, perPerson: Double, count: Int): Result<String> = runCatching {
         ensureRateLimit()
         val key = apiKey()
         if (key.isEmpty()) return Result.failure(Exception("NO_API_KEY"))
         val langCode = prefs.selectedLanguage.first()
         val currency = prefs.defaultCurrency.first()
-        val langInstruction = systemPrompt("MILD", langCode, null).substringBefore("\n")
-        val response = api.chat("Bearer $key", GroqRequest(messages = listOf(
-            GroqMessage("system", "$langInstruction\nYou are a funny commentator. One line only. Be creative."),
-            GroqMessage("user", "Split: $title, Total: ${currency}$total, $count people, ${currency}$perPerson each. Write ONE funny line about this. Hinglish ok.")
-        ), model = "llama-3.3-70b-versatile", temperature = 0.7, max_tokens = 100))
-        response.choices.first().message.content.trim()
+        val langInstruction = buildSystemPrompt("MILD", langCode, null).substringBefore("\n")
+
+        val prompt = "Split: $title, Total: ${currency}$total, $count people, ${currency}$perPerson each. Write ONE funny line about this. Hinglish ok."
+
+        val response = geminiApi.generateContent(
+            apiKey = key,
+            request = GeminiRequest(
+                contents = listOf(GeminiContent(parts = listOf(GeminiPart(prompt)), role = "user")),
+                systemInstruction = GeminiContent(parts = listOf(GeminiPart("$langInstruction\nYou are a funny commentator. One line only. Be creative.")), role = "system"),
+                generationConfig = GenerationConfig(temperature = 0.7, maxOutputTokens = 100)
+            )
+        )
+
+        response.candidates.firstOrNull()?.content?.parts?.firstOrNull()?.text?.trim()
+            ?: return Result.failure(Exception("Empty AI response"))
     }
+
     suspend fun testConnection(): Boolean {
-        try {
+        return try {
             ensureRateLimit()
             val key = apiKey()
             if (key.isEmpty()) return false
-            return api.chat("Bearer $key", GroqRequest(messages = listOf(GroqMessage("user", "Say OK")), max_tokens = 10)).choices.isNotEmpty()
+            return geminiApi.generateContent(
+                apiKey = key,
+                request = GeminiRequest(
+                    contents = listOf(GeminiContent(parts = listOf(GeminiPart("Say OK")), role = "user"))
+                )
+            ).candidates.isNotEmpty()
         } catch (e: kotlinx.coroutines.CancellationException) {
             throw e
         } catch (_: Exception) {

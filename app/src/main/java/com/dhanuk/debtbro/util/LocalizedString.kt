@@ -10,10 +10,68 @@ package com.dhanuk.debtbro.util
  */
 object LocalizedString {
 
-    private var currentLang = "en"
+    private const val ENGLISH = "en"
 
-    fun setLanguage(code: String) { currentLang = code }
+    // ── Family fallback chain ─────────────────────────────────────────────────
+    // When the user's chosen language has no map, or its map is missing a key,
+    // fall back to a closely-related language before English. This makes the
+    // LanguageSelectorGrid honest: picking Marathi actually renders Devanagari
+    // (via Hindi) instead of silently showing English.
+    //
+    // NOTE: this is a degraded-text fallback, not a real translation. The UX
+    // trade-off is "show Marathi-speaking users something Devanagari they can
+    // parse" vs. "show them English they may not read at all". The latter was
+    // what we had before this change.
+    private val familyFallback = mapOf(
+        "mr" to "hi", // Marathi — same Devanagari script, broadly intelligible
+        "pa" to "hi", // Punjabi (Gurmukhi) readers typically also read Devanagari
+        "gu" to "hi", // Gujarati — close Hindi family, shared Devanagari
+        "ne" to "hi", // Nepali — Devanagari
+        "sa" to "hi"  // Sanskrit — Devanagari
+        // Urdu (Arabic script), Bengali, Tamil, Telugu, Korean, Chinese,
+        // Vietnamese, Arabic, Persian, etc. fall through directly to English
+        // because pushing them to Hindi Devanagari would render unreadable text
+        // for those users — English is a more honest fallback than gibberish.
+    )
 
+    // ── Current language is a Compose state ──────────────────────────────────
+    // Reading `currentLang.value` inside any @Composable scope registers the
+    // scope as an observer. When setLanguage() updates the value, every
+    // Composable that called LocalizedString.get(...) will recompose —
+    // including NavGraph and the screen trees it hosts.
+    //
+    // Non-Composable contexts (workers, services, AI repo) read .value directly
+    // without composition side-effects.
+    private val currentLang = androidx.compose.runtime.mutableStateOf(ENGLISH)
+
+    fun setLanguage(code: String) {
+        currentLang.value = code.ifBlank { ENGLISH }
+    }
+
+    /**
+     * Tiered lookup:
+     *   1. The user's chosen language (currentLang).
+     *   2. Its declared family fallback (e.g. mr → hi), if the chosen language
+     *      has gaps or no map.
+     *   3. English.
+     *   4. The raw key string — never an exposed "[key]" sentinel in production
+     *      visible UI, since untranslated languages would render literal brackets.
+     */
+    private fun lookup(lang: String, key: String): String {
+        strings[lang]?.get(key)?.let { return it }
+        familyFallback[lang]?.let { fam ->
+            strings[fam]?.get(key)?.let { return it }
+        }
+        return strings[ENGLISH]?.get(key) ?: key
+    }
+
+    fun get(key: String): String = lookup(currentLang.value, key)
+
+    fun get(key: String, langCode: String): String = lookup(langCode.ifBlank { ENGLISH }, key)
+
+    fun getDefault(key: String): String = lookup(ENGLISH, key)
+
+    // ── All available translations ────────────────────────────────────────────
     private val strings = mapOf(
         "en" to mapOf(
             "nav_home" to "Home",
@@ -24,6 +82,7 @@ object LocalizedString {
             "settings" to "Settings",
             "add_debt" to "Add Debt",
             "search_debts" to "Search by name or reason...",
+            "search_language" to "Search language...",
             "they_owe_me" to "💰 They Owe Me",
             "i_owe_them" to "😅 I Owe Them",
             "overdue" to "Overdue 🔥",
@@ -63,6 +122,11 @@ object LocalizedString {
             "payment_reminder" to "Payment Reminder",
             "delete" to "Delete",
             "cancel" to "Cancel",
+            "allow" to "Allow",
+            "not_now" to "Not Now",
+            "notification_permission_title" to "Enable Notifications",
+            "notification_permission_desc" to "We use notifications to help you stay on top of your debts:",
+            "notification_permission_denied" to "You have blocked notifications. To enable them, please open your device's settings and allow notifications for DebtBro.",
             "remaining_balance" to "Remaining Balance",
             "debt_settled" to "Debt Settled",
             "paid" to "Paid",
@@ -291,6 +355,11 @@ object LocalizedString {
             "payment_reminder" to "भुगतान अनुस्मारक",
             "delete" to "हटाएं",
             "cancel" to "रद्द करें",
+            "allow" to "अनुमति दें",
+            "not_now" to "अभी नहीं",
+            "notification_permission_title" to "नोटिफिकेशन चालू करें",
+            "notification_permission_desc" to "हम आपको कर्ज़ की याद दिलाने के लिए नोटिफिकेशन का उपयोग करते हैं:",
+            "notification_permission_denied" to "आपने नोटिफिकेशन ब्लॉक कर दिए हैं। चालू करने के लिए, कृपया डिवाइस सेटिंग्स में जाकर DebtBro के लिए नोटिफिकेशन अनुमति दें।",
             "remaining_balance" to "शेष राशि",
             "debt_settled" to "कर्ज़ चुकाया गया",
             "paid" to "भुगतान",
@@ -1225,21 +1294,355 @@ object LocalizedString {
             "email_required" to "メールアドレスは必須です",
             "passwords_dont_match" to "パスワードが一致しません",
         ),
+        // ── Marathi (mr) ──────────────────────────────────────────────────────────
+        // Marathi shares the Devanagari script with Hindi. Most of the strings come
+        // straight from Hindi since users of either script are mutually readable;
+        // a few Marathi-specific terms are overridden below where Marathi has
+        // a uniquely different word from Hindi.
+        "mr" to mapOf(
+            "nav_home" to "मुख्यपृष्ठ",
+            "nav_debts" to "कर्जे",
+            "nav_split" to "वाटणी",
+            "nav_stats" to "आकडेवारी",
+            "all_debts" to "सर्व कर्जे",
+            "settings" to "सेटिंग्ज",
+            "add_debt" to "कर्ज जोडा",
+            "search_debts" to "नाव किंवा कारणाने शोधा...",
+            "they_owe_me" to "💰 ते मला देणे",
+            "i_owe_them" to "😅 मी त्यांना देणे",
+            "overdue" to "मुदत संपली 🔥",
+            "recent_debts" to "अलीकडील कर्जे 🕒",
+            "see_all" to "सर्व पहा",
+            "leaderboard" to "कर्ज लीडरबोर्ड 🏆",
+            "add_payment" to "पेमेंट जोडा",
+            "settle_all" to "सर्व पूर्ण करा",
+            "export_image" to "प्रतिमेसह पाठवा",
+            "share_whatsapp" to "WhatsApp वर पाठवा",
+            "payment_history" to "पेमेंट इतिहास",
+            "no_payments" to "कोणतेही पेमेंट नाही.",
+            "edit_debt" to "कर्ज संपादित करा",
+            "delete_debt" to "कर्ज हटवायचे?",
+            "delete_confirm" to "हे कर्ज आणि सर्व पेमेंट्स कायमचे हटवले जातील.",
+            "split_bill" to "बिल वाटा",
+            "financial_insights" to "आर्थिक अंतर्दृष्टी",
+            "monthly_trend" to "मासिक कल",
+            "ai_take" to "🤖 AI चे मत",
+            "nudge" to "🤖 BroBot स्मरणपत्रे",
+            "total_owed" to "एकूण मला देणे",
+            "i_owe" to "मी देणे",
+            "recovery" to "वसुली दर",
+            "settled" to "सर्व पूर्ण",
+            "created" to "तयार केले",
+            "net_balance" to "निव्वळ शिल्लक",
+            "most_trusted" to "🏅 सर्वात विश्वासू",
+            "worst_offender" to "💀 सर्वात मोठा डीफॉल्टर",
+            "no_active" to "कोणतेही कर्ज नाही. शांत पाकीट!",
+            "no_results" to "काहीच सापडले नाही",
+            "try_different" to "दुसरे नाव किंवा शब्द वापरून पहा",
+            "no_debts" to "इथे काहीच नाही!",
+            "empty_owed" to "काहीच नाही. एक कर्ज जोडा.",
+            "gentle_reminder" to "मृदू स्मरणपत्र",
+            "settlement_request" to "सेटलमेंट विनंती",
+            "payment_due" to "पेमेंट बाकी",
+            "payment_reminder" to "पेमेंट स्मरणपत्र",
+            "delete" to "हटवा",
+            "cancel" to "रद्द करा",
+            "allow" to "परवानगी द्या",
+            "not_now" to "आता नाही",
+            "notification_permission_title" to "सूचना चालू करा",
+            "notification_permission_desc" to "आम्ही तुम्हाला कर्जांची आठवण करून देतो:",
+            "notification_permission_denied" to "तुम्ही सूचना अवरोधित केल्या आहेत. त्या चालू करण्यासाठी सेटिंग्ज उघडा आणि DebtBro ला परवानगी द्या.",
+            "remaining_balance" to "उरलेली रक्कम",
+            "debt_settled" to "कर्ज पूर्ण झाले",
+            "paid" to "भरलेले",
+            "total" to "एकूण",
+            "amount" to "रक्कम",
+            "note_optional" to "टीप (पर्यायी)",
+            "save_payment" to "पेमेंट जतन करा",
+            "person_name" to "व्यक्तीचे नाव",
+            "total_amount" to "एकूण रक्कम",
+            "description" to "वर्णन",
+            "emoji" to "इमोजी",
+            "update_debt" to "कर्ज अपडेट करा",
+            "greeting" to "नमस्कार",
+            "money_memory_subtitle" to "तुमची आर्थिक स्मरणशक्ती आज तीक्ष्ण आहे",
+            "cloud_sync" to "☁️ क्लाउड सिंक",
+            "cloud_sync_desc" to "Google ने साइन इन करा आणि तुमचा डेटा सुरक्षित ठेवा.",
+            "go_to_settings" to "सेटिंग्ज वर जा",
+            "maybe_later" to "नंतर कधीतरी",
+            "total_owed_to_me" to "एकूण मला देणे",
+            "recovery_rate" to "वसुली दर",
+            "owed_to_me" to "मला देणे",
+            "all_time_settled" to "सर्व पूर्ण",
+            "debt_recovery_rate" to "कर्ज वसुली दर",
+            "tap_refresh" to "आर्थिक विश्लेषणासाठी रिफ्रेश करा.",
+            "whats_this_for" to "हे कशासाठी?",
+            "goa_trip_placeholder" to "उदा. गोवा ट्रिप, पिझ्झा पार्टी",
+            "per_person" to "प्रत्येकी",
+            "among_people" to "{count} लोकांमध्ये",
+            "create_split" to "वाटणी तयार करा",
+            "past_splits" to "मागील वाटण्या",
+            "add_person" to "व्यक्ती जोडा",
+            "name_placeholder" to "नाव",
+            "ai_take_short" to "AI चे मत",
+            "create_debts" to "कर्जे तयार करा",
+            "select_contact" to "संपर्क निवडा",
+            "pick_from_contacts_desc" to "फोनमधून संपर्क निवडा. परवानगीची गरज नाही.",
+            "pick_contact" to "संपर्क निवडा",
+            "search_contacts" to "संपर्क शोधा...",
+            "contact_permission_msg" to "संपर्क निवडण्यासाठी परवानगी आवश्यक आहे.",
+            "grant_permission" to "परवानगी द्या",
+            "account" to "खाते",
+            "preferences" to "पसंती",
+            "display_name" to "तुमचे नाव",
+            "default_currency" to "चलन",
+            "nudge_roast_level" to "रोस्ट स्तर",
+            "data_export" to "डेटा आणि निर्यात",
+            "export_csv" to "CSV निर्यात",
+            "export_csv_subtitle" to "सर्व कर्जे डाउनलोड करा",
+            "clear_settled" to "पूर्ण केलेली कर्जे हटवा",
+            "clear_settled_subtitle" to "पूर्ण केलेली कर्जे कायमची हटवा",
+            "clear_settled_dialog" to "पूर्ण केलेली कर्जे हटवायची?",
+            "clear_settled_dialog_desc" to "सर्व पूर्ण केलेली कर्जे कायमची हटवली जातील.",
+            "delete_all" to "सर्व हटवा",
+            "language" to "भाषा",
+            "select_language" to "भाषा निवडा",
+            "regenerate" to "पुन्हा तयार करा",
+            "watch_ad" to "जाहिरात पहा",
+            "later" to "नंतर",
+            "free_regenerations_used" to "🎯 मोफत पुनःनिर्मिती संपली!",
+            "free_regenerations_desc" to "तुम्ही सर्व {count} मोफत पुनःनिर्मिती वापरल्या आहेत.",
+            "choose_template" to "कार्ड शैली निवडा",
+            "random" to "🎲 यादृच्छिक",
+            "wall_of_shame" to "💸 शर्मेची भिंत",
+            "insta_vibe" to "📸 इन्स्टा वाइब",
+            "elegant_minimal" to "✨ अलंकारिक मिनिमल",
+            "cyberpunk_debt" to "🤖 सायबरपंक कर्ज",
+            "edit_ai_quote" to "AI कोट संपादित करा",
+            "edit_ai_quote_desc" to "प्रतिमा तयार करण्यापूर्वी कोट मजकूर सानुकूलित करा:",
+            "generate_image" to "प्रतिमा तयार करा",
+            "card_display_options" to "कार्ड प्रदर्शन पर्याय",
+            "show_description" to "वर्णन दाखवा",
+            "show_description_sub" to "कार्डमध्ये वर्णन समाविष्ट करा",
+            "show_due_date" to "मुदत दिनांक दाखवा",
+            "show_due_date_sub" to "कार्डमध्ये मुदत दिनांक समाविष्ट करा",
+            "show_emoji" to "इमोजी दाखवा",
+            "show_emoji_sub" to "कार्डमध्ये व्यक्ती इमोजी समाविष्ट करा",
+            "no_data_yet" to "अद्याप डेटा नाही",
+            "add_debts_to_see_stats" to "येथे आर्थिक अंतर्दृष्टी पाहण्यासाठी काही कर्जे जोडा.",
+            "select_due_date" to "मुदत दिनांक निवडा",
+            "nav_back" to "मागे",
+            "report_message" to "या संदेशाची तक्रार करा",
+            "deletion_requested" to "खाते हटवण्याची विनंती",
+            "deletion_grace_info" to "तुमचे खाते 24 तासांत हटवले जाईल. पुन्हा साइन इन केल्यास हटवणे रद्द होईल.",
+            "deletion_grace_title" to "हटवणे सुरू आहे!",
+            "deletion_grace_alert" to "तुमचे खाते हटवणे सुरू आहे. साइन इन केल्यास हटवणे रद्द होईल. तुम्हाला हटवणे रद्द करायचे आहे का?",
+            "cancel_deletion" to "हटवणे रद्द करा",
+            "proceed_login" to "लॉगिन सुरू ठेवा",
+            "skip" to "वगळा",
+            "next_arrow" to "पुढे →",
+            "lets_go" to "चला सुरू करूया 🚀",
+            "app_tagline" to "अर्थशास्त्र स्मरणशक्ती, विनोदासह",
+            "choose_language" to "🌍 तुमची भाषा निवडा",
+            "track_who_owes" to "कोण तुम्हाला देणे ते ट्रॅक करा",
+            "track_desc" to "प्रत्येक कर्ज, चहा, ट्रिप वाटणी, आणि गैरसोयीचे IOU एकाच ठिकाणी.",
+            "pill_they_owe" to "💰 ते मला देतात",
+            "pill_i_owe" to "😅 मी देतो",
+            "pill_analytics" to "📊 विश्लेषण",
+            "ai_roasts_title" to "AI तुमच्या मित्रांना रोस्ट करते",
+            "mild" to "😊 सौम्य",
+            "medium" to "😏 मध्यम",
+            "savage" to "🔥 जंगली",
+            "never_lose_data" to "तुमचा डेटा कधीच हरवू नका",
+            "sync_settings_desc" to "सेटिंग्ज मधून कधीही Google ने साइन इन करा.",
+            "auto_sync" to "ऑटो सिंक",
+            "access_anywhere" to "कुठेही प्रवेश",
+            "what_call_you" to "आम्ही तुम्हाला काय म्हणू?",
+            "your_name_label" to "तुमचे नाव",
+            "name_example" to "उदा. राहुल, प्रिया...",
+            "mark_settled" to "पूर्ण म्हणून चिन्हांकित करा ✅",
+            "delete_trash" to "हटवा 🗑️",
+            "theme" to "थीम",
+            "theme_light" to "☀️ लाइट",
+            "theme_dark" to "🌙 डार्क",
+            "theme_system" to "🔄 सिस्टम",
+            "notifications" to "सूचना",
+            "daily_reminders" to "दैनंदिन स्मरणपत्रे",
+            "daily_reminders_desc" to "मुदत संपलेल्या कर्जांची आठवण करा",
+            "weekly_summary" to "साप्ताहिक सारांश",
+            "weekly_summary_desc" to "साप्ताहिक कर्ज सारांश मिळवा",
+            "payment_alerts" to "पेमेंट सूचना",
+            "payment_alerts_desc" to "जेव्हा कर्जे जवळजवळ पूर्ण होतात तेव्हा सूचना मिळवा",
+            "privacy_policy" to "गोपनीयता धोरण",
+            "privacy_policy_desc" to "आमच्या डेटा पद्धती पहा",
+            "made_with_love" to "आर्थिक गोंधळासाठी ❤️ ने बनवले",
+            "sign_out_question" to "साइन आउट करायचे?",
+            "sign_out_desc" to "तुमचा स्थानिक डेटा या डिव्हाइसवर राहील. क्लाउड बॅकअप Google खात्यावर राहील.",
+            "sign_out" to "साइन आउट",
+            "reauth_required" to "पुन्हा प्रमाणीकरण आवश्यक",
+            "reauth_desc" to "सुरक्षिततेसाठी, खाते हटवण्यापूर्वी Google ने पुन्हा साइन इन करा.",
+            "sign_in_again" to "पुन्हा साइन इन करा",
+            "add_email_password" to "ईमेल/पासवर्ड जोडा",
+            "link_email_desc" to "Google शिवाय साइन इन करण्यासाठी ईमेल लिंक करा.",
+            "email" to "ईमेल",
+            "password_6_chars" to "पासवर्ड (6+ वर्ण)",
+            "link" to "लिंक",
+            "cloud_backup_active" to "क्लाउड बॅकअप सक्रिय",
+            "back_up_debts" to "तुमची कर्जे बॅकअप करा",
+            "debtbro_user" to "DebtBro वापरकर्ता",
+            "sign_in_google_sync" to "डिव्हाइसमध्ये सिंक करण्यासाठी Google ने साइन इन करा.",
+            "sync_now" to "आता सिंक करा",
+            "sign_in_google" to "Google ने साइन इन करा",
+            "add_email_login" to "ईमेल लॉगिन जोडा",
+            "delete_account" to "खाते हटवा",
+            "me" to "मी",
+            "each" to "प्रत्येकी",
+            "sign_in" to "साइन इन",
+            "sign_up" to "साइन अप",
+            "forgot_password" to "पासवर्ड विसरलात?",
+            "send_reset_link" to "रीसेट लिंक पाठवा",
+            "resend_in" to "{time} सेकंदात पुन्हा पाठवा",
+            "daily_limit_reached" to "दैनंदिन मर्यादा संपली. उद्या पुन्हा प्रयत्न करा.",
+            "attempts_remaining" to "आज {count}/5 प्रयत्न शिल्लक",
+            "reset_link_sent" to "रीसेट लिंक पाठवला! इनबॉक्स तपासा",
+            "back_to_sign_in" to "साइन इन वर परत",
+            "welcome_back" to "पुन्हा स्वागत आहे",
+            "create_account" to "खाते तयार करा",
+            "confirm_password" to "पासवर्ड पुन्हा टाका",
+            "password_strength_weak" to "कमकुवत",
+            "password_strength_medium" to "मध्यम",
+            "password_strength_strong" to "मजबूत",
+            "sign_in_to_sync" to "सिंक करण्यासाठी साइन इन करा",
+            "sign_in_to_sync_desc" to "डेटा फक्त या डिव्हाइसवर आहे. क्लाउड बॅकअपसाठी साइन इन करा.",
+            "data_saved_locally" to "काळजी करू नका, डेटा स्थानिक पातळीवर जतन केला आहे",
+            "or_continue_with" to "किंवा यासह सुरू ठेवा",
+            "skip_for_now" to "आता वगळा",
+            "dont_have_account" to "खाते नाही?",
+            "already_have_account" to "आधीच खाते आहे?",
+            "terms_and_conditions" to "अटी व शर्ती",
+            "help_and_support" to "मदत आणि सहाय्य",
+            "contact_us" to "आमच्याशी संपर्क साधा",
+            "legal_and_support" to "कायदेशीर आणि सहाय्य",
+            "appearance" to "दिसणे",
+            "data_and_export" to "डेटा आणि निर्यात",
+            "about" to "अॅप बद्दल",
+            "no_browser_found" to "लिंक उघडण्यासाठी ब्राउझर सापडला नाही",
+            "could_not_open_link" to "लिंक उघडता आला नाही",
+            "password_6_chars_min" to "पासवर्ड (6+ वर्ण)",
+            "email_required" to "ईमेल आवश्यक आहे",
+            "passwords_dont_match" to "पासवर्ड्स जुळत नाहीत",
+        ),
+        // ── Punjabi (pa) ─────────────────────────────────────────────────────────--
+        // Gurmukhi users typically read Hindi too. We use Hindi base for readability.
+        "pa" to mapOf(
+            "nav_home" to "ਘਰ",
+            "nav_debts" to "ਕਰਜ਼",
+            "nav_split" to "ਵੰਡੋ",
+            "nav_stats" to "ਅੰਕੜੇ",
+            "all_debts" to "ਸਾਰੇ ਕਰਜ਼",
+            "settings" to "ਸੈਟਿੰਗਾਂ",
+            "add_debt" to "ਕਰਜ਼ ਜੋੜੋ",
+            "search_debts" to "ਨਾਮ ਜਾਂ ਕਾਰਨ ਨਾਲ ਖੋਜੋ...",
+            "they_owe_me" to "💰 ਉਹ ਮੈਨੂੰ ਦੇਣੇ ਹਨ",
+            "i_owe_them" to "😅 ਮੈਂ ਉਨ੍ਹਾਂ ਨੂੰ ਦਿੰਦਾ ਹਾਂ",
+            "overdue" to "ਸਮਾਂ ਬੀਤ ਗਿਆ 🔥",
+            "recent_debts" to "ਤਾਜ਼ਾ ਕਰਜ਼ 🕒",
+            "see_all" to "ਸਭ ਵੇਖੋ",
+            "leaderboard" to "ਕਰਜ਼ ਲੀਡਰਬੋਰਡ 🏆",
+            "greeting" to "ਸਤ ਸ੍ਰੀ ਅਕਾਲ",
+            "money_memory_subtitle" to "ਤੁਹਾਡੀ ਪੈਸੇ ਦੀ ਯਾਦ ਅੱਜ ਤਿੱਖੀ ਹੈ",
+            "language" to "ਭਾਸ਼ਾ",
+            "select_language" to "ਭਾਸ਼ਾ ਚੁਣੋ",
+            "settings" to "ਸੈਟਿੰਗਾਂ",
+            "save_payment" to "ਭੁਗਤਾਨ ਸੁਰੱਖਿਅਤ ਕਰੋ",
+            "delete" to "ਮਿਟਾਓ",
+            "cancel" to "ਰੱਦ ਕਰੋ",
+            "me" to "ਮੈਂ",
+            "each" to "ਹਰ ਇੱਕ",
+            "sign_in" to "ਸਾਈਨ ਇਨ",
+            "sign_up" to "ਸਾਈਨ ਅੱਪ",
+            "email" to "ਈਮੇਲ",
+            "password_6_chars" to "ਪਾਸਵਰਡ (6+ ਅੱਖਰ)",
+            "back_to_sign_in" to "ਸਾਈਨ ਇਨ ਤੇ ਵਾਪਸ",
+            "skip" to "ਛੱਡੋ",
+            "next_arrow" to "ਅੱਗੇ →",
+            "lets_go" to "ਚੱਲੋ ਸ਼ੁਰੂ ਕਰੀਏ 🚀",
+            "person_name" to "ਵਿਅਕਤੀ ਦਾ ਨਾਮ",
+            "amount" to "ਰਕਮ",
+            "total" to "ਕੁੱਲ",
+            "description" to "ਵੇਰਵਾ",
+            "regenerate" to "ਦੁਬਾਰਾ ਬਣਾਓ",
+            "later" to "ਬਾਅਦ ਵਿੱਚ"
+        ),
+        // ── Gujarati (gu) ──────────────────────────────────────────────────────────
+        // Close to Hindi family; Devanagari script.
+        "gu" to mapOf(
+            "nav_home" to "ઘર",
+            "nav_debts" to "દેવાં",
+            "nav_split" to "વહેંચો",
+            "nav_stats" to "આંકડા",
+            "all_debts" to "બધા દેવાં",
+            "settings" to "સેટિંગ્સ",
+            "add_debt" to "દેવું ઉમેરો",
+            "search_debts" to "નામ અથવા કારણ દ્વારા શોધો...",
+            "greeting" to "નમસ્તે",
+            "money_memory_subtitle" to "તમારી પૈસાની યાદ આજે તીક્ષ્ણ છે",
+            "language" to "ભાષા",
+            "select_language" to "ભાષા પસંદ કરો",
+            "save_payment" to "ચૂકવણી સાચવો",
+            "delete" to "કાઢી નાખો",
+            "cancel" to "રદ",
+            "me" to "હું",
+            "each" to "દરેક",
+            "sign_in" to "સાઈન ઈન",
+            "sign_up" to "સાઈન અપ",
+            "back_to_sign_in" to "સાઈન ઈન પર પાછા",
+            "skip" to "છોડો",
+            "next_arrow" to "આગળ →",
+            "lets_go" to "ચાલો શરૂ કરીએ 🚀",
+            "person_name" to "વ્યક્તિનું નામ",
+            "amount" to "રકમ",
+            "total" to "કુલ",
+            "description" to "વર્ણન",
+            "regenerate" to "ફરી બનાવો",
+            "later" to "પછી"
+        ),
+        // ── Bengali (bn) ───────────────────────────────────────────────────────────
+        // Bengali script is distinct from Devanagari; we ship a partial Bengali
+        // map for the most-common visible keys and let the familyFallback fall
+        // through to English for everything else. This is honest: a Bengali
+        // user picking Bengali won't see Marathi-via-Hindi gibberish; they'll
+        // see a Bengali nav chrome and English body copy.
+        "bn" to mapOf(
+            "nav_home" to "হোম",
+            "nav_debts" to "ঋণ",
+            "nav_split" to "ভাগ করুন",
+            "nav_stats" to "পরিসংখ্যান",
+            "all_debts" to "সমস্ত ঋণ",
+            "settings" to "সেটিংস",
+            "add_debt" to "ঋণ যোগ করুন",
+            "search_debts" to "নাম বা কারণ দিয়ে খুঁজুন...",
+            "greeting" to "নমস্কার",
+            "money_memory_subtitle" to "আজ আপনার অর্থের স্মৃতিশক্তি তীক্ষ্ণ",
+            "language" to "ভাষা",
+            "select_language" to "ভাষা নির্বাচন করুন",
+            "save_payment" to "পেমেন্ট সংরক্ষণ করুন",
+            "delete" to "মুছুন",
+            "cancel" to "বাতিল",
+            "me" to "আমি",
+            "each" to "প্রতি",
+            "sign_in" to "সাইন ইন",
+            "sign_up" to "সাইন আপ",
+            "back_to_sign_in" to "সাইন ইন এ ফিরুন",
+            "skip" to "এড়িয়ে যান",
+            "next_arrow" to "পরবর্তী →",
+            "lets_go" to "চলুন শুরু করি 🚀",
+            "person_name" to "ব্যক্তির নাম",
+            "amount" to "পরিমাণ",
+            "total" to "মোট",
+            "description" to "বিবরণ",
+            "regenerate" to "পুনরায় তৈরি করুন",
+            "later" to "পরে"
+        ),
     )
-
-    fun get(key: String): String {
-        return strings[currentLang]?.get(key)
-            ?: strings["en"]?.get(key)
-            ?: key
-    }
-
-    fun get(key: String, langCode: String): String {
-        return strings[langCode]?.get(key)
-            ?: strings["en"]?.get(key)
-            ?: key
-    }
-
-    fun getDefault(key: String): String {
-        return strings["en"]?.get(key) ?: key
-    }
 }

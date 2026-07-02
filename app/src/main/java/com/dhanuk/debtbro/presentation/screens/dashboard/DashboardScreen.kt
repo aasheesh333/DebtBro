@@ -7,6 +7,10 @@ import androidx.compose.material.pullrefresh.rememberPullRefreshState
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.scaleIn
+import androidx.compose.animation.scaleOut
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -16,6 +20,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
+import androidx.compose.material3.ExtendedFloatingActionButton
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -167,6 +172,22 @@ fun DashboardScreen(
             backgroundColor = MaterialTheme.colorScheme.surface,
             contentColor = MaterialTheme.colorScheme.primary
         )
+
+        // FAB — primary CTA, lights up only when content is visible.
+        AnimatedVisibility(
+            visible = !isRefreshing,
+            enter = fadeIn() + scaleIn(),
+            exit = fadeOut() + scaleOut(),
+            modifier = Modifier.align(Alignment.BottomEnd).padding(UITokens.SpaceMedium)
+        ) {
+            ExtendedFloatingActionButton(
+                onClick = onAddDebtClick,
+                containerColor = MaterialTheme.colorScheme.primary,
+                contentColor = MaterialTheme.colorScheme.onPrimary,
+                icon = { Icon(Icons.Default.Add, contentDescription = LocalizedString.get("add_debt")) },
+                text = { Text(LocalizedString.get("add_debt"), fontWeight = FontWeight.Bold) }
+            )
+        }
     }
 
     if (showPrompt) {

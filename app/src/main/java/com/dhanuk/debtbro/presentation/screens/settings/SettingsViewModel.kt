@@ -14,7 +14,7 @@ import com.dhanuk.debtbro.data.firebase.FirebaseRepository
 import com.dhanuk.debtbro.data.firebase.RealTimeSyncManager
 import com.dhanuk.debtbro.data.firebase.SyncManager
 import com.dhanuk.debtbro.data.repository.DebtRepository
-import com.dhanuk.debtbro.data.repository.GroqRepository
+import com.dhanuk.debtbro.data.repository.AiRepository
 import com.dhanuk.debtbro.util.CsvExporter
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -105,7 +105,7 @@ class SettingsViewModel @Inject constructor(
     private val realTimeSyncManager: RealTimeSyncManager,
     private val firebaseRepository: FirebaseRepository,
     private val debts: DebtRepository,
-    private val groq: GroqRepository,
+    private val ai: AiRepository,
     private val debtDao: DebtDao,
     private val paymentDao: PaymentDao,
     private val splitDao: SplitDao
@@ -355,18 +355,23 @@ class SettingsViewModel @Inject constructor(
         }
         isDeletingAccount.value = true
         try {
-            auth.deleteAccount().onSuccess {
-                realTimeSyncManager.stopListening()
-                runCatching { firebaseRepository.deleteAllUserData(userId) }
-                debts.clearLocalData()
-                prefs.clearAll()
-                secureStorage.clearSensitiveData()
-            }.onFailure { e ->
-                if (e is com.google.firebase.auth.FirebaseAuthRecentLoginRequiredException) {
-                    onReauthRequired()
-                } else {
-                    onFailure(e.message ?: "Account deletion failed")
+            runCatching {
+                firebaseRepository.deleteAllUserData(userId)
+            }.onSuccess {
+                auth.deleteAccount().onSuccess {
+                    realTimeSyncManager.stopListening()
+                    debts.clearLocalData()
+                    prefs.clearAll()
+                    secureStorage.clearSensitiveData()
+                }.onFailure { e ->
+                    if (e is com.google.firebase.auth.FirebaseAuthRecentLoginRequiredException) {
+                        onReauthRequired()
+                    } else {
+                        onFailure(e.message ?: "Account deletion failed")
+                    }
                 }
+            }.onFailure { e ->
+                onFailure(e.message ?: "Account deletion failed")
             }
         } catch (e: Exception) {
             onFailure(e.message ?: "Account deletion failed")

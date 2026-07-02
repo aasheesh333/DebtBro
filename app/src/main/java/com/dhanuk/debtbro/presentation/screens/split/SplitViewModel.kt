@@ -8,7 +8,7 @@ import com.dhanuk.debtbro.data.db.entity.SplitEntity
 import com.dhanuk.debtbro.data.firebase.AuthManager
 import com.dhanuk.debtbro.data.firebase.SyncManager
 import com.dhanuk.debtbro.data.repository.DebtRepository
-import com.dhanuk.debtbro.data.repository.GroqRepository
+import com.dhanuk.debtbro.data.repository.AiRepository
 import com.dhanuk.debtbro.data.repository.SplitRepository
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
@@ -32,7 +32,7 @@ data class SplitUiState(
 class SplitViewModel @Inject constructor(
     private val splits: SplitRepository,
     private val debts: DebtRepository,
-    private val groq: GroqRepository,
+    private val ai: AiRepository,
     private val authManager: AuthManager,
     private val syncManager: SyncManager,
     private val prefs: AppPreferences
@@ -142,7 +142,7 @@ class SplitViewModel @Inject constructor(
             split.participants,
             object : TypeToken<List<String>>() {}.type
         )
-        val summary = groq.generateSplitSummary(
+        val summary = ai.generateSplitSummary(
             split.title,
             split.totalAmount,
             split.perPersonAmount,

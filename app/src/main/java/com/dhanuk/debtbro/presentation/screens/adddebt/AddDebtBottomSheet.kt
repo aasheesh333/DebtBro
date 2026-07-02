@@ -151,7 +151,8 @@ fun AddDebtBottomSheet(
                 onValueChange = {
                     val filtered = it.filter { c -> c.isDigit() || c == '.' }
                     val dots = filtered.count { c -> c == '.' }
-                    if (dots <= 1 && (filtered.toDoubleOrNull() ?: 0.0 <= 9999999.0)) {
+                    val parsed = filtered.toDoubleOrNull()
+                    if (dots <= 1 && (parsed == null || parsed <= 9999999.0)) {
                         amount = filtered
                     }
                 },

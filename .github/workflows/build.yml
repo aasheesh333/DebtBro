@@ -1,11 +1,30 @@
 name: DebtBro CI/CD
 
+# ─────────────────────────────────────────────────────────────────────────────
+# Single-job workflow: builds the signed release APK + AAB on every push and
+# every PR. All required prod secrets (release keystore, Google services JSON,
+# Gemini + AdMob + OneSignal IDs, etc.) must be configured in repo Settings
+# → Secrets and Actions for the build to succeed.
+#
+# Local builds aren't needed — this workflow is the source of truth for
+# whether the codebase compiles & packages correctly. After pushing a branch,
+# the Actions tab shows a green ✓ for any successful build; a red ✗ surfaces
+# the failing step's stacktrace.
+#
+# Concurrency: cancel any in-progress run for the same branch ref when a new
+# commit lands, so rapid iterative pushes don't stack up wasted CI minutes.
+# ─────────────────────────────────────────────────────────────────────────────
+
+concurrency:
+  group: debro-ci-${{ github.ref }}
+  cancel-in-progress: true
+
 on:
   push:
-    branches: ["main"]
+    branches: ["**"]
     tags: ["v*"]
   pull_request:
-    branches: ["main"]
+    branches: ["**"]
 
 jobs:
   build:
@@ -32,7 +51,8 @@ jobs:
         run: |
           cat > local.properties << EOF
           sdk.dir=$ANDROID_SDK_ROOT
-          GROQ_API_KEY=${{ secrets.GROQ_API_KEY }}
+          GEMINI_API_KEY=${{ secrets.GEMINI_API_KEY }}
+          GEMINI_API_KEY_2_5_FLASH_LITE=${{ secrets.GEMINI_API_KEY_2_5_FLASH_LITE }}
           ADMOB_APP_ID=${{ secrets.ADMOB_APP_ID }}
           ADMOB_BANNER_ID=${{ secrets.ADMOB_BANNER_ID }}
           ADMOB_INTERSTITIAL_ID=${{ secrets.ADMOB_INTERSTITIAL_ID }}

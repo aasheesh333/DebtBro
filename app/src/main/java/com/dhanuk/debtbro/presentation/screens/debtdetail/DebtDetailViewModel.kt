@@ -11,7 +11,7 @@ import com.dhanuk.debtbro.data.ads.AdManager
 import com.dhanuk.debtbro.data.firebase.AuthManager
 import com.dhanuk.debtbro.data.firebase.SyncManager
 import com.dhanuk.debtbro.data.repository.DebtRepository
-import com.dhanuk.debtbro.data.repository.GroqRepository
+import com.dhanuk.debtbro.data.repository.AiRepository
 import com.dhanuk.debtbro.data.repository.PaymentRepository
 import com.dhanuk.debtbro.util.CanvasExporter
 import com.dhanuk.debtbro.util.HtmlExporter
@@ -35,7 +35,7 @@ class DebtDetailViewModel @Inject constructor(
     savedStateHandle: SavedStateHandle,
     private val debtRepository: DebtRepository,
     private val paymentRepository: PaymentRepository,
-    private val groqRepository: GroqRepository,
+    private val aiRepository: AiRepository,
     private val prefs: AppPreferences,
     private val authManager: AuthManager,
     private val syncManager: SyncManager,
@@ -104,7 +104,7 @@ class DebtDetailViewModel @Inject constructor(
 
     init {
         viewModelScope.launch {
-            _remainingFree.value = groqRepository.remainingFreeRegenerations()
+            _remainingFree.value = aiRepository.remainingFreeRegenerations()
         }
     }
 
@@ -115,7 +115,7 @@ class DebtDetailViewModel @Inject constructor(
     fun generateRoast(activity: android.app.Activity? = null) = viewModelScope.launch {
         val d = debt.value ?: return@launch
 
-        if (!groqRepository.canRegenerate()) {
+        if (!aiRepository.canRegenerate()) {
             // If offline, skip ad — show cached message instead
             val cached = d.aiRoastGenerated
             val connectivityManager = activity?.getSystemService(android.content.Context.CONNECTIVITY_SERVICE) as? android.net.ConnectivityManager
@@ -133,8 +133,8 @@ class DebtDetailViewModel @Inject constructor(
             if (activity != null) {
                 adManager.showRewardedAd(activity, onRewarded = {
                     viewModelScope.launch {
-                        groqRepository.resetRegenerationCount()
-                        _remainingFree.value = groqRepository.remainingFreeRegenerations()
+                        aiRepository.resetRegenerationCount()
+                        _remainingFree.value = aiRepository.remainingFreeRegenerations()
                         generateRoastInternal(d)
                     }
                 }, onFailed = {
@@ -163,10 +163,10 @@ class DebtDetailViewModel @Inject constructor(
 
     private suspend fun generateRoastInternal(d: DebtEntity) {
         isGeneratingAi.value = true
-        val result = groqRepository.generateRoast(d, roastLevel.value)
+        val result = aiRepository.generateRoast(d, roastLevel.value)
         result.onSuccess { message ->
-            groqRepository.incrementRegenerationCount()
-            _remainingFree.value = groqRepository.remainingFreeRegenerations()
+            aiRepository.incrementRegenerationCount()
+            _remainingFree.value = aiRepository.remainingFreeRegenerations()
             aiMessage.value = message
             debtRepository.updateRoast(d.id, message, System.currentTimeMillis())
         }.onFailure { error ->

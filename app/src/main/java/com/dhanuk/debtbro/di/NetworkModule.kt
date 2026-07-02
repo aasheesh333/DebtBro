@@ -1,7 +1,7 @@
 package com.dhanuk.debtbro.di
 
 import com.dhanuk.debtbro.BuildConfig
-import com.dhanuk.debtbro.data.network.GroqApiService
+import com.dhanuk.debtbro.data.network.GeminiApiService
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -17,12 +17,19 @@ import javax.inject.Singleton
 object NetworkModule {
     @Provides @Singleton fun provideOkHttp(): OkHttpClient = OkHttpClient.Builder().apply {
         if (BuildConfig.DEBUG) {
-            addInterceptor(HttpLoggingInterceptor().apply {
-                level = HttpLoggingInterceptor.Level.BASIC
-                redactHeader("Authorization")
-            })
+            // NONE — avoids leaking API key in URL via BASIC level logging.
+            // Gemini uses `?key=` query param which BASIC prints full URL for.
+            // Devs needing request tracing should attach a debugger, not logcat.
+            addInterceptor(HttpLoggingInterceptor().apply { level = HttpLoggingInterceptor.Level.NONE })
         }
     }.build()
-    @Provides @Singleton fun provideRetrofit(client: OkHttpClient): Retrofit = Retrofit.Builder().baseUrl("https://api.groq.com/openai/v1/").client(client).addConverterFactory(GsonConverterFactory.create()).build()
-    @Provides @Singleton fun provideGroqApi(retrofit: Retrofit): GroqApiService = retrofit.create(GroqApiService::class.java)
+
+    @Provides @Singleton fun provideRetrofit(client: OkHttpClient): Retrofit = Retrofit.Builder()
+        .baseUrl("https://generativelanguage.googleapis.com/")
+        .client(client)
+        .addConverterFactory(GsonConverterFactory.create())
+        .build()
+
+    @Provides @Singleton fun provideGeminiApi(retrofit: Retrofit): GeminiApiService =
+        retrofit.create(GeminiApiService::class.java)
 }

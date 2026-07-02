@@ -64,26 +64,19 @@ class DebtBroApp : Application(), Configuration.Provider {
             FirebasePerformance.getInstance().isPerformanceCollectionEnabled = BuildConfig.ENABLE_PERFORMANCE_MONITORING
         } catch (_: Exception) { /* Property may be unavailable on some devices */ }
 
+        // ── OneSignal (must initialize BEFORE Ads) ─────────────────────────────
+        if (BuildConfig.ONESIGNAL_APP_ID.isNotBlank()) {
+            OneSignal.Debug.logLevel = if (BuildConfig.DEBUG) LogLevel.VERBOSE else LogLevel.NONE
+            OneSignal.initWithEnvironment(this, BuildConfig.ONESIGNAL_APP_ID)
+            // Defer notification permission request to first UI screen
+            // (POST_NOTIFICATIONS runtime permission should be requested with user gesture)
+        }
+
         // ── Ads ────────────────────────────────────────────────────────────────
         try {
             MobileAds.initialize(this) {}
         } catch (e: Exception) {
             Log.e("DebtBroApp", "MobileAds initialize failed", e)
-        }
-
-        // ── OneSignal ──────────────────────────────────────────────────────────
-        if (BuildConfig.ONESIGNAL_APP_ID.isNotBlank()) {
-            OneSignal.Debug.logLevel = LogLevel.NONE
-            OneSignal.initWithContext(this, BuildConfig.ONESIGNAL_APP_ID)
-            // REST/API key is required for any server-to-server OneSignal calls
-            // (e.g. transactional push via Cloud Functions). Stored as BuildConfig
-            // so it can be rotated per environment without rebuilding native code.
-            if (BuildConfig.ONESIGNAL_API_KEY.isNotBlank() && BuildConfig.DEBUG) {
-                val masked = BuildConfig.ONESIGNAL_API_KEY.take(6) + "…" +
-                    BuildConfig.ONESIGNAL_API_KEY.takeLast(4)
-                Log.d("DebtBroApp", "OneSignal REST API key loaded (preview=$masked)")
-            }
-            CoroutineScope(Dispatchers.IO).launch { OneSignal.Notifications.requestPermission(false) }
         }
 
         // ── WorkManager ────────────────────────────────────────────────────────

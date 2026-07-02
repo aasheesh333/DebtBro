@@ -3,10 +3,11 @@
     xmlns:tools="http://schemas.android.com/tools">
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
-    <uses-permission android:name="android.permission.VIBRATE" />
-    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
     <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"
         android:maxSdkVersion="28" />
+
+    <!-- Removed: VIBRATE - not used; app uses default ringtone/vibration from notification channel -->
+    <!-- Removed: RECEIVE_BOOT_COMPLETED - not used; WorkManager handles rescheduling after reboot -->
 
     <application
         android:name=".DebtBroApp"

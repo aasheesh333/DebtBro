@@ -14,7 +14,7 @@ object ActivityFinder {
         return null
     }
 
-    fun getOrThrow(context: Context): Activity {
-        return find(context) ?: error("No Activity found in context hierarchy")
+    fun getOrNull(context: Context): Activity? {
+        return find(context)
     }
 }

@@ -70,7 +70,7 @@ fun LanguageSelectorGrid(
         OutlinedTextField(
             value = query,
             onValueChange = { query = it },
-            placeholder = { Text("Search language...", color = extra.subtitleGray) },
+            placeholder = { Text(LocalizedString.get("search_language"), color = extra.subtitleGray) },
             leadingIcon = { Icon(Icons.Default.Search, LocalizedString.get("search_debts"), tint = extra.subtitleGray) },
             modifier = Modifier.fillMaxWidth(),
             colors = OutlinedTextFieldDefaults.colors(

@@ -5,10 +5,19 @@
             <certificates src="system" />
         </trust-anchors>
     </base-config>
-    <domain-config>
-        <domain includeSubdomains="true">api.groq.com</domain>
+    <!-- Each <domain-config> explicitly reaffirms cleartext-blocking for the listed origins.
+         This is documentation-only today (since base-config already blocks cleartext globally),
+         but if a future contributor ever relaxes base-config these blocks stand guard. -->
+    <domain-config cleartextTrafficPermitted="false">
+        <domain includeSubdomains="true">generativelanguage.googleapis.com</domain>
     </domain-config>
-    <domain-config>
+    <domain-config cleartextTrafficPermitted="false">
         <domain includeSubdomains="true">firestore.googleapis.com</domain>
+    </domain-config>
+    <domain-config cleartextTrafficPermitted="false">
+        <domain includeSubdomains="true">dhanuk.page.gd</domain>
+    </domain-config>
+    <domain-config cleartextTrafficPermitted="false">
+        <domain includeSubdomains="true">onesignal.com</domain>
     </domain-config>
 </network-security-config>

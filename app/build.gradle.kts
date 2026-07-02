@@ -31,13 +31,18 @@ android {
         versionName = localProp("VERSION_NAME").ifEmpty { "1.0.0" }
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
-        buildConfigField("String", "GROQ_API_KEY", "\"${escapedProp("GROQ_API_KEY")}\"")
+        // GROQ fully replaced by Gemini Flash 2.5 (2026-07-02)
+        buildConfigField("String", "GEMINI_API_KEY", "\"${escapedProp("GEMINI_API_KEY")}\"")
+        buildConfigField("String", "GEMINI_API_KEY_2_5_FLASH_LITE", "\"${escapedProp("GEMINI_API_KEY_2_5_FLASH_LITE")}\"")
         buildConfigField("String", "ADMOB_APP_ID", "\"${escapedProp("ADMOB_APP_ID")}\"")
         buildConfigField("String", "ADMOB_BANNER_ID", "\"${escapedProp("ADMOB_BANNER_ID")}\"")
         buildConfigField("String", "ADMOB_INTERSTITIAL_ID", "\"${escapedProp("ADMOB_INTERSTITIAL_ID")}\"")
         buildConfigField("String", "ADMOB_REWARDED_ID", "\"${escapedProp("ADMOB_REWARDED_ID")}\"")
         buildConfigField("String", "ONESIGNAL_APP_ID", "\"${escapedProp("ONESIGNAL_APP_ID")}\"")
+        // ONESIGNAL_API_KEY is a REST API server secret - ideally should be in Cloud Functions only
+        // Included here for backward compatibility with legacy OneSignal dashboard push workflows
         buildConfigField("String", "ONESIGNAL_API_KEY", "\"${escapedProp("ONESIGNAL_API_KEY")}\"")
+
         buildConfigField("String", "PACKAGE_NAME", "\"${escapedProp("PACKAGE_NAME").ifEmpty { "com.dhanuk.debtbro" }}\"")
         buildConfigField("Boolean", "ENABLE_CRASHLYTICS", "true")
         buildConfigField("Boolean", "ENABLE_PERFORMANCE_MONITORING", "true")

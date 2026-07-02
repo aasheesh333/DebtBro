@@ -5,7 +5,7 @@ import androidx.lifecycle.viewModelScope
 import com.dhanuk.debtbro.data.datastore.AppPreferences
 import com.dhanuk.debtbro.data.db.entity.DebtEntity
 import com.dhanuk.debtbro.data.repository.DebtRepository
-import com.dhanuk.debtbro.data.repository.GroqRepository
+import com.dhanuk.debtbro.data.repository.AiRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -31,7 +31,7 @@ data class AnalyticsUiState(
 )
 
 @HiltViewModel
-class AnalyticsViewModel @Inject constructor(private val repo: DebtRepository, private val groq: GroqRepository, private val prefs: AppPreferences) : ViewModel() {
+class AnalyticsViewModel @Inject constructor(private val repo: DebtRepository,     private val ai: AiRepository, private val prefs: AppPreferences) : ViewModel() {
     val aiInsight = MutableStateFlow("")
     val isLoadingInsight = MutableStateFlow(false)
     private val currency = prefs.defaultCurrency.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), "₹")
@@ -63,7 +63,7 @@ class AnalyticsViewModel @Inject constructor(private val repo: DebtRepository, p
     fun loadAiInsight() = viewModelScope.launch {
         isLoadingInsight.value = true
         val s = state.value
-        aiInsight.value = groq.analyzeDebts(s.totalOwedToMe, s.totalIOwe, s.recoveryRate, s.worstOffender).getOrElse { "Add a Groq API key in Settings for the spicy financial roast." }
+        aiInsight.value = ai.analyzeDebts(s.totalOwedToMe, s.totalIOwe, s.recoveryRate, s.worstOffender).getOrElse { "Add a Gemini API key in Settings for the spicy financial roast." }
         isLoadingInsight.value = false
     }
 }

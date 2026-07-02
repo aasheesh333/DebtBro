@@ -31,7 +31,7 @@ import android.content.ContextWrapper
 import android.app.Activity
 import android.widget.Toast
 import com.dhanuk.debtbro.data.db.entity.DebtEntity
-import com.dhanuk.debtbro.data.repository.GroqRepository.Companion.MAX_FREE_REGENERATIONS
+import com.dhanuk.debtbro.data.repository.AiRepository.Companion.MAX_FREE_REGENERATIONS
 import com.dhanuk.debtbro.presentation.components.ConfettiOverlay
 import com.dhanuk.debtbro.presentation.components.EmptyStateView
 import com.dhanuk.debtbro.presentation.components.LoadingDotsIndicator

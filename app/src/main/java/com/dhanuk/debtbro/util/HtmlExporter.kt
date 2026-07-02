@@ -301,7 +301,7 @@ object HtmlExporter {
                                 ) { heightStr ->
                                     try {
                                         val contentHeight = heightStr?.replace("\"", "")?.toIntOrNull() ?: 1350
-                                        val actualHeight = maxOf(contentHeight, view.measuredHeight, height).coerceAtMost(4096)
+                                        val actualHeight = maxOf(contentHeight, view.measuredHeight, height).coerceAtMost(2048)
 
                                         val bitmap = Bitmap.createBitmap(width, actualHeight, Bitmap.Config.ARGB_8888)
                                         val canvas = Canvas(bitmap)
