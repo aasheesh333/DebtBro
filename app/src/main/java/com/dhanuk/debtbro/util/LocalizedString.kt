@@ -2080,6 +2080,13 @@ object LocalizedString {
             "new_design_generated_toast" to "नवीन डिझाइन तयार!",
             "failed_to_create_image" to "इमेज तयार करण्यात अयशस्वी",
             "no_due_date" to "मुदत तारीख नाही",
+            "ai_api_key" to "AI सेटअप",
+            "ai_api_key_hint" to "तुमची की Google AI Studio मधून पेस्ट करा…",
+            "ai_api_key_label" to "Gemini API की (पर्यायी)",
+            "ai_api_key_supporting" to "मोफत-स्तराच्या की काम करतात. स्थानिकरित्या जतन केले जाते — आमच्या सर्व्हरवर कधीच पाठवले जत नाही. बंडल केलेली की अमर्याद वापरासाठी ओव्हरराइड करते.",
+            "ai_error_message" to "AI थोडा विश्रांती घेत आहे. काही सेकंदांत रिफ्रेश करण्यासाठी खेचा, किंवा सेटिंग्ज → AI सेटअप मध्ये तुमची स्वतःची की पेस्ट करा.",
+            "no_api_key_message" to "वैयक्तिकृत रोस्ट अनलॉक करण्यासाठी सेटिंग्ज → AI सेटअप मध्ये मोफत Gemini API की जोडा. तुम्ही ती aistudio.google.com/app/apikey वर मिळवू शकता.",
+            "search_language" to "भाषा शोधा...",
         ),
         // ── Punjabi (pa) ──────────────────────────────────────────────────────────
         // Gurmukhi users typically read Hindi too. We use Hindi base for readability.
