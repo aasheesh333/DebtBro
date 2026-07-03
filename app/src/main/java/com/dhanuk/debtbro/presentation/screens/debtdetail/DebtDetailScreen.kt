@@ -123,10 +123,10 @@ fun DebtDetailScreen(onBack: () -> Unit, onAuthRequired: () -> Unit = {}, viewMo
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
                     Text("📭", fontSize = UITokens.FontEmojiLarge)
                     Spacer(Modifier.height(16.dp))
-                    Text("Debt not found", color = MaterialTheme.colorScheme.onSurface, fontSize = UITokens.FontSubhead, fontWeight = FontWeight.Bold)
+                    Text(LocalizedString.get("debt_not_found"), color = MaterialTheme.colorScheme.onSurface, fontSize = UITokens.FontSubhead, fontWeight = FontWeight.Bold)
                     Spacer(Modifier.height(8.dp))
                     Text(
-                        if (timedOut) "This shared link could not be opened. It may have been deleted, or its data isn't synced to this device yet."
+                        if (timedOut) LocalizedString.get("debt_link_error")
                         else "It might have been deleted.",
                         color = extra.subtitleGray,
                         fontSize = UITokens.FontBody,
@@ -140,7 +140,7 @@ fun DebtDetailScreen(onBack: () -> Unit, onAuthRequired: () -> Unit = {}, viewMo
                             colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
                             shape = UITokens.ShapeMedium
                         ) {
-                            Text("Go back")
+                            Text(LocalizedString.get("go_back"))
                         }
                     }
                 }
@@ -305,7 +305,7 @@ fun DebtDetailScreen(onBack: () -> Unit, onAuthRequired: () -> Unit = {}, viewMo
                                   ) {
                                        Icon(Icons.Default.Send, contentDescription = LocalizedString.get("share_whatsapp"), modifier = Modifier.size(UITokens.IconSmall))
                                       Spacer(Modifier.width(UITokens.SpaceXS))
-                                      Text("WhatsApp")
+                                      Text(LocalizedString.get("whatsapp_button"))
                                   }
                               }
 
@@ -496,7 +496,7 @@ fun DebtDetailScreen(onBack: () -> Unit, onAuthRequired: () -> Unit = {}, viewMo
                 val seconds = exportElapsed / 1000
                 AlertDialog(
              onDismissRequest = {},
-             title = { Text("Preparing image...", color = MaterialTheme.colorScheme.onSurface) },
+             title = { Text(LocalizedString.get("preparing_image"), color = MaterialTheme.colorScheme.onSurface) },
              text = {
                      Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                          LinearProgressIndicator(
@@ -552,7 +552,7 @@ fun AddPaymentDialog(remaining: Double, currency: String, onDismiss: () -> Unit,
                 isError = (amount.toDoubleOrNull() ?: 0.0) > remaining,
                 supportingText = {
                     if ((amount.toDoubleOrNull() ?: 0.0) > remaining) {
-                        Text("Exceeds remaining balance", color = MaterialTheme.colorScheme.error)
+                        Text(LocalizedString.get("exceeds_remaining_balance"), color = MaterialTheme.colorScheme.error)
                     }
                 },
                 colors = OutlinedTextFieldDefaults.colors(focusedBorderColor = MaterialTheme.colorScheme.primary)
@@ -569,7 +569,7 @@ fun AddPaymentDialog(remaining: Double, currency: String, onDismiss: () -> Unit,
                     val amt = amount.toDoubleOrNull() ?: 0.0
                     if (amt > 0 && amt <= remaining) onSave(amt, note)
                     else if (amt > remaining) {
-                        Toast.makeText(context, "Amount exceeds remaining balance", Toast.LENGTH_SHORT).show()
+                        Toast.makeText(context, LocalizedString.get("exceeds_remaining_balance"), Toast.LENGTH_SHORT).show()
                     }
                 },
                 modifier = Modifier.fillMaxWidth().height(UITokens.ButtonHeight),
@@ -687,7 +687,7 @@ private fun DebtNotFoundScreen(onBack: () -> Unit) {
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
                 Text("📭", fontSize = UITokens.FontEmojiLarge)
                 Spacer(Modifier.height(16.dp))
-                Text("Debt not found", color = MaterialTheme.colorScheme.onSurface, fontSize = 18.sp, fontWeight = FontWeight.Bold)
+                Text(LocalizedString.get("debt_not_found"), color = MaterialTheme.colorScheme.onSurface, fontSize = 18.sp, fontWeight = FontWeight.Bold)
                 Spacer(Modifier.height(8.dp))
                 Text("It might have been deleted.", color = extra.subtitleGray, fontSize = 14.sp)
             }
