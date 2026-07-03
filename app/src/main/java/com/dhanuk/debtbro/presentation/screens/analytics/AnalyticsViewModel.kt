@@ -1,5 +1,6 @@
 package com.dhanuk.debtbro.presentation.screens.analytics
 
+import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.dhanuk.debtbro.data.datastore.AppPreferences
@@ -12,6 +13,7 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.stateIn
@@ -34,11 +36,22 @@ data class AnalyticsUiState(
 )
 
 @HiltViewModel
-class AnalyticsViewModel @Inject constructor(private val repo: DebtRepository,     private val ai: AiRepository, private val prefs: AppPreferences) : ViewModel() {
+class AnalyticsViewModel @Inject constructor(
+    private val repo: DebtRepository,
+    private val ai: AiRepository,
+    private val prefs: AppPreferences,
+    private val adManager: com.dhanuk.debtbro.data.ads.AdManager
+) : ViewModel() {
     val aiInsight = MutableStateFlow("")
     val isLoadingInsight = MutableStateFlow(false)
     private val currency = prefs.defaultCurrency.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), "₹")
     val state: StateFlow<AnalyticsUiState> = combine(repo.getAllDebts(), aiInsight, currency) { debts, _, curr -> compute(debts, curr) }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), AnalyticsUiState())
+
+    private val _showRewardAd = MutableStateFlow(false)
+    val showRewardAd: StateFlow<Boolean> = _showRewardAd.asStateFlow()
+
+    private val _remainingFree = MutableStateFlow(5)
+    val remainingFree: StateFlow<Int> = _remainingFree.asStateFlow()
 
     init {
         // Wait for the first non-empty state emission before requesting AI
@@ -50,6 +63,7 @@ class AnalyticsViewModel @Inject constructor(private val repo: DebtRepository,  
         // The in-function guard below is belt-and-suspenders for manual
         // refresh attempts against a still-empty wallet.
         viewModelScope.launch {
+            _remainingFree.value = ai.remainingFreeRegenerations()
             state.first { it.totalOwedToMe + it.totalIOwe > 0 }
             loadAiInsight()
         }
@@ -74,15 +88,51 @@ class AnalyticsViewModel @Inject constructor(private val repo: DebtRepository,  
         }
         return AnalyticsUiState(totalOwed, totalIOwe, settled, totalOwed - totalIOwe, if (lent > 0) ((settled / lent) * 100).toInt().coerceIn(0, 100) else 0, trusted, worst, months, curr)
     }
-    fun loadAiInsight() = viewModelScope.launch {
+    fun preloadRewardedAd(context: Context) {
+        adManager.loadRewardedAd(context)
+    }
+
+    fun loadAiInsight(activity: android.app.Activity? = null) = viewModelScope.launch {
+        if (isLoadingInsight.value) return@launch
         isLoadingInsight.value = true
+
+        val s = state.value
+        if (s.totalOwedToMe + s.totalIOwe <= 0.0) {
+            isLoadingInsight.value = false
+            return@launch
+        }
+
+        if (!ai.canRegenerate()) {
+            val connectivityManager = activity?.getSystemService(android.content.Context.CONNECTIVITY_SERVICE) as? android.net.ConnectivityManager
+            val isOffline = connectivityManager?.activeNetwork == null
+            if (isOffline) {
+                isLoadingInsight.value = false
+                return@launch
+            }
+            if (activity != null) {
+                isLoadingInsight.value = false
+                adManager.showRewardedAd(activity, onRewarded = {
+                    viewModelScope.launch {
+                        ai.resetRegenerationCount()
+                        _remainingFree.value = ai.remainingFreeRegenerations()
+                        loadAiInsightInternal()
+                    }
+                }, onFailed = {
+                    adManager.loadRewardedAd(activity)
+                    _showRewardAd.value = false
+                })
+            } else {
+                _showRewardAd.value = true
+            }
+            return@launch
+        }
+
+        loadAiInsightInternal()
+    }
+
+    private fun loadAiInsightInternal() = viewModelScope.launch {
         try {
             val s = state.value
-            // Skip the API call when the wallet is genuinely empty. The cold
-            // init { loadAiInsight() } fires against the seeded UiState() before
-            // Room emits real data; without this guard the user sees a
-            // misleading roast about their "0 lent, 0 owed, Nobody yet" wallet
-            // and we waste a free regeneration on an uninteresting prompt.
             if (s.totalOwedToMe + s.totalIOwe <= 0.0) {
                 aiInsight.value = ""
                 return@launch
@@ -95,10 +145,8 @@ class AnalyticsViewModel @Inject constructor(private val repo: DebtRepository,  
                 else ->
                     LocalizedString.get("ai_error_message")
             }
+            _remainingFree.value = ai.remainingFreeRegenerations()
         } finally {
-            // Reset the loading flag even on CancellationException so the
-            // spinner doesn't stick on `true` when the screen is closed
-            // mid-request or the user backs out before the API responds.
             isLoadingInsight.value = false
         }
     }
