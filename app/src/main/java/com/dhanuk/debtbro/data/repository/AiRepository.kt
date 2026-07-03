@@ -9,6 +9,7 @@ import com.dhanuk.debtbro.data.network.GeminiContent
 import com.dhanuk.debtbro.data.network.GeminiRequest
 import com.dhanuk.debtbro.data.network.GeminiPart
 import com.dhanuk.debtbro.data.network.GenerationConfig
+import com.google.gson.JsonParser
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
@@ -94,12 +95,42 @@ class AiRepository @Inject constructor(
      *     with older local.properties configurations.
      *
      * Returns null if all three are empty so callers can throw [NoApiKeyException].
+     *
+     * Logs the resolution source + length + first-4-char prefix on every
+     * call so `adb logcat -d | grep AiRepository` answers "which key is
+     * actually being sent to Gemini?" in 5 seconds after the next roast.
+     * The 4-char prefix is intentionally tiny — enough to distinguish an
+     * AIzaSy-... AI Studio key from an AQ.-... newer bearer-style token
+     * without leaking the secret value into logs.
      */
     private suspend fun apiKey(): String? {
         val userKey = prefs.geminiApiKey.first()
-        return userKey.ifBlank { BuildConfig.GEMINI_API_KEY_2_5_FLASH_LITE }
-            .ifBlank { BuildConfig.GEMINI_API_KEY }
-            .takeIf { it.isNotBlank() }
+        val bundled = BuildConfig.GEMINI_API_KEY_2_5_FLASH_LITE
+        val legacy = BuildConfig.GEMINI_API_KEY
+        val source = when {
+            userKey.isNotBlank() -> "USER_PASTED_IN_DATASTORE"
+            bundled.isNotBlank() -> "BUNDLED_FROM_CI_SECRET_GEMINI_API_KEY_2_5_FLASH_LITE"
+            legacy.isNotBlank() -> "LEGACY_BUILD_CONFIG_GEMINI_API_KEY"
+            else -> "EMPTY_NO_KEY_RESOLVED"
+        }
+        val resolved = userKey.ifBlank { bundled }.ifBlank { legacy }
+        if (resolved.isNotBlank()) {
+            // 4-char prefix is enough to distinguish AI Studio "AIza" from
+            // the newer "AQ." OAuth-style token — never log more than the
+            // first 4 chars to avoid leakage in adb logcat / Crashlytics.
+            //
+            // Gated behind BuildConfig.DEBUG so this routine info-line doesn't
+            // bury real faults in Crashlytics release-mode aggregates — the
+            // WARN line on the no-key path below still always fires for the
+            // genuinely-broken case.
+            val safePrefix = if (resolved.length >= 4) resolved.substring(0, 4) else "(too short)"
+            if (BuildConfig.DEBUG) {
+                Log.i("AiRepository", "Resolved Gemini key: source=$source length=${resolved.length} prefix=$safePrefix")
+            }
+        } else {
+            Log.w("AiRepository", "Resolved Gemini key: source=$source (callers will see NoApiKeyException)")
+        }
+        return resolved.takeIf { it.isNotBlank() }
     }
 
     /**
@@ -147,7 +178,22 @@ class AiRepository @Inject constructor(
                     // Wrong key, forbidden, rate limited, etc. — don't retry.
                     return Result.failure(e)
                 }
-                Log.w("AiRepository", "Gemini ${e.code()} for model '$model': ${e.message?.take(120)}")
+                // Parse the response body so the logcat warning shows Gemini's
+                // OWN explanation rather than just Retrofit's "HTTP 400 " status
+                // line. errorBody().string() consumes the buffer, so we read
+                // exactly once and re-stringify through JsonParser for cleaner
+                // formatting. Falls back to raw body bytes if not valid JSON,
+                // falls back to e.message if the response had no body at all.
+                val rawBody = runCatching { e.response()?.errorBody()?.string() }.getOrNull()
+                val parsedBody = rawBody?.takeIf { it.isNotBlank() }?.let { body ->
+                    runCatching {
+                        JsonParser.parseString(body).toString()
+                    }.getOrElse { body }
+                }
+                val reason = parsedBody?.take(360)
+                    ?: e.message?.take(120)
+                    ?: "(no body, no message)"
+                Log.w("AiRepository", "Gemini ${e.code()} for model '$model': $reason")
             } catch (e: kotlinx.coroutines.CancellationException) {
                 throw e
             } catch (e: Exception) {
