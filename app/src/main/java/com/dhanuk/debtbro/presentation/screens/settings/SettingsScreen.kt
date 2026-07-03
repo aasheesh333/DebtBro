@@ -43,6 +43,17 @@ fun SettingsScreen(viewModel: SettingsViewModel = hiltViewModel()) {
     var showLanguageDialog by remember { mutableStateOf(false) }
     var showSignOutConfirm by remember { mutableStateOf(false) }
     var showDeleteConfirm by remember { mutableStateOf(false) }
+    // P0-1 (2026-07-03): two-step delete flow.
+    // Step 1 — `showDeleteConfirm` opens when the user taps "Delete
+    //   Account" in the link list. Shows a single "Delete Now" button.
+    // Step 2 — tapping "Delete Now" opens `showDeleteOptionsDialog`
+    //   which presents the actual two paths: "Delete Immediately"
+    //   (fires requestImmediateDeletion) and "Request Account Deletion"
+    //   (the 24h reversible grace path).
+    // The intermediate step gives the user one extra moment to back out
+    // before seeing the irreversible/option distinction, matching the
+    // pattern used by Google / WhatsApp account-deletion flows.
+    var showDeleteOptionsDialog by remember { mutableStateOf(false) }
     var showReauthHint by remember { mutableStateOf(false) }
     var showLinkEmailDialog by remember { mutableStateOf(false) }
     val showDeletionGraceAlert by viewModel.showDeletionGraceAlert.collectAsStateWithLifecycle()
@@ -525,29 +536,62 @@ fun SettingsScreen(viewModel: SettingsViewModel = hiltViewModel()) {
         )
     }
 
-    // ── Delete Account Confirmation (GDPR) ─────────────────────────────────
-    // P0-1 (2026-07-03): two-button dialog. The user can pick **Delete
-    // Now** (immediate Firestore + Firebase Auth deletion via
-    // [SettingsViewModel.requestImmediateDeletion], also cancels any
-    // previously-scheduled WorkManager grace backup) or **Schedule 24-Hour
-    // Grace** (writes the pending timestamp, kicks off the WorkManager
-    // one-shot backup at 24h, and lets the user sign back in during the
-    // grace window to cancel the deletion). The two paths share the same
-    // underlying deletion code; the difference is just timing + the
-    // graceful undo window.
+    // ── Delete Account — Step 1: entry confirmation ────────────────────────
+    // P0-1 (2026-07-03): first of two dialogs. The user just tapped
+    // "Delete Account" in the link list. This dialog presents a single
+    // "Delete Now" button which then advances to the options dialog
+    // (`showDeleteOptionsDialog`) below.
     if (showDeleteConfirm) {
-        var reauthMessage by remember { mutableStateOf<String?>(null) }
         AlertDialog(
             onDismissRequest = { showDeleteConfirm = false },
             containerColor = MaterialTheme.colorScheme.surface,
             title = { Text(LocalizedString.get("deletion_requested"), color = MaterialTheme.colorScheme.error) },
             text = {
+                Text(
+                    LocalizedString.get("deletion_grace_info"),
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        showDeleteConfirm = false
+                        showDeleteOptionsDialog = true
+                    }
+                ) {
+                    Text("Delete Now", color = MaterialTheme.colorScheme.error, fontWeight = FontWeight.Bold)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showDeleteConfirm = false }) {
+                    Text(LocalizedString.get("cancel"), color = extra.subtitleGray)
+                }
+            }
+        )
+    }
+
+    // ── Delete Account — Step 2: choose immediate vs grace ──────────────────
+    // P0-1 (2026-07-03): second dialog, shown only after the user has
+    // explicitly tapped "Delete Now" in the step-1 dialog above.
+    // Two paths:
+    //   - **Delete Immediately** — calls [SettingsViewModel.requestImmediateDeletion]
+    //     which delegates to [SettingsViewModel.deleteAccount] and also
+    //     cancels any previously-scheduled WorkManager grace backup.
+    //   - **Request Account Deletion** — calls [SettingsViewModel.requestAccountDeletion]
+    //     which records the 24h grace timestamp, enqueues the WorkManager
+    //     one-shot backup, and lets the user cancel by signing back in
+    //     within the 24h window.
+    if (showDeleteOptionsDialog) {
+        var reauthMessage by remember { mutableStateOf<String?>(null) }
+        AlertDialog(
+            onDismissRequest = {
+                showDeleteOptionsDialog = false
+                reauthMessage = null
+            },
+            containerColor = MaterialTheme.colorScheme.surface,
+            title = { Text(LocalizedString.get("deletion_requested"), color = MaterialTheme.colorScheme.error) },
+            text = {
                 Column {
-                    Text(
-                        LocalizedString.get("deletion_grace_info"),
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                    Spacer(Modifier.height(16.dp))
                     Text(
                         "Choose how to proceed:",
                         color = MaterialTheme.colorScheme.onSurface,
@@ -556,8 +600,8 @@ fun SettingsScreen(viewModel: SettingsViewModel = hiltViewModel()) {
                     )
                     Spacer(Modifier.height(4.dp))
                     Text(
-                        "• Delete Now — immediate. Cannot be undone.\n" +
-                            "• Schedule 24-Hour Grace — reversible by signing back in within 24h.",
+                        "• Delete Immediately — immediate. Cannot be undone.\n" +
+                            "• Request Account Deletion — reversible by signing back in within 24h.",
                         color = extra.subtitleGray,
                         fontSize = UITokens.FontBody
                     )
@@ -575,38 +619,38 @@ fun SettingsScreen(viewModel: SettingsViewModel = hiltViewModel()) {
                 Column(horizontalAlignment = Alignment.End) {
                     TextButton(
                         onClick = {
-                            showDeleteConfirm = false
+                            showDeleteOptionsDialog = false
                             viewModel.requestImmediateDeletion(
                                 context = context,
                                 onReauthRequired = {
                                     reauthMessage = "Re-sign in to confirm deletion — your last sign-in was too long ago for Firebase to allow account deletion."
-                                    showDeleteConfirm = true
+                                    showDeleteOptionsDialog = true
                                 },
                                 onFailure = { msg ->
                                     reauthMessage = msg
-                                    showDeleteConfirm = true
+                                    showDeleteOptionsDialog = true
                                 }
                             )
                         },
                         enabled = !state.isDeletingAccount
                     ) {
                         if (state.isDeletingAccount) CircularProgressIndicator(modifier = Modifier.size(UITokens.IconSmall), strokeWidth = 2.dp)
-                        Text("Delete Now", color = MaterialTheme.colorScheme.error, fontWeight = FontWeight.Bold)
+                        Text("Delete Immediately", color = MaterialTheme.colorScheme.error, fontWeight = FontWeight.Bold)
                     }
                     Spacer(Modifier.height(4.dp))
                     TextButton(
                         onClick = {
-                            showDeleteConfirm = false
+                            showDeleteOptionsDialog = false
                             viewModel.requestAccountDeletion(context) { }
                         }
                     ) {
-                        Text("Schedule 24-Hour Grace", color = MaterialTheme.colorScheme.primary)
+                        Text("Request Account Deletion", color = MaterialTheme.colorScheme.primary)
                     }
                 }
             },
             dismissButton = {
                 TextButton(onClick = {
-                    showDeleteConfirm = false
+                    showDeleteOptionsDialog = false
                     reauthMessage = null
                 }) {
                     Text(LocalizedString.get("cancel"), color = extra.subtitleGray)
