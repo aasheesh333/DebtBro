@@ -10,6 +10,7 @@ import com.dhanuk.debtbro.data.firebase.SyncManager
 import com.dhanuk.debtbro.data.repository.DebtRepository
 import com.dhanuk.debtbro.data.repository.AiRepository
 import com.dhanuk.debtbro.data.repository.SplitRepository
+import com.dhanuk.debtbro.util.LocalizedString
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -160,7 +161,7 @@ class SplitViewModel @Inject constructor(
                 split.totalAmount,
                 split.perPersonAmount,
                 names.size
-            ).getOrElse { "Everyone owes ${_state.value.currencySymbol}${String.format("%.2f", split.perPersonAmount)} each. Receipts don't lie." }
+            ).getOrElse { LocalizedString.get("everyone_owes_each_receipts_dont_lie").replace("{currency}", _state.value.currencySymbol).replace("{amount}", String.format("%.2f", split.perPersonAmount)) }
 
             splits.updateAiSummary(split.id, summary)
             if (_state.value.title == split.title) {
