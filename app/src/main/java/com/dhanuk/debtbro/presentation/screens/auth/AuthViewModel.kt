@@ -7,6 +7,7 @@ import com.dhanuk.debtbro.data.datastore.AppPreferences
 import com.dhanuk.debtbro.data.firebase.AuthManager
 import com.dhanuk.debtbro.data.firebase.RealTimeSyncManager
 import com.dhanuk.debtbro.data.firebase.SyncManager
+import com.dhanuk.debtbro.util.LocalizedString
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
@@ -199,7 +200,7 @@ class AuthViewModel @Inject constructor(
                     startCountdown(RESEND_COOLDOWN_SECONDS)
                 },
                 onFailure = { e ->
-                    _state.value = _state.value.copy(isBusy = false, errorRes = e.message ?: "Could not send reset email")
+                    _state.value = _state.value.copy(isBusy = false, errorRes = e.message ?: LocalizedString.get("could_not_send_reset_email"))
                 }
             )
         }
@@ -225,7 +226,7 @@ class AuthViewModel @Inject constructor(
 
     private suspend fun onAuthSuccess(uid: String?, name: String?, email: String?, photo: String, provider: String) {
         if (uid == null) {
-            _state.value = _state.value.copy(isBusy = false, errorRes = "Auth succeeded but no UID returned")
+            _state.value = _state.value.copy(isBusy = false, errorRes = LocalizedString.get("auth_no_uid_returned"))
             return
         }
         prefs.setSignedIn(provider, name ?: "DebtBro user", email ?: "", photo)
