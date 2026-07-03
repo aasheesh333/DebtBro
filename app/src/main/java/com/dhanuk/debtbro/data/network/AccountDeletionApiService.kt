@@ -23,4 +23,10 @@ interface AccountDeletionApiService {
         @Url url: String,
         @Body request: AccountDeletionRequest
     ): AccountDeletionResponse
+
+    @POST
+    suspend fun cancelDeletion(
+        @Url url: String,
+        @Body request: AccountDeletionRequest
+    ): AccountDeletionResponse
 }

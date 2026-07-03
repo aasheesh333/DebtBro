@@ -206,6 +206,51 @@ class AuthManager @Inject constructor(
     }
 
     /**
+     * Best-effort POST to the configured Cloud Function (BuildConfig.ACCOUNT_DELETION_URL
+     * with the `/requestAccountDeletion` suffix swapped for `/cancelAccountDeletion`)
+     * to cancel a previously-recorded account-deletion request server-side. Returns
+     * silently without throwing if the URL is missing, malformed, points outside the
+     * trusted Google Cloud host set, or HTTP fails — local-only deletion bookkeeping
+     * continues regardless.
+     *
+     * SSRF guard: parse the URL with OkHttp's HttpUrl (no scheme/host can sneak
+     * past) and refuse any host outside the `*.cloudfunctions.net` / `*.googleapis.com`
+     * family. This protects against a tampered local.properties or compromised CI
+     * secret pointing at an attacker-controlled HTTPS endpoint that would otherwise
+     * receive the user's Firebase UID.
+     *
+     * The URL comes from the GH secret `ACCOUNT_DELETION_URL` (wired via build.yml →
+     * buildConfigField → NetworkModule's @Named("accountDeletionUrl") provider).
+     */
+    suspend fun cancelAccountDeletion(uid: String): Result<Unit> = runCatching {
+        if (accountDeletionUrl.isBlank()) return@runCatching
+        val cancelUrl = accountDeletionUrl.removeSuffix("/requestAccountDeletion") + "/cancelAccountDeletion"
+        val parsed = cancelUrl.toHttpUrlOrNull() ?: run {
+            android.util.Log.w("AuthManager", "cancelAccountDeletion: URL is malformed, skipping — $cancelUrl")
+            return@runCatching
+        }
+        if (parsed.scheme != "https") {
+            android.util.Log.w("AuthManager", "cancelAccountDeletion: non-HTTPS scheme '${parsed.scheme}', skipping")
+            return@runCatching
+        }
+        val host = parsed.host.lowercase()
+        val isTrustedHost = host == "cloudfunctions.net" ||
+            host.endsWith(".cloudfunctions.net") ||
+            host.endsWith(".googleapis.com")
+        if (!isTrustedHost) {
+            android.util.Log.w("AuthManager", "cancelAccountDeletion: untrusted host '$host', refusing to POST")
+            return@runCatching
+        }
+        accountDeletionApi.cancelDeletion(
+            url = cancelUrl,
+            request = AccountDeletionRequest(uid)
+        )
+        Unit
+    }.onFailure { e ->
+        android.util.Log.e("AuthManager", "cancelAccountDeletion failed: ${e.message}", e)
+    }
+
+    /**
      * Update the current user's display name (profile) and photo URL.
      */
     suspend fun updateProfile(displayName: String?, photoUri: String?): Result<Unit> = runCatching {
