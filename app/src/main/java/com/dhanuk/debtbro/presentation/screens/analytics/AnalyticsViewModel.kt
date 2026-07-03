@@ -29,7 +29,7 @@ data class AnalyticsUiState(
     val totalSettled: Double = 0.0,
     val netBalance: Double = 0.0,
     val recoveryRate: Int = 0,
-    val mostTrustedFriend: String = "No winner yet",
+    val mostTrustedFriend: String = LocalizedString.get("no_winner_yet"),
     val worstOffender: String = "Nobody yet",
     val monthlyData: List<Pair<String, Double>> = emptyList(),
     val currency: String = "₹"
@@ -76,7 +76,7 @@ class AnalyticsViewModel @Inject constructor(
         val settled = debts.filter { it.status == "SETTLED" }.sumOf { it.amount }
         val lent = debts.filter { it.type == "THEY_OWE_ME" }.sumOf { it.amount }
         val worst = debts.filter { it.status != "SETTLED" }.minByOrNull { it.createdAt }?.personName ?: "Nobody yet"
-        val trusted = debts.filter { it.status == "SETTLED" }.groupBy { it.personName }.maxByOrNull { it.value.sumOf { d -> d.amount } }?.key ?: "No winner yet"
+        val trusted = debts.filter { it.status == "SETTLED" }.groupBy { it.personName }.maxByOrNull { it.value.sumOf { d -> d.amount } }?.key ?: LocalizedString.get("no_winner_yet")
         val fmt = SimpleDateFormat("MMM", Locale.getDefault())
         val months = (5 downTo 0).map { back ->
             val cal = Calendar.getInstance().apply { add(Calendar.MONTH, -back) }
