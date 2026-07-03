@@ -3,20 +3,17 @@
     xmlns:tools="http://schemas.android.com/tools">
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
-
-    <!-- Removed on 2026-07-03 (minSdk bumped from 26 to 29):
-         WRITE_EXTERNAL_STORAGE (android:maxSdkVersion="28") was used by the
-         legacy CsvExporter path that wrote to Environment.getExternalStoragePublicDirectory.
-         MediaStore on API ≥ Q does not need this permission; the legacy
-         pre-Q path threw SecurityException when storage wasn't granted and
-         we never requested it at runtime. Bumping minSdk to 29 lets us
-         delete the broken path entirely and remove the Play Store review
-         flag for legacy storage access. -->
-    <!-- No POST_NOTIFICATIONS rationale is declared here — we use the
-         runtime in-app rationale dialog in NotificationPermissionHandler.kt;
-         the system-level rationale would only matter if we asked via
-         shouldShowRequestPermissionRationale from an Activity-only context,
-         which we no longer do. -->
+    <!-- WRITE_EXTERNAL_STORAGE is required for the legacy CsvExporter
+         path on API 26-28 (configures Environment.getExternalStoragePublicDirectory).
+         maxSdkVersion=28 means it's silently dropped on API ≥ Q where
+         MediaStore handles Downloads without needing this runtime grant.
+         The legacy path also requests the permission at runtime; if the
+         user denies it, the export fails gracefully with an error toast.
+         minSdk was set back to 26 on 2026-07-03 — earlier bump to 29
+         broke installs on older devices with "parsing the package failed". -->
+    <uses-permission
+        android:name="android.permission.WRITE_EXTERNAL_STORAGE"
+        android:maxSdkVersion="28" />
 
     <!-- Removed: VIBRATE - not used; app uses default ringtone/vibration from notification channel -->
     <!-- Removed: RECEIVE_BOOT_COMPLETED - not used; WorkManager handles rescheduling after reboot -->
