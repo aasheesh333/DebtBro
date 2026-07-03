@@ -65,8 +65,35 @@ object LocalizedString {
     fun getDefault(key: String): String = lookup(ENGLISH, key)
 
     // ── All available translations ────────────────────────────────────────────
-    private val strings = mapOf(
-        "en" to mapOf(
+    private val strings: Map<String, Map<String, String>> = mapOf(
+        "en" to enStrings(),
+        "hi" to hiStrings(),
+        "es" to esStrings(),
+        "fr" to frStrings(),
+        "de" to deStrings(),
+        "ja" to jaStrings(),
+        "mr" to mrStrings(),
+        "pa" to paStrings(),
+        "gu" to guStrings(),
+        "bn" to bnStrings(),
+        "pt" to ptStrings(),
+        "ar" to arStrings(),
+        "zh" to zhStrings(),
+        "ko" to koStrings(),
+        "ru" to ruStrings(),
+        "tr" to trStrings(),
+        "it" to itStrings(),
+        "id" to idStrings(),
+        "ta" to taStrings(),
+        "te" to teStrings(),
+        "ur" to urStrings(),
+        "sw" to swStrings(),
+        "nl" to nlStrings(),
+        "pl" to plStrings(),
+        "vi" to viStrings(),
+    )
+
+    private fun enStrings(): Map<String, String> = mapOf(
             "nav_home" to "Home",
             "nav_debts" to "Debts",
             "nav_split" to "Split",
@@ -356,8 +383,8 @@ object LocalizedString {
             "new_design_generated_toast" to "New design generated!",
             "failed_to_create_image" to "Failed to create image",
             "no_due_date" to "No due date",
-        ),
-        "hi" to mapOf(
+        )
+    private fun hiStrings(): Map<String, String> = mapOf(
             "nav_home" to "होम",
             "nav_debts" to "कर्ज़",
             "nav_split" to "बाँटें",
@@ -645,8 +672,8 @@ object LocalizedString {
             "show_emoji" to "इमोजी दिखाएँ",
             "show_emoji_sub" to "कार्ड में व्यक्ति का इमोजी शामिल करें",
             "wall_of_shame" to "💸 शर्म की दीवार",
-        ),
-        "es" to mapOf(
+        )
+    private fun esStrings(): Map<String, String> = mapOf(
             "nav_home" to "Inicio",
             "nav_debts" to "Deudas",
             "nav_split" to "Dividir",
@@ -931,8 +958,8 @@ object LocalizedString {
             "try_different" to "Prueba con un nombre o palabra diferente",
             "wall_of_shame" to "💸 Muro de la Vergüenza",
             "worst_offender" to "💀 Peor Deudor",
-        ),
-        "fr" to mapOf(
+        )
+    private fun frStrings(): Map<String, String> = mapOf(
             "nav_home" to "Accueil",
             "nav_debts" to "Dettes",
             "nav_split" to "Partager",
@@ -1217,8 +1244,8 @@ object LocalizedString {
             "try_different" to "Essayez un autre nom ou mot-clé",
             "wall_of_shame" to "💸 Mur de la Honte",
             "worst_offender" to "💀 Pire Débiteur",
-        ),
-        "de" to mapOf(
+        )
+    private fun deStrings(): Map<String, String> = mapOf(
             "nav_home" to "Startseite",
             "nav_debts" to "Schulden",
             "nav_split" to "Teilen",
@@ -1503,8 +1530,8 @@ object LocalizedString {
             "try_different" to "Versuche einen anderen Namen oder Begriff",
             "wall_of_shame" to "💸 Wand der Schande",
             "worst_offender" to "💀 Schlimmster Schuldner",
-        ),
-        "ja" to mapOf(
+        )
+    private fun jaStrings(): Map<String, String> = mapOf(
             "nav_home" to "ホーム",
             "nav_debts" to "借金",
             "nav_split" to "分割",
@@ -1789,13 +1816,13 @@ object LocalizedString {
             "try_different" to "別の名前やキーワードを試してください",
             "wall_of_shame" to "💸 恥の壁",
             "worst_offender" to "💀 最悪の債務者",
-        ),
+        )
         // ── Marathi (mr) ──────────────────────────────────────────────────────────
         // Marathi shares the Devanagari script with Hindi. Most of the strings come
         // straight from Hindi since users of either script are mutually readable;
         // a few Marathi-specific terms are overridden below where Marathi has
         // a uniquely different word from Hindi.
-        "mr" to mapOf(
+    private fun mrStrings(): Map<String, String> = mapOf(
             "nav_home" to "मुख्यपृष्ठ",
             "nav_debts" to "कर्जे",
             "nav_split" to "वाटणी",
@@ -2080,10 +2107,10 @@ object LocalizedString {
             "ai_error_message" to "AI थोडा विश्रांती घेत आहे. काही सेकंदांत रिफ्रेश करण्यासाठी खेचा, किंवा सेटिंग्ज → AI सेटअप मध्ये तुमची स्वतःची की पेस्ट करा.",
             "no_api_key_message" to "वैयक्तिकृत रोस्ट अनलॉक करण्यासाठी सेटिंग्ज → AI सेटअप मध्ये मोफत Gemini API की जोडा. तुम्ही ती aistudio.google.com/app/apikey वर मिळवू शकता.",
             "search_language" to "भाषा शोधा...",
-        ),
+        )
         // ── Punjabi (pa) ──────────────────────────────────────────────────────────
         // Gurmukhi users typically read Hindi too. We use Hindi base for readability.
-        "pa" to mapOf(
+    private fun paStrings(): Map<String, String> = mapOf(
             "nav_home" to "ਘਰ",
             "nav_debts" to "ਕਰਜ਼",
             "nav_split" to "ਵੰਡੋ",
@@ -2368,10 +2395,10 @@ object LocalizedString {
             "whats_this_for" to "ਇਹ ਕੀ ਲਈ ਹੈ?",
             "worst_offender" to "💀 ਸਭ ਤੋਂ ਮਾੜਾ ਕਰਜ਼ਦਾਰ",
             "your_name_label" to "ਤੁਹਾਡਾ ਨਾਮ",
-        ),
+        )
         // ── Gujarati (gu) ──────────────────────────────────────────────────────────
         // Close to Hindi family; Devanagari script.
-        "gu" to mapOf(
+    private fun guStrings(): Map<String, String> = mapOf(
             "nav_home" to "ઘર",
             "nav_debts" to "દેવાં",
             "nav_split" to "વહેંચો",
@@ -2656,14 +2683,14 @@ object LocalizedString {
             "whats_this_for" to "આ શા માટે છે?",
             "worst_offender" to "💀 સૌથી ખરાબ દેણદાર",
             "your_name_label" to "તમારું નામ",
-        ),
+        )
         // ── Bengali (bn) ───────────────────────────────────────────────────────────
         // Bengali script is distinct from Devanagari; we ship a partial Bengali
         // map for the most-common visible keys and let the familyFallback fall
         // through to English for everything else. This is honest: a Bengali
         // user picking Bengali won't see Marathi-via-Hindi gibberish; they'll
         // see a Bengali nav chrome and English body copy.
-        "bn" to mapOf(
+    private fun bnStrings(): Map<String, String> = mapOf(
             "nav_home" to "হোম",
             "nav_debts" to "ঋণ",
             "nav_split" to "ভাগ করুন",
@@ -2948,8 +2975,8 @@ object LocalizedString {
             "whats_this_for" to "এটি কী জন্য?",
             "worst_offender" to "💀 সবচেয়ে খারাপ দেনাদার",
             "your_name_label" to "আপনার নাম",
-        ),
-        "pt" to mapOf(
+        )
+    private fun ptStrings(): Map<String, String> = mapOf(
             "nav_home" to "Início",
             "nav_debts" to "Dívidas",
             "nav_split" to "Dividir",
@@ -3234,8 +3261,8 @@ object LocalizedString {
             "new_design_generated_toast" to "Novo design gerado!",
             "failed_to_create_image" to "Falha ao criar imagem",
             "no_due_date" to "Sem data de vencimento",
-        ),
-        "ar" to mapOf(
+        )
+    private fun arStrings(): Map<String, String> = mapOf(
             "nav_home" to "الرئيسية",
             "nav_debts" to "الديون",
             "nav_split" to "تقسيم",
@@ -3520,8 +3547,8 @@ object LocalizedString {
             "new_design_generated_toast" to "تم توليد تصميم جديد!",
             "failed_to_create_image" to "فشل في إنشاء الصورة",
             "no_due_date" to "لا تاريخ استحقاق",
-        ),
-        "zh" to mapOf(
+        )
+    private fun zhStrings(): Map<String, String> = mapOf(
             "nav_home" to "首页",
             "nav_debts" to "债务",
             "nav_split" to "分账",
@@ -3806,8 +3833,8 @@ object LocalizedString {
             "new_design_generated_toast" to "新设计已生成！",
             "failed_to_create_image" to "创建图片失败",
             "no_due_date" to "无到期日",
-        ),
-        "ko" to mapOf(
+        )
+    private fun koStrings(): Map<String, String> = mapOf(
             "nav_home" to "홈",
             "nav_debts" to "빚",
             "nav_split" to "분할",
@@ -4092,8 +4119,8 @@ object LocalizedString {
             "new_design_generated_toast" to "새 디자인이 생성되었습니다!",
             "failed_to_create_image" to "이미지 생성 실패",
             "no_due_date" to "만기일 없음",
-        ),
-        "ru" to mapOf(
+        )
+    private fun ruStrings(): Map<String, String> = mapOf(
             "nav_home" to "Главная",
             "nav_debts" to "Долги",
             "nav_split" to "Разделить",
@@ -4378,8 +4405,8 @@ object LocalizedString {
             "new_design_generated_toast" to "Новый дизайн создан!",
             "failed_to_create_image" to "Не удалось создать изображение",
             "no_due_date" to "Без срока",
-        ),
-        "tr" to mapOf(
+        )
+    private fun trStrings(): Map<String, String> = mapOf(
             "nav_home" to "Ana Sayfa",
             "nav_debts" to "Borçlar",
             "nav_split" to "Bölüş",
@@ -4664,8 +4691,8 @@ object LocalizedString {
             "new_design_generated_toast" to "Yeni tasarım oluşturuldu!",
             "failed_to_create_image" to "Görsel oluşturulamadı",
             "no_due_date" to "Vade tarihi yok",
-        ),
-        "it" to mapOf(
+        )
+    private fun itStrings(): Map<String, String> = mapOf(
             "nav_home" to "Home",
             "nav_debts" to "Debiti",
             "nav_split" to "Dividi",
@@ -4950,8 +4977,8 @@ object LocalizedString {
             "new_design_generated_toast" to "Nuovo design generato!",
             "failed_to_create_image" to "Impossibile creare l'immagine",
             "no_due_date" to "Nessuna data di scadenza",
-        ),
-        "id" to mapOf(
+        )
+    private fun idStrings(): Map<String, String> = mapOf(
             "nav_home" to "Beranda",
             "nav_debts" to "Utang",
             "nav_split" to "Bagi",
@@ -5236,8 +5263,8 @@ object LocalizedString {
             "new_design_generated_toast" to "Desain baru dibuat!",
             "failed_to_create_image" to "Gagal membuat gambar",
             "no_due_date" to "Tidak ada tanggal jatuh tempo",
-        ),
-        "ta" to mapOf(
+        )
+    private fun taStrings(): Map<String, String> = mapOf(
             "nav_home" to "முகப்பு",
             "nav_debts" to "கடன்கள்",
             "nav_split" to "பிரித்தல்",
@@ -5522,8 +5549,8 @@ object LocalizedString {
             "new_design_generated_toast" to "புதிய வடிவமைப்பு உருவாக்கப்பட்டது!",
             "failed_to_create_image" to "படத்தை உருவாக்கத் தவறிவிட்டது",
             "no_due_date" to "தவணை தேதி இல்லை",
-        ),
-        "te" to mapOf(
+        )
+    private fun teStrings(): Map<String, String> = mapOf(
             "nav_home" to "హోమ్",
             "nav_debts" to "అప్పులు",
             "nav_split" to "పంచు",
@@ -5808,8 +5835,8 @@ object LocalizedString {
             "new_design_generated_toast" to "కొత్త డిజైన్ సృష్టించబడింది!",
             "failed_to_create_image" to "చిత్రం సృష్టించడంలో విఫలమైంది",
             "no_due_date" to "గడువు తేదీ లేదు",
-        ),
-        "ur" to mapOf(
+        )
+    private fun urStrings(): Map<String, String> = mapOf(
             "nav_home" to "ہوم",
             "nav_debts" to "قرضے",
             "nav_split" to "تقسیم",
@@ -6094,8 +6121,8 @@ object LocalizedString {
             "new_design_generated_toast" to "نیا ڈیزائن بن گیا!",
             "failed_to_create_image" to "تصویر بنانے میں ناکام",
             "no_due_date" to "کوئی تاریخ وصولی نہیں",
-        ),
-        "sw" to mapOf(
+        )
+    private fun swStrings(): Map<String, String> = mapOf(
             "nav_home" to "Nyumbani",
             "nav_debts" to "Madeni",
             "nav_split" to "Gawa",
@@ -6380,8 +6407,8 @@ object LocalizedString {
             "new_design_generated_toast" to "Muundo mpya umetengenezwa!",
             "failed_to_create_image" to "Imeshindwa kutengeneza picha",
             "no_due_date" to "Hakuna tarehe ya mwisho",
-        ),
-        "nl" to mapOf(
+        )
+    private fun nlStrings(): Map<String, String> = mapOf(
             "nav_home" to "Home",
             "nav_debts" to "Schulden",
             "nav_split" to "Splits",
@@ -6666,8 +6693,8 @@ object LocalizedString {
             "new_design_generated_toast" to "Nieuw ontwerp gegenereerd!",
             "failed_to_create_image" to "Afbeelding maken mislukt",
             "no_due_date" to "Geen vervaldatum",
-        ),
-        "pl" to mapOf(
+        )
+    private fun plStrings(): Map<String, String> = mapOf(
             "nav_home" to "Strona główna",
             "nav_debts" to "Długi",
             "nav_split" to "Podział",
@@ -6952,8 +6979,8 @@ object LocalizedString {
             "new_design_generated_toast" to "Nowy projekt wygenerowany!",
             "failed_to_create_image" to "Nie udało się utworzyć obrazu",
             "no_due_date" to "Brak daty płatności",
-        ),
-        "vi" to mapOf(
+        )
+    private fun viStrings(): Map<String, String> = mapOf(
             "nav_home" to "Trang chủ",
             "nav_debts" to "Khoản nợ",
             "nav_split" to "Chia",
@@ -7238,6 +7265,5 @@ object LocalizedString {
             "new_design_generated_toast" to "Đã tạo thiết kế mới!",
             "failed_to_create_image" to "Không tạo được hình",
             "no_due_date" to "Không có ngày đến hạn",
-        ),
-    )
+        )
 }
