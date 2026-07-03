@@ -458,7 +458,7 @@ fun SettingsScreen(viewModel: SettingsViewModel = hiltViewModel()) {
                         showDeleteOptionsDialog = true
                     }
                 ) {
-                    Text("Delete Now", color = MaterialTheme.colorScheme.error, fontWeight = FontWeight.Bold)
+                    Text(LocalizedString.get("delete_now_button"), color = MaterialTheme.colorScheme.error, fontWeight = FontWeight.Bold)
                 }
             },
             dismissButton = {
@@ -492,7 +492,7 @@ fun SettingsScreen(viewModel: SettingsViewModel = hiltViewModel()) {
             text = {
                 Column {
                     Text(
-                        "Choose how to proceed:",
+                        LocalizedString.get("choose_how_to_proceed"),
                         color = MaterialTheme.colorScheme.onSurface,
                         fontSize = UITokens.FontBody,
                         fontWeight = FontWeight.Bold
@@ -534,7 +534,7 @@ fun SettingsScreen(viewModel: SettingsViewModel = hiltViewModel()) {
                         enabled = !state.isDeletingAccount
                     ) {
                         if (state.isDeletingAccount) CircularProgressIndicator(modifier = Modifier.size(UITokens.IconSmall), strokeWidth = 2.dp)
-                        Text("Delete Immediately", color = MaterialTheme.colorScheme.error, fontWeight = FontWeight.Bold)
+                        Text(LocalizedString.get("delete_immediately_button"), color = MaterialTheme.colorScheme.error, fontWeight = FontWeight.Bold)
                     }
                     Spacer(Modifier.height(4.dp))
                     TextButton(
@@ -543,7 +543,7 @@ fun SettingsScreen(viewModel: SettingsViewModel = hiltViewModel()) {
                             viewModel.requestAccountDeletion(context) { }
                         }
                     ) {
-                        Text("Request Account Deletion", color = MaterialTheme.colorScheme.primary)
+                        Text(LocalizedString.get("request_account_deletion_button"), color = MaterialTheme.colorScheme.primary)
                     }
                 }
             },
