@@ -12,7 +12,7 @@ data class GeminiCandidate(val content: GeminiContent)
 data class GeminiResponse(val candidates: List<GeminiCandidate>, val error: GeminiError?)
 data class GeminiError(val code: Int, val message: String, val status: String)
 
-// Request model: Gemini uses a simplified structure compared to Groq
+// Request model
 data class GeminiRequest(
     val contents: List<GeminiContent>,
     val systemInstruction: GeminiContent? = null,

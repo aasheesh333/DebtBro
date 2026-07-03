@@ -31,7 +31,7 @@ android {
         versionName = localProp("VERSION_NAME").ifEmpty { "1.0.0" }
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
-        // GROQ fully replaced by Gemini Flash 2.5 (2026-07-02)
+        // AI uses Gemini Flash 2.5 (2026-07-03)
         buildConfigField("String", "GEMINI_API_KEY", "\"${escapedProp("GEMINI_API_KEY")}\"")
         buildConfigField("String", "GEMINI_API_KEY_2_5_FLASH_LITE", "\"${escapedProp("GEMINI_API_KEY_2_5_FLASH_LITE")}\"")
         buildConfigField("String", "ADMOB_APP_ID", "\"${escapedProp("ADMOB_APP_ID")}\"")

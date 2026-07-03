@@ -66,8 +66,8 @@ jobs:
           KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
           PACKAGE_NAME: ${{ secrets.PACKAGE_NAME }}
           VERSION_NAME: ${{ secrets.VERSION_NAME }}
-          # GEMINI_API_KEY was renamed to GEMINI_API_KEY_2_5_FLASH_LITE on 2026-07-02 when Groq was retired.
-          # AiRepository.kt still reads both as an .ifBlank chain for backwards compat, so we only require the new one.
+          # Gemini API key wired from repo secret.
+          # AiRepository.kt reads both old + new keys for backwards compat.
           GEMINI_API_KEY_2_5_FLASH_LITE: ${{ secrets.GEMINI_API_KEY_2_5_FLASH_LITE }}
           ADMOB_APP_ID: ${{ secrets.ADMOB_APP_ID }}
           ADMOB_BANNER_ID: ${{ secrets.ADMOB_BANNER_ID }}
@@ -85,8 +85,7 @@ jobs:
           : "${KEY_PASSWORD:?ERROR: KEY_PASSWORD secret missing.}"
           : "${PACKAGE_NAME:?ERROR: PACKAGE_NAME secret missing.}"
           : "${VERSION_NAME:?ERROR: VERSION_NAME secret missing.}"
-          # GEMINI_API_KEY was renamed to GEMINI_API_KEY_2_5_FLASH_LITE on 2026-07-02 when Groq was retired.
-          # AiRepository.kt still reads both as an .ifBlank chain for backwards compat, so we only require the new one.
+          # Gemini API key wired from repo secret.
           : "${GEMINI_API_KEY_2_5_FLASH_LITE:?ERROR: GEMINI_API_KEY_2_5_FLASH_LITE secret missing.}"
           : "${ADMOB_APP_ID:?ERROR: ADMOB_APP_ID secret missing.}"
           : "${ADMOB_BANNER_ID:?ERROR: ADMOB_BANNER_ID secret missing.}"

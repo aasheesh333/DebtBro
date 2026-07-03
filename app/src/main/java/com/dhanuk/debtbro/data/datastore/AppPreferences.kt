@@ -20,7 +20,6 @@ class AppPreferences(@ApplicationContext private val context: Context) {
     private object Keys {
         val HAS_COMPLETED_ONBOARDING = booleanPreferencesKey("has_completed_onboarding")
         val USER_NAME = stringPreferencesKey("user_name")
-        val GROQ_API_KEY = stringPreferencesKey("groq_api_key")
         val GEMINI_API_KEY = stringPreferencesKey("gemini_api_key")
         val ROAST_LEVEL = stringPreferencesKey("roast_level")
         val DEFAULT_CURRENCY = stringPreferencesKey("default_currency")
@@ -57,8 +56,7 @@ class AppPreferences(@ApplicationContext private val context: Context) {
 
     val hasCompletedOnboarding: Flow<Boolean> = context.dataStore.data.map { it[Keys.HAS_COMPLETED_ONBOARDING] ?: false }
     val userName: Flow<String> = context.dataStore.data.map { it[Keys.USER_NAME] ?: "" }
-    val groqApiKey: Flow<String> = context.dataStore.data.map { it[Keys.GROQ_API_KEY] ?: "" }
-    val geminiApiKey: Flow<String> = context.dataStore.data.map { it[Keys.GEMINI_API_KEY] ?: "" }
+    val geminiApiKey: Flow<String> = context.dataStore.data.map { (it[Keys.GEMINI_API_KEY] ?: "").trim() }
     val roastLevel: Flow<String> = context.dataStore.data.map { it[Keys.ROAST_LEVEL]?.let { v -> if (v == "SAVAGE") "SPICY" else v } ?: "MEDIUM" }
     val defaultCurrency: Flow<String> = context.dataStore.data.map { it[Keys.DEFAULT_CURRENCY] ?: "₹" }
     val isGoogleSignedIn: Flow<Boolean> = context.dataStore.data.map { it[Keys.IS_GOOGLE_SIGNED_IN] ?: false }
@@ -88,7 +86,6 @@ class AppPreferences(@ApplicationContext private val context: Context) {
         it[Keys.USER_NAME] = name.ifBlank { "Bro" }
     }
     suspend fun saveUserName(name: String) = context.dataStore.edit { it[Keys.USER_NAME] = name.ifBlank { "Bro" } }
-    suspend fun saveGroqKey(key: String) = context.dataStore.edit { it[Keys.GROQ_API_KEY] = key.trim() }
     suspend fun saveGeminiKey(key: String) = context.dataStore.edit { it[Keys.GEMINI_API_KEY] = key.trim() }
     suspend fun setRoastLevel(level: String) = context.dataStore.edit { it[Keys.ROAST_LEVEL] = level }
     suspend fun setCurrency(c: String) = context.dataStore.edit { it[Keys.DEFAULT_CURRENCY] = c }

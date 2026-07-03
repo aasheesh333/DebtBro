@@ -43,7 +43,7 @@ class SecureStorage @Inject constructor(@ApplicationContext private val context:
         }
     }
 
-    private val _geminiApiKey = MutableStateFlow(prefs.getString(Keys.GEMINI_API_KEY, "") ?: "")
+    private val _geminiApiKey = MutableStateFlow((prefs.getString(Keys.GEMINI_API_KEY, "") ?: "").trim())
     private val _googleUserName = MutableStateFlow(prefs.getString(Keys.GOOGLE_USER_NAME, "") ?: "")
     private val _googleUserEmail = MutableStateFlow(prefs.getString(Keys.GOOGLE_USER_EMAIL, "") ?: "")
     private val _googleUserPhoto = MutableStateFlow(prefs.getString(Keys.GOOGLE_USER_PHOTO, "") ?: "")

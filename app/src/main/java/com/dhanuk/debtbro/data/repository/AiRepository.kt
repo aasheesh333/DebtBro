@@ -139,9 +139,13 @@ class AiRepository @Inject constructor(
      * without leaking the secret value into logs.
      */
     private suspend fun apiKey(): String? {
-        val userKey = prefs.geminiApiKey.first()
-        val bundled = BuildConfig.GEMINI_API_KEY_2_5_FLASH_LITE
-        val legacy = BuildConfig.GEMINI_API_KEY
+        // Trim every source — GitHub Actions secrets and user-pasted strings
+        // routinely carry invisible trailing newlines/spaces. One un-trimmed
+        // char becomes URL-encoded (e.g. %0A) in the ?key= query param and
+        // Gemini rejects the whole request with HTTP 400.
+        val userKey = prefs.geminiApiKey.first().trim()
+        val bundled = BuildConfig.GEMINI_API_KEY_2_5_FLASH_LITE.trim()
+        val legacy = BuildConfig.GEMINI_API_KEY.trim()
         val source = when {
             userKey.isNotBlank() -> "USER_PASTED_IN_DATASTORE"
             bundled.isNotBlank() -> "BUNDLED_FROM_CI_SECRET_GEMINI_API_KEY_2_5_FLASH_LITE"
@@ -440,9 +444,9 @@ Generate a WhatsApp-style payment reminder. The message MUST reference the actua
      */
     suspend fun runAiConnectionTest(): ConnectionTestResult {
         ensureRateLimit()
-        val userKey = prefs.geminiApiKey.first()
-        val bundled = BuildConfig.GEMINI_API_KEY_2_5_FLASH_LITE
-        val legacy = BuildConfig.GEMINI_API_KEY
+        val userKey = prefs.geminiApiKey.first().trim()
+        val bundled = BuildConfig.GEMINI_API_KEY_2_5_FLASH_LITE.trim()
+        val legacy = BuildConfig.GEMINI_API_KEY.trim()
         val (packaged, source) = when {
             userKey.isNotBlank() -> userKey to "USER_PASTED_IN_DATASTORE"
             bundled.isNotBlank() -> bundled to "BUNDLED_FROM_CI_SECRET_GEMINI_API_KEY_2_5_FLASH_LITE"
@@ -474,7 +478,7 @@ Generate a WhatsApp-style payment reminder. The message MUST reference the actua
                     apiKey = packaged,
                     request = GeminiRequest(
                         contents = listOf(GeminiContent(parts = listOf(GeminiPart("Say OK")), role = "user")),
-                        generationConfig = GenerationConfig(temperature = 0.0, maxOutputTokens = 5)
+                        generationConfig = GenerationConfig(temperature = 0.1, maxOutputTokens = 5)
                     )
                 )
                 val text = response.candidates.firstOrNull()?.content?.parts?.firstOrNull()?.text
