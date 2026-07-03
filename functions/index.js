@@ -62,12 +62,31 @@ exports.processDeletionQueue = functions
   });
 
 async function wipeUserData(uid) {
-  const userCollections = ["debts", "payments", "splits", "userSettings"];
-  for (const coll of userCollections) {
-    const snap = await db.collection("users").doc(uid).collection(coll).get();
-    const batch = db.batch();
-    snap.forEach((d) => batch.delete(d.ref));
-    await batch.commit();
+  try {
+    const debts = await db.collection("users").doc(uid).collection("debts").get();
+    for (const debtDoc of debts.docs) {
+      try {
+        const payments = await debtDoc.ref.collection("payments").get();
+        for (const p of payments.docs) {
+          await p.ref.delete().catch((err) => console.error(`  payment ${p.id}:`, err.message));
+        }
+      } catch (err) {
+        console.error(`debt ${debtDoc.id} payments walk:`, err.message);
+      }
+      await debtDoc.ref.delete().catch((err) => console.error(`debt ${debtDoc.id} delete:`, err.message));
+    }
+  } catch (err) {
+    console.error(`debts walk for ${uid}:`, err.message);
   }
+
+  try {
+    const splits = await db.collection("users").doc(uid).collection("splits").get();
+    for (const s of splits.docs) {
+      await s.ref.delete().catch((err) => console.error(`split ${s.id}:`, err.message));
+    }
+  } catch (err) {
+    console.error(`splits walk for ${uid}:`, err.message);
+  }
+
   await db.collection("users").doc(uid).delete().catch(() => {});
 }
