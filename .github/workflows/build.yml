@@ -44,7 +44,29 @@ jobs:
 
       # Fail fast with a clear, actionable message if any required secret is
       # missing — far better than a 15-minute silent build failure later.
+      # GitHub Actions does NOT auto-export secrets as bash env vars; we must
+      # map each ${{ secrets.X }} into the step's env explicitly, or the
+      # `: "${VAR:?msg}"` guard below triggers on every run and aborts
+      # before decode/build steps ever start.
       - name: Validate required secrets
+        env:
+          KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
+          GOOGLE_SERVICES_JSON: ${{ secrets.GOOGLE_SERVICES_JSON }}
+          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+          PACKAGE_NAME: ${{ secrets.PACKAGE_NAME }}
+          VERSION_NAME: ${{ secrets.VERSION_NAME }}
+          # GEMINI_API_KEY was renamed to GEMINI_API_KEY_2_5_FLASH_LITE on 2026-07-02 when Groq was retired.
+          # AiRepository.kt still reads both as an .ifBlank chain for backwards compat, so we only require the new one.
+          GEMINI_API_KEY_2_5_FLASH_LITE: ${{ secrets.GEMINI_API_KEY_2_5_FLASH_LITE }}
+          ADMOB_APP_ID: ${{ secrets.ADMOB_APP_ID }}
+          ADMOB_BANNER_ID: ${{ secrets.ADMOB_BANNER_ID }}
+          ADMOB_INTERSTITIAL_ID: ${{ secrets.ADMOB_INTERSTITIAL_ID }}
+          ADMOB_REWARDED_ID: ${{ secrets.ADMOB_REWARDED_ID }}
+          ONESIGNAL_APP_ID: ${{ secrets.ONESIGNAL_APP_ID }}
+          ONESIGNAL_API_KEY: ${{ secrets.ONESIGNAL_API_KEY }}
+          FIREBASE_PROJECT_ID: ${{ secrets.FIREBASE_PROJECT_ID }}
+          ACCOUNT_DELETION_URL: ${{ secrets.ACCOUNT_DELETION_URL }}
         run: |
           set -e
           : "${KEYSTORE_BASE64:?ERROR: KEYSTORE_BASE64 secret missing — add it in repo Settings > Secrets.}"
