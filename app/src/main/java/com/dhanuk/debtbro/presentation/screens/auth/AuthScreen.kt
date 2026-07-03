@@ -103,7 +103,7 @@ fun AuthScreen(onAuthComplete: () -> Unit, onSkip: () -> Unit) {
 
                     if (activity == null) {
                         Text(
-                            "Google sign-in unavailable in this context.",
+                            LocalizedString.get("google_signin_unavailable"),
                             color = extra.subtitleGray,
                             fontSize = 11.sp,
                             textAlign = TextAlign.Center,
@@ -129,7 +129,7 @@ fun AuthScreen(onAuthComplete: () -> Unit, onSkip: () -> Unit) {
                 OutlinedTextField(
                     value = state.email,
                     onValueChange = { viewModel.setEmail(it) },
-                    label = { Text("Email") },
+                    label = { Text(LocalizedString.get("email")) },
                     singleLine = true,
                     enabled = !state.isBusy,
                     keyboardOptions = KeyboardOptions(
