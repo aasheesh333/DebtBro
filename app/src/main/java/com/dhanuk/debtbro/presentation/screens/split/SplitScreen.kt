@@ -187,7 +187,6 @@ fun SplitScreen(onAuthRequired: () -> Unit, viewModel: SplitViewModel = hiltView
                 }
             }
         }
-        }
 
         item {
             Text(
