@@ -22,6 +22,16 @@ concurrency:
 
 jobs:
   build:
+    # Required for `softprops/action-gh-release@v2` below — the default
+    # GITHUB_TOKEN issued to workflows is read-only for releases on this org,
+    # so without `contents: write` the Create GitHub Release step returns
+    # "Resource not accessible by integration · HTTP 403". Granular job-level
+    # scope (instead of workflow-level) keeps the rest of the build as
+    # read-only as possible. Only the create-release step actually needs
+    # write; everything else is unaffected by this scope (assembleRelease /
+    # bundleRelease / upload-artifact don't touch the repo contents API).
+    permissions:
+      contents: write
     name: Build Signed Release Artifacts
     runs-on: ubuntu-latest
     timeout-minutes: 60
