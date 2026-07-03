@@ -53,6 +53,8 @@ class AnalyticsViewModel @Inject constructor(
     private val _remainingFree = MutableStateFlow(5)
     val remainingFree: StateFlow<Int> = _remainingFree.asStateFlow()
 
+    fun dismissRewardAd() { _showRewardAd.value = false }
+
     init {
         // Wait for the first non-empty state emission before requesting AI
         // insight. The cold-start seeded UiState() has zero totals + "Nobody

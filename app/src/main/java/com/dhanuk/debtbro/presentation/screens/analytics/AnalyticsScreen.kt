@@ -1,6 +1,7 @@
 package com.dhanuk.debtbro.presentation.screens.analytics
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.CircleShape
@@ -12,6 +13,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -43,10 +45,16 @@ fun AnalyticsScreen(viewModel: AnalyticsViewModel = hiltViewModel()) {
     val state by viewModel.state.collectAsStateWithLifecycle()
     val insight by viewModel.aiInsight.collectAsStateWithLifecycle()
     val loading by viewModel.isLoadingInsight.collectAsStateWithLifecycle()
+    val showRewardAd by viewModel.showRewardAd.collectAsStateWithLifecycle()
+    val remainingFree by viewModel.remainingFree.collectAsStateWithLifecycle()
+    val context = LocalContext.current
+    val activity = context as? android.app.Activity
     val extra = LocalExtraColors.current
 
     val modelProducer = remember { CartesianChartModelProducer.build() }
     
+    LaunchedEffect(Unit) { viewModel.preloadRewardedAd(context) }
+
     LaunchedEffect(state.monthlyData) {
         if (state.monthlyData.isNotEmpty()) {
             modelProducer.tryRunTransaction {
@@ -212,8 +220,20 @@ fun AnalyticsScreen(viewModel: AnalyticsViewModel = hiltViewModel()) {
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             Text(LocalizedString.get("ai_take"), color = MaterialTheme.colorScheme.onSurface, fontWeight = FontWeight.Bold, fontSize = UITokens.FontSubhead)
                             Spacer(Modifier.weight(1f))
-                            IconButton(onClick = { viewModel.loadAiInsight() }) {
-                                Icon(Icons.Default.Refresh, contentDescription = LocalizedString.get("regenerate"), tint = MaterialTheme.colorScheme.primary)
+                            val badgeLabel = if (remainingFree > 0) "$remainingFree" else LocalizedString.get("watch_ad")
+                            Box(
+                                modifier = Modifier
+                                    .clip(UITokens.ShapeLarge)
+                                    .background(MaterialTheme.colorScheme.surfaceVariant)
+                                    .clickable { viewModel.loadAiInsight(activity) }
+                                    .padding(horizontal = 10.dp, vertical = 4.dp)
+                            ) {
+                                Text(
+                                    badgeLabel,
+                                    color = MaterialTheme.colorScheme.primary,
+                                    fontSize = UITokens.FontCaption,
+                                    fontWeight = FontWeight.Bold
+                                )
                             }
                         }
 
@@ -233,6 +253,24 @@ fun AnalyticsScreen(viewModel: AnalyticsViewModel = hiltViewModel()) {
                                     fontSize = 14.sp
                                 )
                             }
+                        }
+                        if (showRewardAd) {
+                            AlertDialog(
+                                onDismissRequest = { viewModel.dismissRewardAd() },
+                                title = { Text(LocalizedString.get("watch_ad")) },
+                                text = { Text(LocalizedString.get("free_regenerations_desc")) },
+                                confirmButton = {
+                                    TextButton(onClick = {
+                                        viewModel.dismissRewardAd()
+                                        viewModel.loadAiInsight(activity)
+                                    }) { Text(LocalizedString.get("watch_ad")) }
+                                },
+                                dismissButton = {
+                                    TextButton(onClick = { viewModel.dismissRewardAd() }) {
+                                        Text(LocalizedString.get("later"))
+                                    }
+                                }
+                            )
                         }
                     }
                 }
