@@ -333,7 +333,7 @@ fun Page5aName(
 }
 
 @Composable
-fun Page6Auth(
+private fun Page6Auth(
     name: String,
     showEmailForm: Boolean,
     isSignInMode: Boolean,
