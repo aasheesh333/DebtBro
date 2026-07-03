@@ -394,11 +394,13 @@ Generate a WhatsApp-style payment reminder. The message MUST reference the actua
             request = GeminiRequest(
                 contents = listOf(GeminiContent(parts = listOf(GeminiPart(userMessage)), role = "user")),
                 systemInstruction = GeminiContent(parts = listOf(GeminiPart(systemText)), role = "system"),
-                generationConfig = GenerationConfig(temperature = temp, maxOutputTokens = 200)
+                generationConfig = GenerationConfig(temperature = temp, maxOutputTokens = 400)
             )
         ).getOrThrow()
 
-        val text = response.candidates.firstOrNull()?.content?.parts?.firstOrNull()?.text
+        val text = response.candidates.firstOrNull()?.content?.parts
+            ?.joinToString("") { it.text ?: "" }
+            ?.takeIf { it.isNotBlank() }
             ?: throw Exception("AI response is empty, try again")
 
         filterProfanity(text.trim()
@@ -423,11 +425,14 @@ Generate a WhatsApp-style payment reminder. The message MUST reference the actua
             request = GeminiRequest(
                 contents = listOf(GeminiContent(parts = listOf(GeminiPart(prompt)), role = "user")),
                 systemInstruction = GeminiContent(parts = listOf(GeminiPart("$langInstruction\nYou are a funny personal finance analyst. Give ONE sharp 2-line insight. No disclaimers.")), role = "system"),
-                generationConfig = GenerationConfig(temperature = 0.3, maxOutputTokens = 150)
+                generationConfig = GenerationConfig(temperature = 0.3, maxOutputTokens = 350)
             )
         ).getOrThrow()
 
-        response.candidates.firstOrNull()?.content?.parts?.firstOrNull()?.text?.trim()
+        response.candidates.firstOrNull()?.content?.parts
+            ?.joinToString("") { it.text ?: "" }
+            ?.trim()
+            ?.takeIf { it.isNotEmpty() }
             ?: throw Exception("Empty AI response")
     }
 
@@ -445,11 +450,14 @@ Generate a WhatsApp-style payment reminder. The message MUST reference the actua
             request = GeminiRequest(
                 contents = listOf(GeminiContent(parts = listOf(GeminiPart(prompt)), role = "user")),
                 systemInstruction = GeminiContent(parts = listOf(GeminiPart("$langInstruction\nYou are a funny commentator. One line only. Be creative.")), role = "system"),
-                generationConfig = GenerationConfig(temperature = 0.7, maxOutputTokens = 100)
+                generationConfig = GenerationConfig(temperature = 0.7, maxOutputTokens = 250)
             )
         ).getOrThrow()
 
-        response.candidates.firstOrNull()?.content?.parts?.firstOrNull()?.text?.trim()
+        response.candidates.firstOrNull()?.content?.parts
+            ?.joinToString("") { it.text ?: "" }
+            ?.trim()
+            ?.takeIf { it.isNotEmpty() }
             ?: throw Exception("Empty AI response")
     }
 
