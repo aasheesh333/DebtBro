@@ -419,7 +419,7 @@ fun ContactPickerBottomSheet(
             Text(LocalizedString.get("pick_from_contacts_desc"), color = extra.subtitleGray, textAlign = TextAlign.Center)
             if (permissionDenied) {
                 androidx.compose.material3.Text(
-                    "Contacts access was denied. Pick names manually instead.",
+                    LocalizedString.get("contacts_access_denied_toast"),
                     color = MaterialTheme.colorScheme.error,
                     textAlign = TextAlign.Center,
                     fontSize = UITokens.FontBody
