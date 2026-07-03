@@ -18,6 +18,7 @@ import com.dhanuk.debtbro.data.firebase.RealTimeSyncManager
 import com.dhanuk.debtbro.data.firebase.SyncManager
 import com.dhanuk.debtbro.data.repository.DebtRepository
 import com.dhanuk.debtbro.util.CsvExporter
+import com.dhanuk.debtbro.util.LocalizedString
 import com.dhanuk.debtbro.worker.AccountDeletionWorker
 import dagger.hilt.android.lifecycle.HiltViewModel
 import java.util.concurrent.TimeUnit
@@ -333,7 +334,7 @@ class SettingsViewModel @Inject constructor(
                 }
                 // No server-side pending deletion — sync as normal.
                 isSyncing.value = true
-                syncMessage.value = "Syncing your data..."
+                syncMessage.value = LocalizedString.get("syncing_your_data")
                 try {
                     realTimeSyncManager.startListening(uid)
                     sync.fullSync(uid)
@@ -443,7 +444,7 @@ class SettingsViewModel @Inject constructor(
     fun deleteAccount(context: Context, onReauthRequired: () -> Unit, onFailure: (String) -> Unit) = viewModelScope.launch {
         val userId = auth.getUserId()
         if (userId == null) {
-            onFailure("Not signed in.")
+            onFailure(LocalizedString.get("not_signed_in"))
             return@launch
         }
         isDeletingAccount.value = true
@@ -460,14 +461,14 @@ class SettingsViewModel @Inject constructor(
                     if (e is com.google.firebase.auth.FirebaseAuthRecentLoginRequiredException) {
                         onReauthRequired()
                     } else {
-                        onFailure(e.message ?: "Account deletion failed")
+                        onFailure(e.message ?: LocalizedString.get("account_deletion_failed"))
                     }
                 }
             }.onFailure { e ->
-                onFailure(e.message ?: "Account deletion failed")
+                onFailure(e.message ?: LocalizedString.get("account_deletion_failed"))
             }
         } catch (e: Exception) {
-            onFailure(e.message ?: "Account deletion failed")
+            onFailure(e.message ?: LocalizedString.get("account_deletion_failed"))
         } finally {
             isDeletingAccount.value = false
         }
@@ -491,12 +492,12 @@ class SettingsViewModel @Inject constructor(
                 try {
                     context.startActivity(chooser)
                 } catch (e: Exception) {
-                    android.widget.Toast.makeText(context, "Could not share CSV", android.widget.Toast.LENGTH_SHORT).show()
+                    android.widget.Toast.makeText(context, LocalizedString.get("could_not_share_csv"), android.widget.Toast.LENGTH_SHORT).show()
                 }
             }
         }.onFailure { e ->
             kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Main) {
-                android.widget.Toast.makeText(context, "Export failed: ${e.message}", android.widget.Toast.LENGTH_LONG).show()
+                android.widget.Toast.makeText(context, LocalizedString.get("export_failed") + ": " + e.message, android.widget.Toast.LENGTH_LONG).show()
             }
         }
     }
