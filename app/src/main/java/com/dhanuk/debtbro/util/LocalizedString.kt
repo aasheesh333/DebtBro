@@ -23,15 +23,8 @@ object LocalizedString {
     // parse" vs. "show them English they may not read at all". The latter was
     // what we had before this change.
     private val familyFallback = mapOf(
-        "mr" to "hi", // Marathi — same Devanagari script, broadly intelligible
-        "pa" to "hi", // Punjabi (Gurmukhi) readers typically also read Devanagari
-        "gu" to "hi", // Gujarati — close Hindi family, shared Devanagari
         "ne" to "hi", // Nepali — Devanagari
         "sa" to "hi"  // Sanskrit — Devanagari
-        // Urdu (Arabic script), Bengali, Tamil, Telugu, Korean, Chinese,
-        // Vietnamese, Arabic, Persian, etc. fall through directly to English
-        // because pushing them to Hindi Devanagari would render unreadable text
-        // for those users — English is a more honest fallback than gibberish.
     )
 
     // ── Current language is a Compose state ──────────────────────────────────
