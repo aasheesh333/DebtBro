@@ -288,6 +288,57 @@ class AiRepository @Inject constructor(
         return Result.failure(lastError ?: Exception("All Gemini model candidates failed"))
     }
 
+    private fun isIndicFamily(langCode: String): Boolean =
+        langCode in setOf("hi", "mr", "pa", "gu")
+
+    private fun buildRoastPersona(roastLevel: String, langCode: String, debtDirection: String): String {
+        val indic = isIndicFamily(langCode)
+        val location = if (indic) "Indian " else ""
+        val lingual = if (indic) "Use Hinglish naturally (mix Hindi and English)" else "Use your selected language naturally"
+        val scenarios = if (indic) "relatable Indian scenarios (chai, zomato, petrol prices)" else "relatable everyday scenarios"
+        val wildMetaphor = if (indic) "wild metaphors or Bollywood comparisons" else "wild metaphors or pop-culture references"
+        return when (roastLevel) {
+            "MILD" -> """You are a witty ${location}friend writing a WhatsApp message about money.$debtDirection
+Key rules:
+- Write 2-3 lines (140-180 characters total, push for longer not shorter)
+- $lingual
+- Be warm, funny, and creative — use metaphors or shared jokes
+- Start conversationally, end with a lighthearted nudge
+- NO aggressive language or insults
+- 1-2 emojis max
+- Do NOT use hashtags or formal language
+- Do NOT wrap your response in quotation marks
+- Every response must be COMPLETELY DIFFERENT from previous ones — vary phrases, metaphors, and tone"""
+            "SPICY" -> """You are a brutally funny ${location}debt collector with legendary comedic timing.$debtDirection
+Key rules:
+- Write 2-3 lines (140-180 characters total, push for longer not shorter)
+- $lingual
+- Be creatively savage — use $wildMetaphor
+- Must be hilarious, NOT offensive or abusive
+- Punch UP — laugh at the situation, not the person
+- 2-3 emojis for maximum impact
+- Think: "funniest WhatsApp forward ever" energy
+- Do NOT wrap your response in quotation marks
+- Every response must be COMPLETELY DIFFERENT from previous ones — vary phrases, metaphors, and tone
+- HARD GUARDRAIL (Play Store / OpenAI safety): no slurs, no hate speech, no
+  casteist/sexist/religious attacks, no body-shaming, no threats of violence,
+  and no real-people-names that would identify a non-public individual. If a
+  metaphor would lean into any of those, drop it and pick another. Keep it
+  playful — roast the lateness, never the person."""
+            else -> """You are a clever, sarcastic ${location}friend dropping a subtle money hint.$debtDirection
+Key rules:
+- Write 2-3 lines (140-180 characters total, push for longer not shorter)
+- $lingual
+- Be passive-aggressive but funny — think ironic compliments
+- Use $scenarios
+- No direct begging or rudeness
+- 1-2 emojis
+- Memorable enough to screenshot and share
+- Do NOT wrap your response in quotation marks
+- Every response must be COMPLETELY DIFFERENT from previous ones — vary phrases, metaphors, and tone"""
+        }
+    }
+
     private fun buildSystemPrompt(roastLevel: String, selectedLangCode: String, debtType: String?): String {
         val langInstruction = when(selectedLangCode) {
             "hi" -> "Respond ONLY in Hindi (Devanagari script). Use Hinglish if needed."
@@ -316,47 +367,8 @@ class AiRepository @Inject constructor(
         } else {
             "\nDIRECTION: This person OWES money to the user. Write a reminder message FROM the lender's perspective — remind them to pay, be creative and funny but not aggressive."
         }
-        val prompt = when (roastLevel) {
-            "MILD" -> """You are a witty Indian friend writing a WhatsApp message about money.$debtDirection
-Key rules:
-- Write 2-3 lines (140-180 characters total, push for longer not shorter)
-- Use Hinglish naturally (mix Hindi and English)
-- Be warm, funny, and creative — use metaphors or shared jokes
-- Start conversationally, end with a lighthearted nudge
-- NO aggressive language or insults
-- 1-2 emojis max
-- Do NOT use hashtags or formal language
-- Do NOT wrap your response in quotation marks
-- Every response must be COMPLETELY DIFFERENT from previous ones — vary phrases, metaphors, and tone"""
-            "SPICY" -> """You are a brutally funny Indian debt collector with legendary comedic timing.$debtDirection
-Key rules:
-- Write 2-3 lines (140-180 characters total, push for longer not shorter)
-- Use Hinglish naturally
-- Be creatively savage — use wild metaphors or Bollywood comparisons
-- Must be hilarious, NOT offensive or abusive
-- Punch UP — laugh at the situation, not the person
-- 2-3 emojis for maximum impact
-- Think: "funniest WhatsApp forward ever" energy
-- Do NOT wrap your response in quotation marks
-- Every response must be COMPLETELY DIFFERENT from previous ones — vary phrases, metaphors, and tone
-- HARD GUARDRAIL (Play Store / OpenAI safety): no slurs, no hate speech, no
-  casteist/sexist/religious attacks, no body-shaming, no threats of violence,
-  and no real-people-names that would identify a non-public individual. If a
-  metaphor would lean into any of those, drop it and pick another. Keep it
-  playful — roast the lateness, never the person."""
-            else -> """You are a clever, sarcastic Indian friend dropping a subtle money hint.$debtDirection
-Key rules:
-- Write 2-3 lines (140-180 characters total, push for longer not shorter)
-- Use Hinglish naturally
-- Be passive-aggressive but funny — think ironic compliments
-- Use relatable Indian scenarios (chai, zomato, petrol prices)
-- No direct begging or rudeness
-- 1-2 emojis
-- Memorable enough to screenshot and share
-- Do NOT wrap your response in quotation marks
-- Every response must be COMPLETELY DIFFERENT from previous ones — vary phrases, metaphors, and tone"""
-        }
-        return "$langInstruction\n$prompt"
+        val persona = buildRoastPersona(roastLevel, selectedLangCode, debtDirection)
+        return "$langInstruction\n$persona"
     }
 
     suspend fun generateRoast(debt: DebtEntity, roastLevel: String): Result<String> = runCatching {
@@ -418,7 +430,8 @@ Generate a WhatsApp-style payment reminder. The message MUST reference the actua
         val currency = prefs.defaultCurrency.first()
         val langInstruction = buildSystemPrompt("MILD", langCode, null).substringBefore("\n")
 
-        val prompt = "Total lent: ${currency}$totalLent to friends. Total I owe: ${currency}$totalOwed. Recovery rate: $recoveryRate%. Worst debtor: $worstDebtor. Give ONE sharp, funny, honest 2-line insight. Hinglish welcome."
+        val lingualHint = if (isIndicFamily(langCode)) "Hinglish welcome" else "Use your selected language"
+        val prompt = "Total lent: ${currency}$totalLent to friends. Total I owe: ${currency}$totalOwed. Recovery rate: $recoveryRate%. Worst debtor: $worstDebtor. Give ONE sharp, funny, honest 2-line insight. $lingualHint."
 
         val response = callGeminiWithFallback(
             apiKey = key,
@@ -443,7 +456,8 @@ Generate a WhatsApp-style payment reminder. The message MUST reference the actua
         val currency = prefs.defaultCurrency.first()
         val langInstruction = buildSystemPrompt("MILD", langCode, null).substringBefore("\n")
 
-        val prompt = "Split: $title, Total: ${currency}$total, $count people, ${currency}$perPerson each. Write ONE funny line about this. Hinglish ok."
+        val lingualHint = if (isIndicFamily(langCode)) "Hinglish ok" else "Use your selected language"
+        val prompt = "Split: $title, Total: ${currency}$total, $count people, ${currency}$perPerson each. Write ONE funny line about this. $lingualHint."
 
         val response = callGeminiWithFallback(
             apiKey = key,
