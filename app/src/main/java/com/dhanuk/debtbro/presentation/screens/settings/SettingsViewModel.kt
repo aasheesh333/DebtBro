@@ -312,6 +312,10 @@ class SettingsViewModel @Inject constructor(
     fun dismissDeletionGraceAlert() { _showDeletionGraceAlert.value = false }
 
     fun cancelDeletion() = viewModelScope.launch {
+        val uid = auth.getUserId()
+        if (uid != null) {
+            auth.cancelAccountDeletion(uid)
+        }
         prefs.clearPendingDeletion()
         _showDeletionGraceAlert.value = false
     }
