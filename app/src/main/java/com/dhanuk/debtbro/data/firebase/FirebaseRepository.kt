@@ -172,4 +172,58 @@ class FirebaseRepository @Inject constructor(private val firestore: FirebaseFire
             android.util.Log.w("FirebaseRepository", "deleteAllUserData: user doc delete failed: ${e.message}", e)
         }
     }
+
+    // ── Account-deletion queue (Spark-plan compatible; no Cloud Functions) ──
+    //
+    // Schema: /deletionRequests/{uid} -> { uid, status, requestedAt, cancelledAt? }
+    //   status: "PENDING" | "CANCELLED"
+    //   requestedAt: Long (epoch ms)
+    //   cancelledAt: Long (epoch ms, only present after cancellation)
+    //
+    // Flow:
+    //   requestAccountDeletion(uid) -> writes a PENDING doc with requestedAt = now
+    //   fetchDeletionRequest(uid)    -> reads the doc (or null if missing)
+    //   cancelDeletionRequest(uid)   -> sets status=CANCELLED + cancelledAt=now
+    //   deleteDeletionRequest(uid)   -> hard-deletes the doc (post-deletion cleanup)
+
+    suspend fun recordDeletionRequest(userId: String, requestedAt: Long) {
+        val data = mapOf(
+            "uid" to userId,
+            "status" to "PENDING",
+            "requestedAt" to requestedAt
+        )
+        firestore.collection("deletionRequests").document(userId).set(data).await()
+    }
+
+    /** Returns `requestedAt` epoch-ms if a PENDING request exists, else null. */
+    suspend fun fetchDeletionRequest(userId: String): Long? {
+        val snap = runCatching {
+            firestore.collection("deletionRequests").document(userId).get().await()
+        }.getOrNull() ?: return null
+        if (!snap.exists()) return null
+        val status = snap.getString("status") ?: return null
+        if (status != "PENDING") return null
+        return snap.getLong("requestedAt")
+    }
+
+    suspend fun cancelDeletionRequest(userId: String, cancelledAt: Long) {
+        val data = mapOf(
+            "status" to "CANCELLED",
+            "cancelledAt" to cancelledAt
+        )
+        runCatching {
+            firestore.collection("deletionRequests").document(userId)
+                .set(data, com.google.firebase.firestore.SetOptions.merge()).await()
+        }.onFailure { e ->
+            android.util.Log.w("FirebaseRepository", "cancelDeletionRequest failed: ${e.message}", e)
+        }
+    }
+
+    suspend fun deleteDeletionRequest(userId: String) {
+        runCatching {
+            firestore.collection("deletionRequests").document(userId).delete().await()
+        }.onFailure { e ->
+            android.util.Log.w("FirebaseRepository", "deleteDeletionRequest failed: ${e.message}", e)
+        }
+    }
 }

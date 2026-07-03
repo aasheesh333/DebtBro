@@ -76,7 +76,6 @@ jobs:
           ONESIGNAL_APP_ID: ${{ secrets.ONESIGNAL_APP_ID }}
           ONESIGNAL_API_KEY: ${{ secrets.ONESIGNAL_API_KEY }}
           FIREBASE_PROJECT_ID: ${{ secrets.FIREBASE_PROJECT_ID }}
-          ACCOUNT_DELETION_URL: ${{ secrets.ACCOUNT_DELETION_URL }}
         run: |
           set -e
           : "${KEYSTORE_BASE64:?ERROR: KEYSTORE_BASE64 secret missing — add it in repo Settings > Secrets.}"
@@ -94,7 +93,6 @@ jobs:
           : "${ONESIGNAL_APP_ID:?ERROR: ONESIGNAL_APP_ID secret missing.}"
           : "${ONESIGNAL_API_KEY:?ERROR: ONESIGNAL_API_KEY secret missing.}"
           : "${FIREBASE_PROJECT_ID:?ERROR: FIREBASE_PROJECT_ID secret missing.}"
-          : "${ACCOUNT_DELETION_URL:?ERROR: ACCOUNT_DELETION_URL secret missing.}"
           echo "All required secrets present."
 
       - name: Decode Keystore
@@ -126,7 +124,6 @@ jobs:
           KEYSTORE_PASSWORD=${{ secrets.KEYSTORE_PASSWORD }}
           KEY_PASSWORD=${{ secrets.KEY_PASSWORD }}
           FIREBASE_PROJECT_ID=${{ secrets.FIREBASE_PROJECT_ID }}
-          ACCOUNT_DELETION_URL=${{ secrets.ACCOUNT_DELETION_URL }}
           EOF
 
       - name: Echo version info

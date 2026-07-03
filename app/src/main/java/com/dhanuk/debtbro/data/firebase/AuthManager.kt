@@ -6,9 +6,6 @@ import androidx.credentials.ClearCredentialStateRequest
 import androidx.credentials.CredentialManager
 import androidx.credentials.GetCredentialRequest
 import com.dhanuk.debtbro.R
-import com.dhanuk.debtbro.data.network.AccountDeletionApiService
-import com.dhanuk.debtbro.data.network.AccountDeletionRequest
-import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
 import com.google.android.libraries.identity.googleid.GetGoogleIdOption
 import com.google.android.libraries.identity.googleid.GoogleIdTokenCredential
 import com.google.firebase.auth.AuthCredential
@@ -24,15 +21,13 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
 import kotlinx.coroutines.tasks.await
 import javax.inject.Inject
-import javax.inject.Named
 import javax.inject.Singleton
 
 @Singleton
 class AuthManager @Inject constructor(
     private val auth: FirebaseAuth,
     private val credentialManager: CredentialManager,
-    private val accountDeletionApi: AccountDeletionApiService,
-    @Named("accountDeletionUrl") private val accountDeletionUrl: String,
+    private val firebaseRepository: FirebaseRepository,
     @ApplicationContext private val context: Context
 ) {
     suspend fun signInWithGoogle(activity: Activity): Result<FirebaseUser> = runCatching {
@@ -158,96 +153,63 @@ class AuthManager @Inject constructor(
     }
 
     /**
-     * Best-effort POST to the configured Cloud Function (BuildConfig.ACCOUNT_DELETION_URL)
-     * to record an account-deletion request server-side and kick off the 24-hour GDPR
-     * grace window. Returns silently without throwing if the URL is missing, malformed,
-     * points outside the trusted Google Cloud host set, or HTTP fails — local-only
-     * deletion bookkeeping continues regardless.
+     * Spark-plan account-deletion request: writes a `PENDING` doc to
+     * Firestore at `deletionRequests/{uid}` with the `requestedAt` epoch-ms.
+     * No Cloud Functions / Blaze plan needed — the Android client itself is
+     * the deletion orchestrator via the Firestore SDK.
      *
-     * SSRF guard: parse the URL with OkHttp's HttpUrl (no scheme/host can sneak
-     * past) and refuse any host outside the `*.cloudfunctions.net` / `*.googleapis.com`
-     * family. This protects against a tampered local.properties or compromised CI
-     * secret pointing at an attacker-controlled HTTPS endpoint that would otherwise
-     * receive the user's Firebase UID.
-     *
-     * The URL comes from the GH secret `ACCOUNT_DELETION_URL` (wired via build.yml →
-     * buildConfigField → NetworkModule's @Named("accountDeletionUrl") provider).
+     * Combined with [checkDeletionRequest] called on every sign-in, this
+     * gives us a server-of-record so a deletion scheduled on one device
+     * (or before an uninstall) is correctly honored if the user signs in
+     * from another device or reinstalls. The existing [AccountDeletionWorker]
+     * (WorkManager one-shot, ~30 min delay) is the failsafe for the
+     * "user never signs in again" case.
      */
-    suspend fun requestAccountDeletion(uid: String): Result<Unit> = runCatching {
-        if (accountDeletionUrl.isBlank()) return@runCatching
-        val parsed = accountDeletionUrl.toHttpUrlOrNull() ?: run {
-            android.util.Log.w("AuthManager", "requestAccountDeletion: URL is malformed, skipping — $accountDeletionUrl")
-            return@runCatching
-        }
-        if (parsed.scheme != "https") {
-            android.util.Log.w("AuthManager", "requestAccountDeletion: non-HTTPS scheme '${parsed.scheme}', skipping")
-            return@runCatching
-        }
-        val host = parsed.host.lowercase()
-        val isTrustedHost = host == "cloudfunctions.net" ||
-            host.endsWith(".cloudfunctions.net") ||
-            host.endsWith(".googleapis.com")
-        if (!isTrustedHost) {
-            android.util.Log.w("AuthManager", "requestAccountDeletion: untrusted host '$host', refusing to POST. " +
-                "ACCOUNT_DELETION_URL must point to a *.cloudfunctions.net or *.googleapis.com endpoint.")
-            return@runCatching
-        }
-        accountDeletionApi.requestDeletion(
-            url = accountDeletionUrl,
-            request = AccountDeletionRequest(uid)
-        )
+    suspend fun requestAccountDeletion(uid: String, requestedAt: Long): Result<Unit> = runCatching {
+        firebaseRepository.recordDeletionRequest(uid, requestedAt)
         Unit
     }.onFailure { e ->
-        android.util.Log.w(
-            "AuthManager",
-            "requestAccountDeletion HTTP failed (continuing with local-only deletion) — ${e.message}",
-            e
-        )
+        android.util.Log.w("AuthManager", "requestAccountDeletion Firestore write failed: ${e.message}", e)
     }
 
     /**
-     * Best-effort POST to the configured Cloud Function (BuildConfig.ACCOUNT_DELETION_URL
-     * with the `/requestAccountDeletion` suffix swapped for `/cancelAccountDeletion`)
-     * to cancel a previously-recorded account-deletion request server-side. Returns
-     * silently without throwing if the URL is missing, malformed, points outside the
-     * trusted Google Cloud host set, or HTTP fails — local-only deletion bookkeeping
-     * continues regardless.
+     * Read the server-side deletion-request status for [uid]. Returns the
+     * `requestedAt` epoch-ms if a PENDING request exists and is still in
+     * force; null otherwise (no doc, doc missing status, status=CANCELLED,
+     * or status=COMPLETED).
      *
-     * SSRF guard: parse the URL with OkHttp's HttpUrl (no scheme/host can sneak
-     * past) and refuse any host outside the `*.cloudfunctions.net` / `*.googleapis.com`
-     * family. This protects against a tampered local.properties or compromised CI
-     * secret pointing at an attacker-controlled HTTPS endpoint that would otherwise
-     * receive the user's Firebase UID.
-     *
-     * The URL comes from the GH secret `ACCOUNT_DELETION_URL` (wired via build.yml →
-     * buildConfigField → NetworkModule's @Named("accountDeletionUrl") provider).
+     * Called by `SettingsViewModel.signInWithGoogle` / email-password
+     * sign-in paths and by the `init` block to surface the "Cancel
+     * deletion?" alert or to commit deletion if grace has elapsed.
      */
-    suspend fun cancelAccountDeletion(uid: String): Result<Unit> = runCatching {
-        if (accountDeletionUrl.isBlank()) return@runCatching
-        val cancelUrl = accountDeletionUrl.removeSuffix("/requestAccountDeletion") + "/cancelAccountDeletion"
-        val parsed = cancelUrl.toHttpUrlOrNull() ?: run {
-            android.util.Log.w("AuthManager", "cancelAccountDeletion: URL is malformed, skipping — $cancelUrl")
-            return@runCatching
-        }
-        if (parsed.scheme != "https") {
-            android.util.Log.w("AuthManager", "cancelAccountDeletion: non-HTTPS scheme '${parsed.scheme}', skipping")
-            return@runCatching
-        }
-        val host = parsed.host.lowercase()
-        val isTrustedHost = host == "cloudfunctions.net" ||
-            host.endsWith(".cloudfunctions.net") ||
-            host.endsWith(".googleapis.com")
-        if (!isTrustedHost) {
-            android.util.Log.w("AuthManager", "cancelAccountDeletion: untrusted host '$host', refusing to POST")
-            return@runCatching
-        }
-        accountDeletionApi.cancelDeletion(
-            url = cancelUrl,
-            request = AccountDeletionRequest(uid)
-        )
+    suspend fun checkDeletionRequest(uid: String): Long? = runCatching {
+        firebaseRepository.fetchDeletionRequest(uid)
+    }.onFailure { e ->
+        android.util.Log.w("AuthManager", "checkDeletionRequest Firestore read failed: ${e.message}", e)
+    }.getOrNull()
+
+    /**
+     * Cancel a previously-recorded deletion request: marks the Firestore doc
+     * `status=CANCELLED` (with `cancelledAt` timestamp). Idempotent — safe to
+     * call even if no pending request exists.
+     */
+    suspend fun cancelAccountDeletion(uid: String, cancelledAt: Long): Result<Unit> = runCatching {
+        firebaseRepository.cancelDeletionRequest(uid, cancelledAt)
         Unit
     }.onFailure { e ->
         android.util.Log.e("AuthManager", "cancelAccountDeletion failed: ${e.message}", e)
+    }
+
+    /**
+     * Hard-delete the deletion-request doc. Called by the deletion-commit
+     * path once Firestore + Firebase Auth account have been wiped, so we
+     * don't leave orphaned queue state behind.
+     */
+    suspend fun clearDeletionRequest(uid: String) {
+        runCatching { firebaseRepository.deleteDeletionRequest(uid) }
+            .onFailure { e ->
+                android.util.Log.w("AuthManager", "clearDeletionRequest failed: ${e.message}", e)
+            }
     }
 
     /**

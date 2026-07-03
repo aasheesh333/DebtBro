@@ -120,9 +120,33 @@ class SettingsViewModel @Inject constructor(
 
     init {
         viewModelScope.launch {
+            // Local DataStore check: user may have requested deletion on this
+            // device earlier and just relaunched the app past the grace window.
             val ts = prefs.pendingDeletionTimestamp.first()
             if (ts > 0L && (System.currentTimeMillis() - ts) >= GRACE_PERIOD_MS) {
                 commitAccountDeletion()
+                return@launch
+            }
+            // Server-side check: user may have requested deletion on another
+            // device, or uninstalled + reinstalled. Local DataStore wouldn't
+            // carry the pending timestamp across those scenarios — Firestore is
+            // the source of truth. Should only run if the user is signed in.
+            val uid = auth.getUserId()
+            if (uid != null) {
+                val serverRequestedAt = auth.checkDeletionRequest(uid)
+                if (serverRequestedAt != null) {
+                    val elapsed = System.currentTimeMillis() - serverRequestedAt
+                    if (elapsed >= GRACE_PERIOD_MS) {
+                        // Grace has elapsed while the user was away — commit deletion.
+                        commitAccountDeletion()
+                    } else {
+                        // Within grace — surface the alert so the user can cancel.
+                        // Also reflect this into local DataStore so the counter
+                        // badge + dialog stay consistent across relaunches.
+                        prefs.setPendingDeletionTimestamp(serverRequestedAt)
+                        _showDeletionGraceAlert.value = true
+                    }
+                }
             }
         }
     }
@@ -133,6 +157,9 @@ class SettingsViewModel @Inject constructor(
             try {
                 firebaseRepository.deleteAllUserData(userId)
                 auth.deleteAccount()
+                // Clear the server-side queue doc once the wipe + Auth delete
+                // have completed — don't leave orphaned PENDING state behind.
+                auth.clearDeletionRequest(userId)
             } catch (_: Exception) { }
         }
         prefs.clearPendingDeletion()
@@ -281,19 +308,30 @@ class SettingsViewModel @Inject constructor(
     val showDeletionGraceAlert: StateFlow<Boolean> = _showDeletionGraceAlert.asStateFlow()
 
     fun signInWithGoogle(activity: Activity) = viewModelScope.launch {
-        val pendingTs = prefs.pendingDeletionTimestamp.first()
-        if (pendingTs > 0) {
-            val elapsed = System.currentTimeMillis() - pendingTs
-            if (elapsed < GRACE_PERIOD_MS) {
-                _showDeletionGraceAlert.value = true
-                return@launch
-            } else {
-                prefs.clearPendingDeletion()
-            }
-        }
         auth.signInWithGoogle(activity).onSuccess { user ->
             prefs.setGoogleSignedIn(true, user.displayName ?: "DebtBro user", user.email ?: "", user.photoUrl?.toString().orEmpty())
             user.uid?.let { uid ->
+                // Server-side deletion-request check (the source of truth — a
+                // pending request could have been created on another device
+                // or before a reinstall, in which case local DataStore knows
+                // nothing about it). Local DataStore is then synchronised from
+                // the server value so the rest of the app (counter badge,
+                // Settings dialog) stays consistent.
+                val serverRequestedAt = auth.checkDeletionRequest(uid)
+                if (serverRequestedAt != null) {
+                    val elapsed = System.currentTimeMillis() - serverRequestedAt
+                    if (elapsed >= GRACE_PERIOD_MS) {
+                        // Grace already elapsed — finish what was started elsewhere.
+                        commitAccountDeletion()
+                        // Don't proceed with sync — the data has been wiped.
+                        return@let
+                    }
+                    // Within window — mirror into local prefs and alert the user
+                    prefs.setPendingDeletionTimestamp(serverRequestedAt)
+                    _showDeletionGraceAlert.value = true
+                    return@let
+                }
+                // No server-side pending deletion — sync as normal.
                 isSyncing.value = true
                 syncMessage.value = "Syncing your data..."
                 try {
@@ -314,7 +352,7 @@ class SettingsViewModel @Inject constructor(
     fun cancelDeletion() = viewModelScope.launch {
         val uid = auth.getUserId()
         if (uid != null) {
-            auth.cancelAccountDeletion(uid)
+            auth.cancelAccountDeletion(uid, System.currentTimeMillis())
         }
         prefs.clearPendingDeletion()
         _showDeletionGraceAlert.value = false
@@ -347,25 +385,27 @@ class SettingsViewModel @Inject constructor(
      * On `FirebaseAuthRecentLoginRequiredException`, surfaces a re-auth requirement.
      */
     companion object {
-        private const val GRACE_PERIOD_MS = 24 * 60 * 60 * 1000L
+        // Mirrors the worker's grace window (30 min) and the Privacy Policy
+        // wording ("we complete account deletion within 30 minutes").
+        private const val GRACE_PERIOD_MS = AccountDeletionWorker.GRACE_PERIOD_MS
     }
 
     fun requestAccountDeletion(context: Context, onSuccess: () -> Unit) = viewModelScope.launch {
-        // Best-effort: post to the configured Cloud Function BEFORE recording
-        // the local 24-hour grace timestamp. If the HTTP fails or the URL is
-        // missing, we still set the local timestamp so the user's experience
-        // (sign-in during grace window cancels deletion) works as designed.
+        // Write the server-side deletion-request doc FIRST so the server-of-
+        // record is updated even if the user uninstalls before the WorkManager
+        // backup fires. Then record the local timestamp for the counter badge
+        // and enqueue the WorkManager failsafe.
+        val requestedAt = System.currentTimeMillis()
         val uid = auth.getUserId()
         if (uid != null) {
-            auth.requestAccountDeletion(uid)
+            auth.requestAccountDeletion(uid, requestedAt)
         }
-        prefs.setPendingDeletionTimestamp(System.currentTimeMillis())
-        // P0-1 (2026-07-03): enqueue a WorkManager one-shot as a backup.
-        // If the user never reopens the app (uninstalled, lost device),
-        // the SettingsViewModel.init-block detection alone wouldn't fire
-        // — leaving the Firebase account data orphaned. This worker
-        // commits deletion 24h after the grace starts, also serves as
-        // a fallback if WorkManager fires under Doze constraints.
+        prefs.setPendingDeletionTimestamp(requestedAt)
+        // Failsafe worker: if the user uninstalls / loses the device during
+        // the grace window, the SettingsViewModel.init path never runs (the
+        // user never reopens the app). This WorkManager one-shot fires after
+        // GRACE_PERIOD_MS to commit deletion on the local device. The
+        // server-side deletionRequests/{uid} doc is the cross-device failsafe.
         runCatching {
             val workRequest = OneTimeWorkRequestBuilder<AccountDeletionWorker>()
                 .setInitialDelay(AccountDeletionWorker.GRACE_PERIOD_MS, TimeUnit.MILLISECONDS)
@@ -374,8 +414,8 @@ class SettingsViewModel @Inject constructor(
                 AccountDeletionWorker.UNIQUE_WORK_NAME,
                 // KEEP (instead of REPLACE) so a re-tap on "Schedule Grace"
                 // during an existing pending grace doesn't reset the timer
-                // back to 24h from the second tap. The earliest grace start
-                // wins. (User can still cancel by signing back in.)
+                // back to the second-tap time. The earliest grace start wins.
+                // (User can still cancel by signing back in.)
                 ExistingWorkPolicy.KEEP,
                 workRequest
             )

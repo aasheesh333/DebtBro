@@ -18,5 +18,16 @@ service cloud.firestore {
     match /users/{userId}/{document=**} {
       allow read: if request.auth != null && request.auth.uid == userId;
     }
+    // Account-deletion queue (Spark-plan compatible — no Cloud Functions needed):
+    // The Android client writes "PENDING" on deletion request and either
+    // "CANCELLED" (within grace) or deletes the doc (after deletion commits).
+    // On every sign-in, the client reads its own doc — if PENDING and the
+    // grace window has elapsed, the client wipes Firestore + deletes the
+    // Firebase account; if within the window, it surfaces the "Cancel
+    // deletion?" alert.
+    match /deletionRequests/{userId} {
+      allow read, write: if request.auth != null && request.auth.uid == userId
+        && request.resource.data.keys().hasOnly(['uid','status','requestedAt','cancelledAt']);
+    }
   }
 }
