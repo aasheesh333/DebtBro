@@ -45,3 +45,17 @@
 
 # OkHttp's platform-specific classes (Android 10+ platform proxy class).
 -dontwarn okhttp3.internal.platform.Android10Platform
+
+# Gson TypeToken defense-in-depth — R8 strips the generic signature from
+# anonymous `object : TypeToken<T>() {}` declarations at runtime, causing
+# `IllegalStateException: TypeToken must be created with a type argument`
+# (Crashlytics 594a7f30, SplitViewModel.java:144). The codebase now uses
+# `TypeToken.getParameterized(...)` for known sites; these rules ensure
+# any future hand-rolled TypeTokens / serializers survive R8.
+-keep class com.google.gson.** { *; }
+-keepattributes Signature
+-keepattributes EnclosingMethod
+-keepattributes InnerClasses
+-keep class * implements com.google.gson.TypeAdapterFactory
+-keep class * implements com.google.gson.JsonSerializer
+-keep class * implements com.google.gson.JsonDeserializer

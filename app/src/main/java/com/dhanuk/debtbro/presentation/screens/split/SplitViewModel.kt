@@ -15,7 +15,11 @@ import com.google.gson.reflect.TypeToken
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
+import java.lang.reflect.Type
 import javax.inject.Inject
+
+private val LIST_STRING_TYPE: Type =
+    TypeToken.getParameterized(List::class.java, String::class.java).type
 
 data class SplitUiState(
     val title: String = "",
@@ -122,7 +126,7 @@ class SplitViewModel @Inject constructor(
     fun createDebtsFromSplit(split: SplitEntity) = viewModelScope.launch {
         val names: List<String> = Gson().fromJson(
             split.participants,
-            object : TypeToken<List<String>>() {}.type
+            LIST_STRING_TYPE
         )
         names.filterNot { it.equals("Me", true) }.forEach { name ->
             debts.insertDebt(
@@ -141,7 +145,7 @@ class SplitViewModel @Inject constructor(
     fun getAiSummary(split: SplitEntity) = viewModelScope.launch {
         val names: List<String> = Gson().fromJson(
             split.participants,
-            object : TypeToken<List<String>>() {}.type
+            LIST_STRING_TYPE
         )
         val summary = ai.generateSplitSummary(
             split.title,
