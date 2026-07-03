@@ -89,7 +89,7 @@ class AppPreferences(@ApplicationContext private val context: Context) {
     val lastSyncedAt: Flow<Long> = context.dataStore.data.map { it[Keys.LAST_SYNCED_AT] ?: 0L }
     val rewardTimestamp: Flow<Long> = context.dataStore.data.map { it[Keys.REWARD_TIMESTAMP] ?: 0L }
     val lastInterstitialAt: Flow<Long> = context.dataStore.data.map { it[Keys.LAST_INTERSTITIAL_AT] ?: 0L }
-    val themeMode: Flow<String> = context.dataStore.data.map { it[Keys.THEME_MODE] ?: "SYSTEM" }
+    val themeMode: Flow<String> = context.dataStore.data.map { it[Keys.THEME_MODE] ?: "LIGHT" }
     val selectedLanguage: Flow<String> = context.dataStore.data.map { it[Keys.SELECTED_LANGUAGE] ?: "en" }
     val showDescription: Flow<Boolean> = context.dataStore.data.map { it[Keys.SHOW_DESCRIPTION] ?: true }
     val showDueDate: Flow<Boolean> = context.dataStore.data.map { it[Keys.SHOW_DUE_DATE] ?: true }
