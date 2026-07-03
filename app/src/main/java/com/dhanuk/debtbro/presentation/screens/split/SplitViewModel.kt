@@ -45,6 +45,9 @@ class SplitViewModel @Inject constructor(
     private val _state = MutableStateFlow(SplitUiState())
     val state: StateFlow<SplitUiState> = _state.asStateFlow()
 
+    private val _snackbar = MutableSharedFlow<String>()
+    val snackbar: SharedFlow<String> = _snackbar.asSharedFlow()
+
     private val _showAuthPrompt = MutableStateFlow(false)
     val showAuthPrompt: StateFlow<Boolean> = _showAuthPrompt.asStateFlow()
 
@@ -101,64 +104,70 @@ class SplitViewModel @Inject constructor(
         // see offline-mode audit 2026-07-03.
         val s = _state.value
         val total = s.totalAmount.toDoubleOrNull() ?: return@launch
-        _state.value = s.copy(isLoading = true)
+        runCatching {
+            _state.value = s.copy(isLoading = true)
 
-        val split = SplitEntity(
-            title = s.title.ifBlank { "Untitled split" },
-            totalAmount = total,
-            participants = Gson().toJson(s.participants),
-            perPersonAmount = s.perPerson
-        )
-        val id = splits.insertSplit(split).toInt()
-        val createdSplit = split.copy(id = id)
+            val split = SplitEntity(
+                title = s.title.ifBlank { "Untitled split" },
+                totalAmount = total,
+                participants = Gson().toJson(s.participants),
+                perPersonAmount = s.perPerson
+            )
+            val id = splits.insertSplit(split).toInt()
+            val createdSplit = split.copy(id = id)
 
-        // Push immediately to Firestore only if actually signed in — failure
-        // must not roll back the local insert.
-        authManager.getCurrentUser()?.uid?.let { uid ->
-            pushSplitImmediately(uid, createdSplit)
-        }
+            // Push immediately to Firestore only if actually signed in — failure
+            // must not roll back the local insert.
+            authManager.getCurrentUser()?.uid?.let { uid ->
+                pushSplitImmediately(uid, createdSplit)
+            }
 
-        _state.value = _state.value.copy(isLoading = false)
-        onCreated(createdSplit)
-        syncIfSignedIn()
+            _state.value = _state.value.copy(isLoading = false)
+            onCreated(createdSplit)
+            syncIfSignedIn()
+        }.onFailure { _snackbar.tryEmit("Couldn't create split: ${it.message ?: "unknown error"}") }
     }
 
     fun createDebtsFromSplit(split: SplitEntity) = viewModelScope.launch {
-        val names: List<String> = Gson().fromJson(
-            split.participants,
-            LIST_STRING_TYPE
-        )
-        names.filterNot { it.equals("Me", true) }.forEach { name ->
-            debts.insertDebt(
-                DebtEntity(
-                    personName = name,
-                    personEmoji = "🍽️",
-                    amount = split.perPersonAmount,
-                    description = split.title,
-                    type = "THEY_OWE_ME"
-                )
+        runCatching {
+            val names: List<String> = Gson().fromJson(
+                split.participants,
+                LIST_STRING_TYPE
             )
-        }
-        syncIfSignedIn()
+            names.filterNot { it.equals("Me", true) }.forEach { name ->
+                debts.insertDebt(
+                    DebtEntity(
+                        personName = name,
+                        personEmoji = "🍽️",
+                        amount = split.perPersonAmount,
+                        description = split.title,
+                        type = "THEY_OWE_ME"
+                    )
+                )
+            }
+            syncIfSignedIn()
+        }.onFailure { _snackbar.tryEmit("Couldn't create debts from split: ${it.message ?: "unknown error"}") }
     }
 
     fun getAiSummary(split: SplitEntity) = viewModelScope.launch {
-        val names: List<String> = Gson().fromJson(
-            split.participants,
-            LIST_STRING_TYPE
-        )
-        val summary = ai.generateSplitSummary(
-            split.title,
-            split.totalAmount,
-            split.perPersonAmount,
-            names.size
-        ).getOrElse { "Everyone owes ${_state.value.currencySymbol}${String.format("%.2f", split.perPersonAmount)} each. Receipts don't lie." }
+        runCatching {
+            val names: List<String> = Gson().fromJson(
+                split.participants,
+                LIST_STRING_TYPE
+            )
+            val summary = ai.generateSplitSummary(
+                split.title,
+                split.totalAmount,
+                split.perPersonAmount,
+                names.size
+            ).getOrElse { "Everyone owes ${_state.value.currencySymbol}${String.format("%.2f", split.perPersonAmount)} each. Receipts don't lie." }
 
-        splits.updateAiSummary(split.id, summary)
-        if (_state.value.title == split.title) {
-            _state.value = _state.value.copy(aiSummary = summary)
-        }
-        syncIfSignedIn()
+            splits.updateAiSummary(split.id, summary)
+            if (_state.value.title == split.title) {
+                _state.value = _state.value.copy(aiSummary = summary)
+            }
+            syncIfSignedIn()
+        }.onFailure { _snackbar.tryEmit("Couldn't fetch AI summary: ${it.message ?: "unknown error"}") }
     }
 
     private fun syncIfSignedIn() = viewModelScope.launch {
