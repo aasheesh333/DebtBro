@@ -21,6 +21,7 @@ import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -42,6 +43,14 @@ fun OnboardingScreen(onOnboardingComplete: () -> Unit) {
     val extra = LocalExtraColors.current
     val name by viewModel.userName.collectAsStateWithLifecycle()
     val selectedLanguage by viewModel.selectedLanguage.collectAsStateWithLifecycle()
+    var showEmailForm by remember { mutableStateOf(false) }
+    var isSignInMode by remember { mutableStateOf(false) }
+    var email by remember { mutableStateOf("") }
+    var password by remember { mutableStateOf("") }
+    var authBusy by remember { mutableStateOf(false) }
+    val authError by viewModel.authError.collectAsStateWithLifecycle()
+    val context = androidx.compose.ui.platform.LocalContext.current
+    val activity = context as? android.app.Activity
 
     Box(
         modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)
@@ -73,7 +82,52 @@ fun OnboardingScreen(onOnboardingComplete: () -> Unit) {
                     1 -> Page2Track()
                     2 -> Page3Roasts()
                     3 -> Page4Sync()
-                    4 -> Page5Name(name) { viewModel.onNameChange(it) }
+                    4 -> Page5Name(
+                        name = name,
+                        onNameChange = { viewModel.onNameChange(it) },
+                        showEmailForm = showEmailForm,
+                        isSignInMode = isSignInMode,
+                        onToggleEmailForm = {
+                            if (!showEmailForm) {
+                                showEmailForm = true
+                                isSignInMode = false
+                            } else {
+                                isSignInMode = !isSignInMode
+                            }
+                        },
+                        email = email,
+                        password = password,
+                        onEmailChange = { email = it },
+                        onPasswordChange = { password = it },
+                        authBusy = authBusy,
+                        authError = authError,
+                        onGoogleSignIn = {
+                            if (activity != null) {
+                                authBusy = true
+                                viewModel.dismissAuthError()
+                                viewModel.signInWithGoogle(activity) { success ->
+                                    authBusy = false
+                                    if (success) viewModel.completeOnboarding(onOnboardingComplete)
+                                }
+                            }
+                        },
+                        onEmailSubmit = {
+                            authBusy = true
+                            viewModel.dismissAuthError()
+                            if (isSignInMode) {
+                                viewModel.signInEmailPassword(email, password) { ok, err ->
+                                    authBusy = false
+                                    if (ok) viewModel.completeOnboarding(onOnboardingComplete)
+                                }
+                            } else {
+                                viewModel.signUpEmailPassword(email, password, name) { ok, err ->
+                                    authBusy = false
+                                    if (ok) viewModel.completeOnboarding(onOnboardingComplete)
+                                }
+                            }
+                        },
+                        onSkip = { viewModel.completeOnboarding(onOnboardingComplete) }
+                    )
                 }
             }
 
@@ -218,7 +272,22 @@ fun Page4Sync() {
 }
 
 @Composable
-fun Page5Name(name: String, onNameChange: (String) -> Unit) {
+fun Page5Name(
+    name: String,
+    onNameChange: (String) -> Unit,
+    showEmailForm: Boolean,
+    isSignInMode: Boolean,
+    onToggleEmailForm: () -> Unit,
+    email: String,
+    password: String,
+    onEmailChange: (String) -> Unit,
+    onPasswordChange: (String) -> Unit,
+    authBusy: Boolean,
+    authError: String?,
+    onGoogleSignIn: () -> Unit,
+    onEmailSubmit: () -> Unit,
+    onSkip: () -> Unit
+) {
     val extra = LocalExtraColors.current
     Column(
         Modifier.fillMaxSize().padding(horizontal = 24.dp),
@@ -226,9 +295,9 @@ fun Page5Name(name: String, onNameChange: (String) -> Unit) {
         verticalArrangement = Arrangement.Center
     ) {
         Text("\uD83D\uDC4B", fontSize = 72.sp)
-        Spacer(Modifier.height(24.dp))
-        Text(LocalizedString.get("what_call_you"), color = MaterialTheme.colorScheme.onSurface, fontSize = 28.sp, fontWeight = FontWeight.ExtraBold, textAlign = TextAlign.Center)
-        Spacer(Modifier.height(32.dp))
+        Spacer(Modifier.height(16.dp))
+        Text(LocalizedString.get("what_call_you"), color = MaterialTheme.colorScheme.onSurface, fontSize = 24.sp, fontWeight = FontWeight.ExtraBold, textAlign = TextAlign.Center)
+        Spacer(Modifier.height(16.dp))
         OutlinedTextField(
             value = name,
             onValueChange = { if (it.length <= 30) onNameChange(it.trimStart()) },
@@ -245,6 +314,78 @@ fun Page5Name(name: String, onNameChange: (String) -> Unit) {
             modifier = Modifier.fillMaxWidth(),
             trailingIcon = { Text("${name.length}/30", color = extra.subtitleGray, fontSize = 11.sp) }
         )
+
+        Spacer(Modifier.height(24.dp))
+        OutlinedButton(
+            onClick = onGoogleSignIn,
+            enabled = !authBusy,
+            modifier = Modifier.fillMaxWidth().height(52.dp)
+        ) {
+            Text(LocalizedString.get("sign_in_google"), fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
+        }
+
+        Spacer(Modifier.height(12.dp))
+        Text(LocalizedString.get("or_continue_with"), color = extra.subtitleGray, fontSize = UITokens.FontCaption)
+        TextButton(onClick = onToggleEmailForm) {
+            Text(
+                if (!showEmailForm || isSignInMode) LocalizedString.get("dont_have_account") else LocalizedString.get("already_have_account"),
+                color = MaterialTheme.colorScheme.primary
+            )
+        }
+
+        if (showEmailForm) {
+            OutlinedTextField(
+                value = email,
+                onValueChange = onEmailChange,
+                label = { Text(LocalizedString.get("email")) },
+                singleLine = true,
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
+                modifier = Modifier.fillMaxWidth(),
+                colors = OutlinedTextFieldDefaults.colors(
+                    focusedBorderColor = MaterialTheme.colorScheme.primary,
+                    unfocusedBorderColor = MaterialTheme.colorScheme.outline
+                )
+            )
+            Spacer(Modifier.height(8.dp))
+            OutlinedTextField(
+                value = password,
+                onValueChange = onPasswordChange,
+                label = { Text(LocalizedString.get("password")) },
+                singleLine = true,
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
+                visualTransformation = PasswordVisualTransformation(),
+                modifier = Modifier.fillMaxWidth(),
+                colors = OutlinedTextFieldDefaults.colors(
+                    focusedBorderColor = MaterialTheme.colorScheme.primary,
+                    unfocusedBorderColor = MaterialTheme.colorScheme.outline
+                )
+            )
+            Spacer(Modifier.height(12.dp))
+            Button(
+                onClick = onEmailSubmit,
+                enabled = !authBusy && email.isNotBlank() && password.length >= 6,
+                shape = RoundedCornerShape(28.dp),
+                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
+                modifier = Modifier.fillMaxWidth().height(52.dp)
+            ) {
+                Text(
+                    if (isSignInMode) LocalizedString.get("sign_in") else LocalizedString.get("sign_up"),
+                    color = MaterialTheme.colorScheme.onPrimary,
+                    fontWeight = FontWeight.Bold
+                )
+            }
+        }
+
+        authError?.let { err ->
+            Spacer(Modifier.height(8.dp))
+            Text(err, color = MaterialTheme.colorScheme.error, fontSize = UITokens.FontCaption, textAlign = TextAlign.Center)
+        }
+
+        Spacer(Modifier.height(16.dp))
+        TextButton(onClick = onSkip) {
+            Text(LocalizedString.get("skip_for_now"), color = extra.subtitleGray)
+        }
+        Text(LocalizedString.get("account_setup_skip_note"), color = extra.subtitleGray, fontSize = UITokens.FontCaption, textAlign = TextAlign.Center)
     }
 }
 
