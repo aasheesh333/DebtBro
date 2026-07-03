@@ -86,7 +86,7 @@ object HtmlExporter {
         val dateFormat = SimpleDateFormat("dd MMM yyyy", Locale.getDefault())
         val dueDateStr = debt.dueDate?.let { dateFormat.format(Date(it)) } ?: "No due date"
 
-        val formattedAmount = "${debt.currency}${(debt.amount - debt.amountPaid).toLong()}"
+        val formattedAmount = com.dhanuk.debtbro.util.formatCurrency(debt.amount - debt.amountPaid, debt.currency)
         val hasDesc = debt.description.isNotBlank() && showDescription
         val hasDueDate = showDueDate
         val hasEmoji = debt.personEmoji.isNotBlank() && showEmoji
@@ -261,10 +261,25 @@ object HtmlExporter {
                     WebView.enableSlowWholeDocumentDraw()
                 }
 
+                // Single source of truth for "the WebView has been
+                // destroyed" — every post-cancellation callback (JS
+                // evaluateJavascript result, postDelayed runnable,
+                // invokeOnCancellation) MUST consult this before touching
+                // the WebView. Previously the WebView could be destroy()ed
+                // concurrently by `invokeOnCancellation` while an in-flight
+                // `view.measure()` or `view.evaluateJavascript` callback was
+                // scheduled, throwing `IllegalStateException: The WebView
+                // has already been destroyed` inside the export-coroutine
+                // and surfacing as the runtime crash from the
+                // `fix-google-signin-and-export-crash-…` branch.
+                @Volatile var destroyed = false
                 var webViewRef: WebView? = null
 
-                val destroyWebView = {
+                fun destroyWebView() {
+                    if (destroyed) return
+                    destroyed = true
                     try { webViewRef?.destroy() } catch (_: Exception) {}
+                    webViewRef = null
                 }
 
                 val webView = WebView(context).apply {
@@ -289,7 +304,13 @@ object HtmlExporter {
                 webView.webViewClient = object : WebViewClient() {
                     override fun onPageFinished(view: WebView?, url: String?) {
                         super.onPageFinished(view, url)
-                        view?.postDelayed({
+                        if (destroyed || view == null) return
+                        view.postDelayed({
+                            // If cancellation happened between scheduling
+                            // and execution, abort before any view.measure
+                            // call — those throw IllegalStateException once
+                            // the WebView has been destroy()ed.
+                            if (destroyed) return@postDelayed
                             try {
                                 val widthSpec = android.view.View.MeasureSpec.makeMeasureSpec(width, android.view.View.MeasureSpec.EXACTLY)
                                 val heightSpec = android.view.View.MeasureSpec.makeMeasureSpec(0, android.view.View.MeasureSpec.UNSPECIFIED)
@@ -299,6 +320,11 @@ object HtmlExporter {
                                 view.evaluateJavascript(
                                     "(function(){var c=document.querySelector('.card');return c?c.scrollHeight:1350;})();"
                                 ) { heightStr ->
+                                    // JS callbacks are deferred; verify the
+                                    // WebView is still alive AND the coroutine
+                                    // still wants a result before trying to draw
+                                    // it. Otherwise destroy and bail.
+                                    if (destroyed) return@evaluateJavascript
                                     try {
                                         val contentHeight = heightStr?.replace("\"", "")?.toIntOrNull() ?: 1350
                                         val actualHeight = maxOf(contentHeight, view.measuredHeight, height).coerceAtMost(2048)
@@ -353,7 +379,11 @@ object HtmlExporter {
                 )
 
                 continuation.invokeOnCancellation {
-                    try { webView.destroy() } catch (_: Exception) {}
+                    // Mark destroyed BEFORE actually calling destroy() so
+                    // any in-flight callbacks (postDelayed, evaluateJavascript)
+                    // observe the flag and short-circuit instead of touching
+                    // a defunct WebView.
+                    destroyWebView()
                 }
             }
         }

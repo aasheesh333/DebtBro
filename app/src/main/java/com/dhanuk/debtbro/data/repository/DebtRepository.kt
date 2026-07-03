@@ -18,6 +18,7 @@ class DebtRepository @Inject constructor(
     fun getAllDebts(): Flow<List<DebtEntity>> = debtDao.getAllDebts()
     suspend fun getAllDebtsOnce(): List<DebtEntity> = debtDao.getAllDebtsOnce()
     suspend fun getDebtById(id: Int): DebtEntity? = debtDao.getDebtById(id)
+    suspend fun getDebtByFirebaseId(firebaseId: String): DebtEntity? = debtDao.getDebtByFirebaseId(firebaseId)
     fun observeDebtById(id: Int): Flow<DebtEntity?> = debtDao.observeDebtById(id)
     fun getPendingDebts(): Flow<List<DebtEntity>> = debtDao.getPendingDebts()
     suspend fun insertDebt(debt: DebtEntity): Long = debtDao.insertDebt(debt)

@@ -91,10 +91,10 @@ class SplitViewModel @Inject constructor(
     }
 
     fun createSplit(onCreated: (SplitEntity) -> Unit) = viewModelScope.launch {
-        if (!prefs.isGoogleSignedIn.first()) {
-            _showAuthPrompt.value = true
-            return@launch
-        }
+        // Local-first: persist unconditionally, sync only if a Firebase user
+        // actually exists. Previously gated on prefs.isGoogleSignedIn which
+        // blocked offline/"Skip for now" users from any primary action —
+        // see offline-mode audit 2026-07-03.
         val s = _state.value
         val total = s.totalAmount.toDoubleOrNull() ?: return@launch
         _state.value = s.copy(isLoading = true)
@@ -108,7 +108,8 @@ class SplitViewModel @Inject constructor(
         val id = splits.insertSplit(split).toInt()
         val createdSplit = split.copy(id = id)
 
-        // Push immediately to Firestore if signed in
+        // Push immediately to Firestore only if actually signed in — failure
+        // must not roll back the local insert.
         authManager.getCurrentUser()?.uid?.let { uid ->
             pushSplitImmediately(uid, createdSplit)
         }
@@ -147,7 +148,7 @@ class SplitViewModel @Inject constructor(
             split.totalAmount,
             split.perPersonAmount,
             names.size
-        ).getOrElse { "Everyone owes ${split.perPersonAmount.toInt()} each. Receipts don't lie." }
+        ).getOrElse { "Everyone owes ${_state.value.currencySymbol}${String.format("%.2f", split.perPersonAmount)} each. Receipts don't lie." }
 
         splits.updateAiSummary(split.id, summary)
         if (_state.value.title == split.title) {

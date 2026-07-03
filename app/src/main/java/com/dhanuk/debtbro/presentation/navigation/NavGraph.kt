@@ -264,7 +264,7 @@ fun DebtBroNavGraph(appPreferences: AppPreferences) {
             composable(Screen.Settings.route) { SettingsScreen() }
             composable(
                 Screen.DebtDetail.route,
-                arguments = listOf(navArgument("debtId") { type = NavType.IntType }),
+                arguments = listOf(navArgument("debtId") { type = NavType.StringType }),
                 deepLinks = listOf(navDeepLink { uriPattern = "debtbro://debt/{debtId}" })
             ) {
                 DebtDetailScreen(

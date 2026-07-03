@@ -353,7 +353,7 @@ class SettingsViewModel @Inject constructor(
         try {
             realTimeSyncManager.stopListening()
             auth.signOut()
-            prefs.setGoogleSignedIn(false)
+            prefs.setSignedIn(null)
             secureStorage.clearSensitiveData()
             debtDao.deleteAll()
             paymentDao.deleteAll()

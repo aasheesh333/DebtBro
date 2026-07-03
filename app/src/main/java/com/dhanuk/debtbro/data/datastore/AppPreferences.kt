@@ -24,6 +24,12 @@ class AppPreferences(@ApplicationContext private val context: Context) {
         val ROAST_LEVEL = stringPreferencesKey("roast_level")
         val DEFAULT_CURRENCY = stringPreferencesKey("default_currency")
         val IS_GOOGLE_SIGNED_IN = booleanPreferencesKey("is_google_signed_in")
+        // signInProvider distinguishers "google" / "email" / null; exists
+        // alongside IS_GOOGLE_SIGNED_IN for backwards read-compat with
+        // existing DataStore files. New callers should prefer
+        // [signInProvider] over [isGoogleSignedIn]; see offline-mode
+        // audit 2026-07-03.
+        val SIGN_IN_PROVIDER = stringPreferencesKey("sign_in_provider")
         val GOOGLE_USER_NAME = stringPreferencesKey("google_user_name")
         val GOOGLE_USER_EMAIL = stringPreferencesKey("google_user_email")
         val GOOGLE_USER_PHOTO = stringPreferencesKey("google_user_photo")
@@ -51,6 +57,12 @@ class AppPreferences(@ApplicationContext private val context: Context) {
         val FORGOT_PASSWORD_LAST_SENT = longPreferencesKey("forgot_password_last_sent")
         val FORGOT_PASSWORD_DAILY_COUNT = intPreferencesKey("forgot_password_daily_count")
         val FORGOT_PASSWORD_DAILY_DATE = stringPreferencesKey("forgot_password_daily_date")
+        // Phase D (2026-07-03): user has dismissed the notification
+        // permission rationale at least once. We won't auto-prompt them
+        // again — they can still grant it via Settings. The system-level
+        // "permanently denied" route (`showSettings`) remains operational
+        // because we only suppress _our_ rationale dialog.
+        val NOTIFICATION_RATIONALE_DISMISSED = booleanPreferencesKey("notification_rationale_dismissed")
     }
 
 
@@ -60,6 +72,16 @@ class AppPreferences(@ApplicationContext private val context: Context) {
     val roastLevel: Flow<String> = context.dataStore.data.map { it[Keys.ROAST_LEVEL]?.let { v -> if (v == "SAVAGE") "SPICY" else v } ?: "MEDIUM" }
     val defaultCurrency: Flow<String> = context.dataStore.data.map { it[Keys.DEFAULT_CURRENCY] ?: "₹" }
     val isGoogleSignedIn: Flow<Boolean> = context.dataStore.data.map { it[Keys.IS_GOOGLE_SIGNED_IN] ?: false }
+    /**
+     * Auth provider used for the current session. `null` when signed out.
+     * Reads from the new `SIGN_IN_PROVIDER` key, but transparently falls
+     * back to `IS_GOOGLE_SIGNED_IN=true` (legacy) when the new key is not
+     * yet populated — keeps read-compat with installs that upgrade from
+     * the previous build where the boolean flag was the only signal.
+     */
+    val signInProvider: Flow<String?> = context.dataStore.data.map {
+        it[Keys.SIGN_IN_PROVIDER] ?: if (it[Keys.IS_GOOGLE_SIGNED_IN] == true) "google" else null
+    }
     val googleUserName: Flow<String> = context.dataStore.data.map { it[Keys.GOOGLE_USER_NAME] ?: "" }
     val googleUserEmail: Flow<String> = context.dataStore.data.map { it[Keys.GOOGLE_USER_EMAIL] ?: "" }
     val googleUserPhoto: Flow<String> = context.dataStore.data.map { it[Keys.GOOGLE_USER_PHOTO] ?: "" }
@@ -75,6 +97,16 @@ class AppPreferences(@ApplicationContext private val context: Context) {
     val notifyDailyReminder: Flow<Boolean> = context.dataStore.data.map { it[Keys.NOTIFY_DAILY_REMINDER] ?: true }
     val notifyWeeklySummary: Flow<Boolean> = context.dataStore.data.map { it[Keys.NOTIFY_WEEKLY_SUMMARY] ?: true }
     val notifyPaymentAlerts: Flow<Boolean> = context.dataStore.data.map { it[Keys.NOTIFY_PAYMENT_ALERTS] ?: true }
+    /**
+     * True once the user dismissed the notification-permission rationale
+     * at least once. The rationale will not auto-popup on subsequent
+     * launches. The user may still grant permission via the OS Settings
+     * page if they change their mind. Reset to false automatically when
+     * the permission is observed as granted (handled in
+     * NotificationPermissionHandler).
+     */
+    val notificationRationaleDismissed: Flow<Boolean> =
+        context.dataStore.data.map { it[Keys.NOTIFICATION_RATIONALE_DISMISSED] ?: false }
     val exportFormat: Flow<String> = context.dataStore.data.map { it[Keys.EXPORT_FORMAT] ?: "CSV" }
     val customAvatarUri: Flow<String> = context.dataStore.data.map { it[Keys.CUSTOM_AVATAR_URI] ?: "" }
     val pendingDeletionTimestamp: Flow<Long> = context.dataStore.data.map { it[Keys.PENDING_DELETION_TIMESTAMP] ?: 0L }
@@ -95,6 +127,23 @@ class AppPreferences(@ApplicationContext private val context: Context) {
         it[Keys.GOOGLE_USER_EMAIL] = email
         it[Keys.GOOGLE_USER_PHOTO] = photo
     }
+    /**
+     * Sets both the legacy `IS_GOOGLE_SIGNED_IN` boolean (for read-compat
+     * with existing call sites) and the new `SIGN_IN_PROVIDER` string
+     * ("google", "email", or null on sign-out). The boolean is the source
+     * of truth for "isSignedIn"; the provider string is the source of
+     * truth for "which method did the user use" — auth methods' onAuth
+     * success paths should call this instead of `setGoogleSignedIn` so
+     * email-password users no longer appear as "Google signed in" in
+     * downstream flags. See offline-mode audit 2026-07-03.
+     */
+    suspend fun setSignedIn(provider: String?, name: String = "", email: String = "", photo: String = "") = context.dataStore.edit {
+        it[Keys.IS_GOOGLE_SIGNED_IN] = provider != null
+        it[Keys.SIGN_IN_PROVIDER] = provider
+        it[Keys.GOOGLE_USER_NAME] = name
+        it[Keys.GOOGLE_USER_EMAIL] = email
+        it[Keys.GOOGLE_USER_PHOTO] = photo
+    }
     suspend fun setLastSyncedAt(ts: Long) = context.dataStore.edit { it[Keys.LAST_SYNCED_AT] = ts }
     suspend fun setRewardTimestamp(ts: Long) = context.dataStore.edit { it[Keys.REWARD_TIMESTAMP] = ts }
     suspend fun setLastInterstitialAt(ts: Long) = context.dataStore.edit { it[Keys.LAST_INTERSTITIAL_AT] = ts }
@@ -107,6 +156,8 @@ class AppPreferences(@ApplicationContext private val context: Context) {
     suspend fun setNotifyDailyReminder(value: Boolean) = context.dataStore.edit { it[Keys.NOTIFY_DAILY_REMINDER] = value }
     suspend fun setNotifyWeeklySummary(value: Boolean) = context.dataStore.edit { it[Keys.NOTIFY_WEEKLY_SUMMARY] = value }
     suspend fun setNotifyPaymentAlerts(value: Boolean) = context.dataStore.edit { it[Keys.NOTIFY_PAYMENT_ALERTS] = value }
+    suspend fun setNotificationRationaleDismissed(value: Boolean) =
+        context.dataStore.edit { it[Keys.NOTIFICATION_RATIONALE_DISMISSED] = value }
     suspend fun setExportFormat(format: String) = context.dataStore.edit { it[Keys.EXPORT_FORMAT] = format }
     suspend fun setCustomAvatarUri(uri: String) = context.dataStore.edit { it[Keys.CUSTOM_AVATAR_URI] = uri }
     suspend fun setPendingDeletionTimestamp(ts: Long) = context.dataStore.edit { it[Keys.PENDING_DELETION_TIMESTAMP] = ts }

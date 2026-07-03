@@ -25,7 +25,17 @@ android {
 
     defaultConfig {
         applicationId = "com.dhanuk.debtbro"
-        minSdk = 26
+        // minSdk bumped from 26 to 29 on 2026-07-03:
+        //  - Drops the WRITE_EXTERNAL_STORAGE permission and the legacy
+        //    `Environment.getExternalStoragePublicDirectory` code path in
+        //    CsvExporter that threw SecurityException on API 26-28 unless
+        //    the user granted storage permission (which we never requested
+        //    at runtime). Now CSV export uses MediaStore exclusively.
+        //  - Removes a Play Store review flag for legacy storage access.
+        //  - Tradeoff: loses ~5% of installs on API 26-28. Acceptable for
+        //    a brand-new launch; post-launch retention matters more than
+        //    max device coverage.
+        minSdk = 29
         targetSdk = 35
         versionCode = (System.getenv("GITHUB_RUN_NUMBER")?.toIntOrNull() ?: localProp("VERSION_CODE").toIntOrNull() ?: 1)
         versionName = localProp("VERSION_NAME").ifEmpty { "1.0.0" }

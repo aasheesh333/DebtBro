@@ -60,7 +60,7 @@ val splashScreen = installSplashScreen()
                 ) {
                     if (isThemeReady) {
                         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-                            NotificationPermissionHandler(onPermissionHandled = {}) {
+                            NotificationPermissionHandler(appPreferences = appPreferences, onPermissionHandled = {}) {
                                 DebtBroNavGraph(appPreferences = appPreferences)
                             }
                         } else {

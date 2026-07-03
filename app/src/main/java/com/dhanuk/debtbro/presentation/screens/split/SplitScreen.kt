@@ -181,36 +181,12 @@ fun SplitScreen(onAuthRequired: () -> Unit, viewModel: SplitViewModel = hiltView
                                 Text("🤖", fontSize = 24.sp)
                                 Spacer(Modifier.width(8.dp))
                                 Text(state.aiSummary, color = MaterialTheme.colorScheme.onSurface, fontSize = 13.sp)
-        }
-    }
-
-    val onAuthRequiredCopy = onAuthRequired // explicit lambda capture
-    val viewModelCopy = viewModel
-
-    if (showAuthPrompt) {
-        AlertDialog(
-            onDismissRequest = { viewModelCopy.dismissAuthPrompt() },
-            title = { Text(LocalizedString.get("sign_in_to_sync")) },
-            text = { Text(LocalizedString.get("sign_in_to_sync_desc")) },
-            confirmButton = {
-                TextButton(onClick = {
-                    viewModelCopy.dismissAuthPrompt()
-                    onAuthRequiredCopy()
-                }) {
-                    Text(LocalizedString.get("sign_in"), color = MaterialTheme.colorScheme.primary)
-                }
-            },
-            dismissButton = {
-                TextButton(onClick = { viewModelCopy.dismissAuthPrompt() }) {
-                    Text(LocalizedString.get("cancel"), color = extra.subtitleGray)
-                }
-            },
-            containerColor = MaterialTheme.colorScheme.surface
-        )
-    }
+                            }
+                        }
                     }
                 }
             }
+        }
         }
 
         item {
@@ -226,6 +202,34 @@ fun SplitScreen(onAuthRequired: () -> Unit, viewModel: SplitViewModel = hiltView
         items(pastSplits, key = { it.id }) { split ->
             SplitItemCard(split, onGetAi = { viewModel.getAiSummary(it) }, onCreateDebts = { viewModel.createDebtsFromSplit(it) })
         }
+    }
+
+    // Auth prompt is rendered OUTSIDE the LazyColumn so the AlertDialog
+    // behaves as a top-level overlay (dim + center), not as a child slot
+    // of a LazyColumn item Card — which was visually broken (the dialog
+    // appeared inside the Card flow and distorted layout). Also fixes the
+    // balance of the previously-malformed block at the bottom of the
+    // create-split Card. (offline-mode audit 2026-07-03.)
+    if (showAuthPrompt) {
+        AlertDialog(
+            onDismissRequest = { viewModel.dismissAuthPrompt() },
+            title = { Text(LocalizedString.get("sign_in_to_sync")) },
+            text = { Text(LocalizedString.get("sign_in_to_sync_desc")) },
+            confirmButton = {
+                TextButton(onClick = {
+                    viewModel.dismissAuthPrompt()
+                    onAuthRequired()
+                }) {
+                    Text(LocalizedString.get("sign_in"), color = MaterialTheme.colorScheme.primary)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { viewModel.dismissAuthPrompt() }) {
+                    Text(LocalizedString.get("cancel"), color = extra.subtitleGray)
+                }
+            },
+            containerColor = MaterialTheme.colorScheme.surface
+        )
     }
 
     if (showContactPicker) {

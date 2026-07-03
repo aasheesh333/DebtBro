@@ -78,11 +78,16 @@ fun AuthScreen(onAuthComplete: () -> Unit, onSkip: () -> Unit) {
                 verticalArrangement = Arrangement.spacedBy(14.dp)
             ) {
                 if (state.mode != AuthMode.FORGOT_PASSWORD) {
+                    // Disable Google sign-in when we cannot obtain a host
+                    // Activity — Credentials API needs one. Showing a
+                    // disabled state (rather than a silent no-op tap) is
+                    // more honest; the audit on 2026-07-03 flagged this as
+                    // C4. Email-password path is unaffected.
                     OutlinedButton(
                         onClick = {
                             if (activity != null) viewModel.signInWithGoogle(activity)
                         },
-                        enabled = !state.isBusy,
+                        enabled = !state.isBusy && activity != null,
                         modifier = Modifier.fillMaxWidth().height(52.dp),
                         shape = UITokens.ShapeLarge
                     ) {
@@ -93,6 +98,16 @@ fun AuthScreen(onAuthComplete: () -> Unit, onSkip: () -> Unit) {
                             fontWeight = FontWeight.SemiBold,
                             fontSize = 15.sp,
                             color = MaterialTheme.colorScheme.onSurface
+                        )
+                    }
+
+                    if (activity == null) {
+                        Text(
+                            "Google sign-in unavailable in this context.",
+                            color = extra.subtitleGray,
+                            fontSize = 11.sp,
+                            textAlign = TextAlign.Center,
+                            modifier = Modifier.fillMaxWidth().padding(top = 6.dp)
                         )
                     }
 

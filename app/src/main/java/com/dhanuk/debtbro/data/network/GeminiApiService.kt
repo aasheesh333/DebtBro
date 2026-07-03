@@ -22,8 +22,6 @@ data class GeminiRequest(
 data class GenerationConfig(
     val temperature: Double = 0.7,
     val maxOutputTokens: Int = 300,
-    val topK: Int = 1,
-    val topP: Double = 0.95
 )
 
 interface GeminiApiService {
@@ -57,31 +55,23 @@ interface GeminiApiService {
          * named after and the most widely-supported free-tier Flash-Lite on
          * AI Studio as of July 2026.
          *
+         * 2026-07-03 follow-up pruning: `gemini-flash-lite` (the bare alias)
+         * and `gemini-1.5-flash-latest` were both verified to return HTTP 404
+         * against AI Studio — they no longer exist. Keeping them in the
+         * chain only guaranteed every roast attempt burned two extra
+         * round-trips before failure. Pruned.
+         *
          * Order rationale, top-to-bottom:
          *  - `gemini-2.5-flash-lite` — primary, name-matched to the GH secret.
          *  - `gemini-2.5-flash` — slightly larger sibling, the safest
          *    paid-tier fallback when 2.5-flash-lite is region-gated.
-         *  - `gemini-flash-lite-latest`, `gemini-flash-lite` — Google's
-         *    rolling aliases; cheap to keep in case 2.5-flash-lite is
-         *    renamed.
-         *  - `gemini-1.5-flash-latest` — long-stable legacy, kept as last
-         *    resort for keys restricted to the 1.5 family.
-         *
-         * `gemini-2.0-flash-lite` was previously retained at the tail for
-         * "log-line continuity" — dropped. Every healthy call would have
-         * paid a guaranteed 404 round-trip just to log a line nobody
-         * reads, and the 404-retry in
-         * [AiRepository.callGeminiWithFallback] makes the placeholder
-         * unnecessary: any future Google retirement of one of these
-         * candidates is now a gracefully-skipped failure rather than a
-         * chain short-circuit.
+         *  - `gemini-flash-lite-latest` — Google's rolling alias; cheap to
+         *    keep in case 2.5-flash-lite is renamed.
          */
         val MODEL_CANDIDATES: List<String> = listOf(
             "gemini-2.5-flash-lite",
             "gemini-2.5-flash",
-            "gemini-flash-lite-latest",
-            "gemini-flash-lite",
-            "gemini-1.5-flash-latest"
+            "gemini-flash-lite-latest"
         )
 
         fun buildUrl(model: String): String = "v1beta/models/$model:generateContent"

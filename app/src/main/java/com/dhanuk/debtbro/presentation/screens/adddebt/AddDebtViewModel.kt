@@ -33,10 +33,6 @@ class AddDebtViewModel @Inject constructor(
         _showAuthPrompt.value = false
     }
 
-    private suspend fun isCloudSyncEnabled(): Boolean {
-        return prefs.isGoogleSignedIn.first()
-    }
-
     fun saveDebt(
         personName: String,
         personEmoji: String,
@@ -49,12 +45,15 @@ class AddDebtViewModel @Inject constructor(
         onSaved: () -> Unit
     ) {
         viewModelScope.launch {
-            if (!isCloudSyncEnabled()) {
-                _showAuthPrompt.value = true
-                return@launch
-            }
             _isLoading.value = true
             try {
+                // Local-first: always persist to Room so offline users can use
+                // the app. Cloud sync only fires if a Firebase user actually
+                // exists (independent of the prefs.isGoogleSignedIn flag, which
+                // historically was set for ALL providers incl. email/password
+                // — not a reliable gate for "should we sync to the cloud?" and
+                // its blocking use blocked onboarding-skip users from any
+                // primary action. See offline-mode audit 2026-07-03.)
                 val id = debtRepository.insertDebt(
                     DebtEntity(
                         personName = personName,
@@ -68,7 +67,9 @@ class AddDebtViewModel @Inject constructor(
                     )
                 )
 
-                // Sync with Firebase if user is logged in
+                // Sync with Firebase only if the user is actually signed in —
+                // failure here MUST NOT roll back the local insert (offline
+                // still wins).
                 authManager.getCurrentUser()?.uid?.let { uid ->
                     val debt = debtRepository.getDebtById(id.toInt())
                     if (debt != null) {

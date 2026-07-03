@@ -43,12 +43,40 @@ class DebtDetailViewModel @Inject constructor(
     private val adManager: AdManager
 ) : ViewModel() {
 
-    private val debtId: Int = savedStateHandle.get<Int>("debtId")
-        ?: savedStateHandle.get<String>("debtId")?.toIntOrNull()
-        ?: error("debtId is required for DebtDetailViewModel")
+    /**
+     * Resolves the `debtId` nav argument to a local Room Int id.
+     *
+     * Fix history (2026-07-03, offline-mode audit):
+     *  Previously this ViewModel hard-required an Int and crashed the navigation
+     *  graph if the deep-link `debtbro://debt/{debtId}` carried anything else
+     *  (e.g. a Firestore firebaseId from a shared card, or a malformed path
+     *  like `debtbro://debt/abc`). Now the route is `NavType.StringType` and we
+     *  resolve in three steps inside an init coroutine:
+     *    1. If the string is an integer, set `_resolvedDebtId` directly.
+     *    2. Else try a Firestore firebaseId lookup against the DAO.
+     *    3. Else leave `_resolvedDebtId = null` — the UI shows a "debt not
+     *       found" state rather than crashing the nav graph.
+     *
+     * `debt.value` is exposed as a StateFlow that flatMapLatest over the
+     * resolved id, so a deferred firebaseId lookup updates the UI once the
+     * local row is found.
+     */
+    private val _resolvedDebtId = MutableStateFlow<Int?>(null)
+    val debt: StateFlow<DebtEntity?> = _resolvedDebtId.flatMapLatest { id ->
+        if (id == null) flowOf(null) else debtRepository.observeDebtById(id)
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), null)
 
-    val debt: StateFlow<DebtEntity?> = debtRepository.observeDebtById(debtId)
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), null)
+    init {
+        viewModelScope.launch {
+            val raw = savedStateHandle.get<String>("debtId")
+                ?: return@launch
+            _resolvedDebtId.value = raw.toIntOrNull()
+                ?: debtRepository.getDebtByFirebaseId(raw)?.id
+        }
+    }
+
+    private val debtId: Int
+        get() = _resolvedDebtId.value ?: throw IllegalStateException("debtId not yet resolved")
 
     val payments: StateFlow<List<PaymentEntity>> = debt.flatMapLatest { d ->
         if (d == null) flowOf(emptyList()) else paymentRepository.getPaymentsForDebt(d.id)
@@ -76,10 +104,9 @@ class DebtDetailViewModel @Inject constructor(
     }
 
     fun addPayment(amount: Double, note: String) = viewModelScope.launch {
-        if (!prefs.isGoogleSignedIn.first()) {
-            _showAuthPrompt.value = true
-            return@launch
-        }
+        // Local-first: always record payment locally; sync only if signed in.
+        // (Previously gated on prefs.isGoogleSignedIn which blocked offline /
+        // email-password / "Skip for now" users — see audit 2026-07-03.)
         paymentRepository.recordPayment(debtId, amount, note)
         val after = debtRepository.getDebtById(debtId)
         if (after?.status == "SETTLED") {
@@ -211,10 +238,7 @@ class DebtDetailViewModel @Inject constructor(
     }
 
     fun markSettled() = viewModelScope.launch {
-        if (!prefs.isGoogleSignedIn.first()) {
-            _showAuthPrompt.value = true
-            return@launch
-        }
+        // Local-first — see addPayment for the why.
         debt.value?.let { d ->
             val remaining = d.amount - d.amountPaid
             if (remaining > 0) {
@@ -239,10 +263,7 @@ class DebtDetailViewModel @Inject constructor(
     }
 
     fun deleteDebt() = viewModelScope.launch {
-        if (!prefs.isGoogleSignedIn.first()) {
-            _showAuthPrompt.value = true
-            return@launch
-        }
+        // Local-first — see addPayment for the why.
         val d = debt.value ?: return@launch
         debtRepository.deleteDebt(d)
         syncIfSignedIn()
@@ -304,16 +325,20 @@ class DebtDetailViewModel @Inject constructor(
 
         val totalPaid = paymentList.sumOf { it.amount }
         val historyLines = paymentList.mapIndexed { i, p ->
-            "${i + 1}. ${debt.currency}${p.amount.toLong()} on ${p.paidAt.toReadableDate()}${if (!p.note.isNullOrBlank()) " - ${p.note}" else ""}"
+            "${i + 1}. ${com.dhanuk.debtbro.util.formatCurrency(p.amount, debt.currency)} on ${p.paidAt.toReadableDate()}${if (!p.note.isNullOrBlank()) " - ${p.note}" else ""}"
         }.joinToString("\n")
+
+        val totalStr = com.dhanuk.debtbro.util.formatCurrency(debt.amount, debt.currency)
+        val paidStr = com.dhanuk.debtbro.util.formatCurrency(totalPaid, debt.currency)
+        val remainingStr = com.dhanuk.debtbro.util.formatCurrency(remaining, debt.currency)
 
         val textMessage = when (debt.type) {
             "THEY_OWE_ME" -> buildString {
                 append("💰 *DebtBro - Payment Reminder*\n\n")
                 append("*To:* ${debt.personName}\n")
-                append("*Total:* ${debt.currency}${debt.amount.toLong()}\n")
-                append("*Paid:* ${debt.currency}${totalPaid.toLong()}\n")
-                append("*Remaining:* ${debt.currency}${remaining.toLong()}\n")
+                append("*Total:* $totalStr\n")
+                append("*Paid:* $paidStr\n")
+                append("*Remaining:* $remainingStr\n")
                 append("*Due Date:* $dueDate\n")
                 if (debt.description.isNotBlank()) append("*Reason:* ${debt.description}\n")
                 append("\n")
@@ -325,9 +350,9 @@ class DebtDetailViewModel @Inject constructor(
             else -> buildString {
                 append("🙏 *DebtBro - I Owe You*\n\n")
                 append("*From:* ${debt.personName}\n")
-                append("*Total:* ${debt.currency}${debt.amount.toLong()}\n")
-                append("*Paid:* ${debt.currency}${totalPaid.toLong()}\n")
-                append("*Remaining:* ${debt.currency}${remaining.toLong()}\n")
+                append("*Total:* $totalStr\n")
+                append("*Paid:* $paidStr\n")
+                append("*Remaining:* $remainingStr\n")
                 append("*Due Date:* $dueDate\n")
                 if (debt.description.isNotBlank()) append("*Reason:* ${debt.description}\n")
                 append("\n")

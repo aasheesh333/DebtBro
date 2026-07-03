@@ -186,7 +186,12 @@ class AiRepository @Inject constructor(
      *    perfectly healthy and an unretired model was further down the list.
      *  - HTTP 401 / 403 (key invalid / restricted / region-locked) — bubble
      *    up unchanged so the user sees the right error.
-     *  - HTTP 429 (rate limited) — bubble up; retrying wastes quota.
+     *  - HTTP 429 / 503 (rate-limited / transient overload) — RETRY the SAME
+     *    model with a 1.2s backoff before falling through to the next
+     *    candidate. Google's "high demand" 503s on Flash-Lite are typically
+     *    sub-second and one retry is enough to clear them; previously these
+     *    bubbled up immediately and surfaced as "AI failed" to the user even
+     *    though their key and the model were both healthy.
      *  - Network failures / Cancellation — bubble up unchanged.
      */
     private suspend fun callGeminiWithFallback(
@@ -195,53 +200,63 @@ class AiRepository @Inject constructor(
     ): Result<com.dhanuk.debtbro.data.network.GeminiResponse> {
         var lastError: Throwable? = null
         for ((index, model) in GeminiApiService.MODEL_CANDIDATES.withIndex()) {
-            try {
-                val response = geminiApi.generateContent(
-                    url = GeminiApiService.buildUrl(model),
-                    apiKey = apiKey,
-                    request = request
-                )
-                if (index > 0) {
-                    Log.i("AiRepository", "Gemini model '$model' succeeded after " +
-                        "'${GeminiApiService.MODEL_CANDIDATES.take(index).joinToString(",")}' " +
-                        "were rejected with HTTP 400")
-                }
-                return Result.success(response)
-            } catch (e: HttpException) {
-                lastError = e
-                // Both 400 (bad-request / FAILED_PRECONDITION) and 404
-                // (retired model / renamed alias) are treated as "try the next
-                // candidate" — re-aligned with the docstring above. Anything
-                // else (401/403/429/network) bubbles up unchanged.
-                if (e.code() != 400 && e.code() != 404) {
-                    // Wrong key, forbidden, rate limited, etc. — don't retry.
+            var attempt = 0
+            while (true) {
+                try {
+                    val response = geminiApi.generateContent(
+                        url = GeminiApiService.buildUrl(model),
+                        apiKey = apiKey,
+                        request = request
+                    )
+                    if (index > 0 || attempt > 0) {
+                        Log.i("AiRepository", "Gemini model '$model' succeeded (attempt=${attempt + 1}) " +
+                            "after earlier rejection(s)")
+                    }
+                    return Result.success(response)
+                } catch (e: HttpException) {
+                    lastError = e
+                    val code = e.code()
+
+                    // HTTP 429 / 503 are transient — retry the SAME model once
+                    // with a short backoff before giving up on it.
+                    if ((code == 429 || code == 503) && attempt == 0) {
+                        val rawBody = runCatching { e.response()?.errorBody()?.string() }.getOrNull()
+                        Log.w("AiRepository", "Gemini ${code} (transient) for model '$model': " +
+                            "${rawBody?.take(200) ?: e.message?.take(120)}. Retrying in 1200ms.")
+                        kotlinx.coroutines.delay(1200L)
+                        attempt++
+                        continue
+                    }
+
+                    // Bubble up auth / forbidden / persistent-rate-limit immediately.
+                    if (code != 400 && code != 404 && code != 429 && code != 503) {
+                        return Result.failure(e)
+                    }
+
+                    // 400/404 OR a second 429/503 on the same model — fall
+                    // through to the next candidate. Parsing the error body
+                    // so logcat shows Gemini's own explanation rather than
+                    // Retrofit's bare status line.
+                    val parsedBody = runCatching {
+                        JsonParser.parseString(
+                            e.response()?.errorBody()?.string() ?: ""
+                        ).toString()
+                    }.getOrNull()
+                    val reason = parsedBody?.take(360)
+                        ?: e.message?.take(120)
+                        ?: "(no body, no message)"
+                    Log.w("AiRepository", "Gemini ${code} for model '$model' (attempt=${attempt + 1}): $reason")
+                    break
+                } catch (e: kotlinx.coroutines.CancellationException) {
+                    throw e
+                } catch (e: Exception) {
                     return Result.failure(e)
                 }
-                // Parse the response body so the logcat warning shows Gemini's
-                // OWN explanation rather than just Retrofit's "HTTP 400 " status
-                // line. errorBody().string() consumes the buffer, so we read
-                // exactly once and re-stringify through JsonParser for cleaner
-                // formatting. Falls back to raw body bytes if not valid JSON,
-                // falls back to e.message if the response had no body at all.
-                val rawBody = runCatching { e.response()?.errorBody()?.string() }.getOrNull()
-                val parsedBody = rawBody?.takeIf { it.isNotBlank() }?.let { body ->
-                    runCatching {
-                        JsonParser.parseString(body).toString()
-                    }.getOrElse { body }
-                }
-                val reason = parsedBody?.take(360)
-                    ?: e.message?.take(120)
-                    ?: "(no body, no message)"
-                Log.w("AiRepository", "Gemini ${e.code()} for model '$model': $reason")
-            } catch (e: kotlinx.coroutines.CancellationException) {
-                throw e
-            } catch (e: Exception) {
-                return Result.failure(e)
             }
         }
-        Log.w("AiRepository", "All Gemini model candidates failed with HTTP 400. " +
-            "API key may be valid but incompatible with this model family — " +
-            "the user can paste a different key in Settings → AI Setup.")
+        Log.w("AiRepository", "All Gemini model candidates failed (last error: " +
+            "${lastError?.message?.take(120) ?: "unknown"}). The user can paste a " +
+            "different key in Settings → AI Setup or retry shortly for transient 503s.")
         return Result.failure(lastError ?: Exception("All Gemini model candidates failed"))
     }
 

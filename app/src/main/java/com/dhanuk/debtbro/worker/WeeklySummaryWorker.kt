@@ -34,10 +34,12 @@ class WeeklySummaryWorker @AssistedInject constructor(
         val owed = debts.filter { it.type == "THEY_OWE_ME" && it.status != "SETTLED" }.sumOf { it.amount - it.amountPaid }
         val recovered = debts.filter { it.status == "SETTLED" && System.currentTimeMillis() - it.updatedAt < 7 * 86400000L }.sumOf { it.amount }
         val intent = PendingIntent.getActivity(applicationContext, 42, Intent(applicationContext, MainActivity::class.java), PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
+        val owedText = com.dhanuk.debtbro.util.formatCurrency(owed, currency)
+        val recoveredText = com.dhanuk.debtbro.util.formatCurrency(recovered, currency)
         NotificationCompat.Builder(applicationContext, CHANNEL)
             .setSmallIcon(R.drawable.ic_launcher)
             .setContentTitle("DebtBro weekly summary")
-            .setContentText("Owed: ${currency}${owed.toInt()} • Recovered this week: ${currency}${recovered.toInt()}")
+            .setContentText("Owed: $owedText • Recovered this week: $recoveredText")
             .setContentIntent(intent)
             .setAutoCancel(true)
             .build()

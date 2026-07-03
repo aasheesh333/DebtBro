@@ -42,10 +42,11 @@ class DebtReminderWorker @AssistedInject constructor(
                 data = android.net.Uri.parse("debtbro://debt/${debt.id}")
             }
             val pendingIntent = PendingIntent.getActivity(applicationContext, debt.id, intent, PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
+            val amountText = com.dhanuk.debtbro.util.formatCurrency(debt.amount - debt.amountPaid, debt.currency)
             NotificationCompat.Builder(applicationContext, CHANNEL)
                 .setSmallIcon(R.drawable.ic_launcher)
                 .setContentTitle("${debt.personName} has a DebtBro reminder")
-                .setContentText("${debt.currency}${(debt.amount - debt.amountPaid).toInt()} is still pending")
+                .setContentText("$amountText is still pending")
                 .setContentIntent(pendingIntent)
                 .setAutoCancel(true)
                 .setPriority(NotificationCompat.PRIORITY_DEFAULT)

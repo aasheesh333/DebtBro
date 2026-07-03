@@ -105,7 +105,7 @@ class AuthViewModel @Inject constructor(
         _state.value = _state.value.copy(isBusy = true, errorRes = null)
         viewModelScope.launch {
             auth.signInWithGoogle(activity).fold(
-                onSuccess = { user -> onAuthSuccess(user.uid, user.displayName, user.email, user.photoUrl?.toString().orEmpty()) },
+                onSuccess = { user -> onAuthSuccess(user.uid, user.displayName, user.email ?: "", user.photoUrl?.toString().orEmpty(), "google") },
                 onFailure = { e ->
                     _state.value = _state.value.copy(isBusy = false, errorRes = e.message)
                 }
@@ -136,7 +136,7 @@ class AuthViewModel @Inject constructor(
         _state.value = current.copy(isBusy = true, errorRes = null)
         viewModelScope.launch {
             auth.signInWithEmailPassword(current.email, current.password).fold(
-                onSuccess = { user -> onAuthSuccess(user.uid, user.displayName ?: "", user.email ?: "", "") },
+                onSuccess = { user -> onAuthSuccess(user.uid, user.displayName ?: "", user.email ?: "", "", "email") },
                 onFailure = { e ->
                     _state.value = _state.value.copy(isBusy = false, errorRes = e.message ?: "Sign-in failed")
                 }
@@ -157,7 +157,7 @@ class AuthViewModel @Inject constructor(
         _state.value = current.copy(isBusy = true, errorRes = null)
         viewModelScope.launch {
             auth.signUpWithEmailPassword(current.email, current.password).fold(
-                onSuccess = { user -> onAuthSuccess(user.uid, user.displayName ?: "", user.email ?: "", "") },
+                onSuccess = { user -> onAuthSuccess(user.uid, user.displayName ?: "", user.email ?: "", "", "email") },
                 onFailure = { e ->
                     _state.value = _state.value.copy(isBusy = false, errorRes = e.message ?: "Sign-up failed")
                 }
@@ -223,12 +223,12 @@ class AuthViewModel @Inject constructor(
         return (MAX_DAILY_RESETS - count).coerceAtLeast(0)
     }
 
-    private suspend fun onAuthSuccess(uid: String?, name: String?, email: String?, photo: String) {
+    private suspend fun onAuthSuccess(uid: String?, name: String?, email: String?, photo: String, provider: String) {
         if (uid == null) {
             _state.value = _state.value.copy(isBusy = false, errorRes = "Auth succeeded but no UID returned")
             return
         }
-        prefs.setGoogleSignedIn(true, name ?: "DebtBro user", email ?: "", photo)
+        prefs.setSignedIn(provider, name ?: "DebtBro user", email ?: "", photo)
         runCatching {
             realTimeSyncManager.startListening(uid)
             sync.fullSync(uid)
