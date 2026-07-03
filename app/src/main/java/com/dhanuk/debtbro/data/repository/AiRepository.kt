@@ -33,6 +33,41 @@ import javax.inject.Singleton
  */
 class NoApiKeyException(message: String = "NO_API_KEY") : Exception(message)
 
+/**
+ * Result of an in-app self-diagnose attempt (called via Settings → AI Setup →
+ * "Test Connection"). Every field is intended for direct display in the UI:
+ *
+ *  - [keySource] / [keyPrefix]   → "Which key is being sent?" answer
+ *  - [winningModel]              → First candidate that returned a non-empty 2xx
+ *  - [failureCode] / [failureReason] → What Gemini actually rejected (and why)
+ *  - [userFacingHint]            → 1-line actionable guidance for the user
+ *
+ * The 4-char [keyPrefix] is enough to distinguish an `AIza…` AI Studio key
+ * from the newer `AQ.…` OAuth-style token, and never grows beyond that to
+ * avoid secret leakage into screen recordings / bug reports with screenshots.
+ *
+ * Also logged at INFO/WARN level via the caller, so logcat-only debugging (when
+ * a PC + adb is available) sees the same data shape.
+ */
+data class ConnectionTestResult(
+    val success: Boolean,
+    val keySource: String,
+    val keyPrefix: String,
+    val winningModel: String?,
+    val failureCode: Int?,
+    val failureReason: String?,
+    val userFacingHint: String
+) {
+    /** Human-readable form of [keySource] for direct on-screen display. */
+    val sourceLabel: String
+        get() = when (keySource) {
+            "USER_PASTED_IN_DATASTORE" -> "Your AI Setup save (overrides the bundled key)"
+            "BUNDLED_FROM_CI_SECRET_GEMINI_API_KEY_2_5_FLASH_LITE" -> "Bundled GitHub Actions secret"
+            "LEGACY_BUILD_CONFIG_GEMINI_API_KEY" -> "Legacy local.properties key"
+            else -> "No key resolved — set GEMINI_API_KEY_2_5_FLASH_LITE in repo Settings → Secrets, or paste one here"
+        }
+}
+
 @Singleton
 class AiRepository @Inject constructor(
     private val geminiApi: GeminiApiService,
@@ -382,5 +417,139 @@ Generate a WhatsApp-style payment reminder. The message MUST reference the actua
         } catch (e: kotlinx.coroutines.CancellationException) {
             throw e
         }
+    }
+
+    /**
+     * Structured self-diagnose call. Returns a [ConnectionTestResult] with
+     * enough detail for the user to read the result on-device WITHOUT a PC —
+     * each MODEL_CANDIDATES entry is exercised with a tiny 5-token "Say OK"
+     * prompt and the result collects:
+     *
+     *  - The actual key source + 4-char prefix (proves which slot is winning
+     *    the DataStore-vs-BuildConfig chain, without leaking the secret).
+     *  - The first model that returned a non-empty 2xx body, if any.
+     *  - For failure paths, the parsed GeminiError JSON (or raw body if the
+     *    response wasn't JSON), so the user can read Gemini's own reason.
+     *
+     * The retry policy mirrors [callGeminiWithFallback]: 400/404 retried; 401,
+     * 403, 429 (and network errors) bubble up immediately with an actionable
+     * one-liner.
+     *
+     * Safe to call from the UI: 1 request per candidate, max 5 small ones,
+     * capped at ~6 seconds even on the worst-case all-candidates-fail path.
+     */
+    suspend fun runAiConnectionTest(): ConnectionTestResult {
+        ensureRateLimit()
+        val userKey = prefs.geminiApiKey.first()
+        val bundled = BuildConfig.GEMINI_API_KEY_2_5_FLASH_LITE
+        val legacy = BuildConfig.GEMINI_API_KEY
+        val (packaged, source) = when {
+            userKey.isNotBlank() -> userKey to "USER_PASTED_IN_DATASTORE"
+            bundled.isNotBlank() -> bundled to "BUNDLED_FROM_CI_SECRET_GEMINI_API_KEY_2_5_FLASH_LITE"
+            legacy.isNotBlank() -> legacy to "LEGACY_BUILD_CONFIG_GEMINI_API_KEY"
+            else -> null to "EMPTY_NO_KEY_RESOLVED"
+        }
+        val prefix = packaged?.let { if (it.length >= 4) it.substring(0, 4) else "(too short)" } ?: "(empty)"
+
+        if (packaged.isNullOrBlank()) {
+            return ConnectionTestResult(
+                success = false,
+                keySource = source,
+                keyPrefix = prefix,
+                winningModel = null,
+                failureCode = null,
+                failureReason = null,
+                userFacingHint = "No API key found. Set GEMINI_API_KEY_2_5_FLASH_LITE in repo Settings → Secrets " +
+                    "(and re-push main), OR paste a key here in Settings → AI Setup."
+            )
+        }
+
+        var lastHttpCode: Int? = null
+        var lastErrorBody: String? = null
+
+        for (model in GeminiApiService.MODEL_CANDIDATES) {
+            try {
+                val response = geminiApi.generateContent(
+                    url = GeminiApiService.buildUrl(model),
+                    apiKey = packaged,
+                    request = GeminiRequest(
+                        contents = listOf(GeminiContent(parts = listOf(GeminiPart("Say OK")), role = "user")),
+                        generationConfig = GenerationConfig(temperature = 0.0, maxOutputTokens = 5)
+                    )
+                )
+                val text = response.candidates.firstOrNull()?.content?.parts?.firstOrNull()?.text
+                if (!text.isNullOrBlank()) {
+                    Log.i("AiRepository", "Connection test: model '$model' succeeded (key source=$source)")
+                    return ConnectionTestResult(
+                        success = true,
+                        keySource = source,
+                        keyPrefix = prefix,
+                        winningModel = model,
+                        failureCode = null,
+                        failureReason = null,
+                        userFacingHint = "AI is working. First live model: $model."
+                    )
+                }
+                // 200 but empty body — treat as candidate-failed, try next.
+                lastHttpCode = 200
+                lastErrorBody = "(empty 200 response body — unusual)"
+            } catch (e: HttpException) {
+                lastHttpCode = e.code()
+                val body = runCatching { e.response()?.errorBody()?.string() }.getOrNull()
+                val parsed = body?.takeIf { it.isNotBlank() }?.let { b ->
+                    runCatching { JsonParser.parseString(b).toString() }.getOrElse { b }
+                }
+                lastErrorBody = parsed?.take(360) ?: e.message?.take(120) ?: "(no body)"
+
+                if (e.code() != 400 && e.code() != 404) {
+                    val hint = when (e.code()) {
+                        401, 403 -> "Key invalid or restricted (HTTP ${e.code()}). " +
+                            "Try a different Gemini API key from a different AI Studio project."
+                        429 -> "Rate-limited (HTTP 429). Wait a minute and try again."
+                        else -> "Transient error (HTTP ${e.code()}). Retry shortly."
+                    }
+                    Log.w("AiRepository", "Connection test: model '$model' returned HTTP ${e.code()}; aborting: $lastErrorBody")
+                    return ConnectionTestResult(
+                        success = false,
+                        keySource = source,
+                        keyPrefix = prefix,
+                        winningModel = null,
+                        failureCode = e.code(),
+                        failureReason = lastErrorBody,
+                        userFacingHint = hint
+                    )
+                }
+                // Else (400/404) — retry on next candidate.
+            } catch (e: kotlinx.coroutines.CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                Log.w("AiRepository", "Connection test: network error on model '$model': ${e.message?.take(120)}")
+                return ConnectionTestResult(
+                    success = false,
+                    keySource = source,
+                    keyPrefix = prefix,
+                    winningModel = null,
+                    failureCode = null,
+                    failureReason = e.message?.take(280) ?: "Unknown error",
+                    userFacingHint = "Network error. Check your internet connection and retry."
+                )
+            }
+        }
+
+        // All MODEL_CANDIDATES returned 400/404 — the key may be valid for Gemini
+        // broadly but the project doesn't have any of these specific models
+        // enabled. Surface that clearly so the user knows to try a different key.
+        Log.w("AiRepository", "Connection test: all ${GeminiApiService.MODEL_CANDIDATES.size} models returned 4xx for key source=$source")
+        return ConnectionTestResult(
+            success = false,
+            keySource = source,
+            keyPrefix = prefix,
+            winningModel = null,
+            failureCode = lastHttpCode,
+            failureReason = lastErrorBody ?: "(no captured error body)",
+            userFacingHint = "All ${GeminiApiService.MODEL_CANDIDATES.size} Gemini Flash models returned 4xx for this key. " +
+                "The key may be valid for non-Flash models on this project. Try pasting a different " +
+                "Gemini API key from a fresh AI Studio project (aistudio.google.com/app/apikey)."
+        )
     }
 }

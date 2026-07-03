@@ -15,6 +15,7 @@ import com.dhanuk.debtbro.data.firebase.RealTimeSyncManager
 import com.dhanuk.debtbro.data.firebase.SyncManager
 import com.dhanuk.debtbro.data.repository.DebtRepository
 import com.dhanuk.debtbro.data.repository.AiRepository
+import com.dhanuk.debtbro.data.repository.ConnectionTestResult
 import com.dhanuk.debtbro.util.CsvExporter
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -275,6 +276,38 @@ class SettingsViewModel @Inject constructor(
     fun setThemeMode(mode: String) = viewModelScope.launch { prefs.setThemeMode(mode) }
     fun setCustomAvatarUri(uri: String) = viewModelScope.launch { prefs.setCustomAvatarUri(uri) }
     fun saveGeminiKey(key: String) = viewModelScope.launch { prefs.saveGeminiKey(key) }
+
+    // ── AI Connection Test State ─────────────────────────────────────────────
+    // Exposed directly (not through the SettingsUiState combine pipeline) to
+    // avoid threading two more flows through that already-complex 5-input
+    // combine. Compose UI subscribes separately to these two StateFlows.
+    private val _aiTestRunning = MutableStateFlow(false)
+    val aiTestRunning: StateFlow<Boolean> = _aiTestRunning.asStateFlow()
+    private val _aiTestResult = MutableStateFlow<ConnectionTestResult?>(null)
+    val aiTestResult: StateFlow<ConnectionTestResult?> = _aiTestResult.asStateFlow()
+
+    fun testAiConnection() = viewModelScope.launch {
+        _aiTestRunning.value = true
+        _aiTestResult.value = null
+        try {
+            _aiTestResult.value = ai.runAiConnectionTest()
+        } catch (e: kotlinx.coroutines.CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            _aiTestResult.value = ConnectionTestResult(
+                success = false,
+                keySource = "UNKNOWN",
+                keyPrefix = "(error)",
+                winningModel = null,
+                failureCode = null,
+                failureReason = e.message?.take(280) ?: "Unknown error",
+                userFacingHint = "Test crashed before reaching Gemini. " +
+                    "If this recurs, reinstall the app — DataStore may be corrupted."
+            )
+        } finally {
+            _aiTestRunning.value = false
+        }
+    }
 
     private val _showDeletionGraceAlert = MutableStateFlow(false)
     val showDeletionGraceAlert: StateFlow<Boolean> = _showDeletionGraceAlert.asStateFlow()

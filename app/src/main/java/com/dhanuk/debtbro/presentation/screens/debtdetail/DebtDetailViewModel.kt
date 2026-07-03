@@ -27,6 +27,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import retrofit2.HttpException
 import javax.inject.Inject
 
 @OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
@@ -185,7 +186,20 @@ class DebtDetailViewModel @Inject constructor(
                     aiMessage.value = "No internet connection. Tap refresh when online."
                 }
             } else {
-                aiMessage.value = "Could not generate roast. ${error.message ?: "Try again."}"
+                // Self-diagnostic on-device message — the user may have NO PC /
+                // adb logcat access, so the actual Gemini response body has to
+                // be surfaced HERE. For Retrofit HttpExceptions, pull errorBody()
+                // so the user sees Gemini's own reason (e.g.
+                // "INVALID_ARGUMENT: ...", "FAILED_PRECONDITION: ...", or
+                // "PERMISSION_DENIED") instead of the bare "HTTP 400 " line.
+                val httpDetail = (error as? HttpException)?.let { ex ->
+                    val body = runCatching { ex.response()?.errorBody()?.string() }
+                        .getOrNull()?.take(280)
+                    if (body != null) "[HTTP ${ex.code()}] $body"
+                    else "[HTTP ${ex.code()}] ${ex.message ?: "(no body)"}"
+                }
+                val detail = httpDetail ?: error.message ?: "Unknown error (try again in a moment)"
+                aiMessage.value = "Could not generate roast. $detail"
             }
         }
         isGeneratingAi.value = false

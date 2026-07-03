@@ -22,6 +22,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.compose.material.icons.filled.NetworkCheck
 import com.dhanuk.debtbro.BuildConfig
 import com.dhanuk.debtbro.presentation.components.GoogleSignInCard
 import com.dhanuk.debtbro.presentation.components.LanguageSelectorGrid
@@ -234,6 +235,60 @@ fun SettingsScreen(viewModel: SettingsViewModel = hiltViewModel()) {
                                 unfocusedBorderColor = MaterialTheme.colorScheme.outline
                             )
                         )
+
+                        // ── AI Connection self-diagnose panel ───────────────────────
+                        // Hits Gemini end-to-end with the user's actual key path and
+                        // shows the result on-device. Designed for users without PC /
+                        // adb logcat access — every result field has on-screen display
+                        // intent, not just logcat telemetry.
+                        val aiTestRunning by viewModel.aiTestRunning.collectAsStateWithLifecycle()
+                        val aiTestResult by viewModel.aiTestResult.collectAsStateWithLifecycle()
+                        Spacer(Modifier.height(UITokens.SpaceSmall))
+                        OutlinedButton(
+                            onClick = { viewModel.testAiConnection() },
+                            enabled = !aiTestRunning,
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Icon(Icons.Default.NetworkCheck, contentDescription = null, modifier = Modifier.size(UITokens.IconSmall))
+                            Spacer(Modifier.width(UITokens.SpaceXS))
+                            Text(if (aiTestRunning) "Testing AI…" else "Test AI connection")
+                        }
+                        aiTestResult?.let { res ->
+                            Spacer(Modifier.height(UITokens.SpaceSmall))
+                            // surfaceVariant on success gives a real visual tier against
+                            // the parent AI-Setup Card (surface) — failure continues to
+                            // use errorContainer. Without this delta, a passing test was
+                            // indistinguishable from the surrounding layout.
+                            val containerColor = if (res.success) MaterialTheme.colorScheme.surfaceVariant else MaterialTheme.colorScheme.errorContainer
+                            val accentColor = if (res.success) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error
+                            Card(
+                                modifier = Modifier.fillMaxWidth(),
+                                colors = CardDefaults.cardColors(containerColor = containerColor),
+                                shape = UITokens.ShapeLarge
+                            ) {
+                                Column(Modifier.padding(UITokens.CardInnerPadding), verticalArrangement = Arrangement.spacedBy(UITokens.SpaceSmall)) {
+                                    Text(
+                                        if (res.success) "✓ AI is working" else "✗ AI is not working right now",
+                                        color = accentColor,
+                                        fontWeight = FontWeight.Bold,
+                                        fontSize = UITokens.FontBody
+                                    )
+                                    Text("Key source: ${res.sourceLabel}", fontSize = UITokens.FontCaption, color = MaterialTheme.colorScheme.onSurface)
+                                    Text("Key prefix: ${res.keyPrefix}", fontSize = UITokens.FontCaption, color = MaterialTheme.colorScheme.onSurface)
+                                    if (res.winningModel != null) {
+                                        Text("First live model: ${res.winningModel}", fontSize = UITokens.FontCaption, color = MaterialTheme.colorScheme.onSurface)
+                                    }
+                                    Text(res.userFacingHint, fontSize = UITokens.FontCaption, color = MaterialTheme.colorScheme.onSurface)
+                                    if (res.failureReason != null && res.failureReason.length > 3) {
+                                        Text(
+                                            "Reason: ${res.failureReason}",
+                                            fontSize = UITokens.FontCaption,
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                                        )
+                                    }
+                                }
+                            }
+                        }
                     }
                 }
             }
