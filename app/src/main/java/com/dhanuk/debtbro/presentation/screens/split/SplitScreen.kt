@@ -41,14 +41,24 @@ fun SplitScreen(onAuthRequired: () -> Unit, viewModel: SplitViewModel = hiltView
     val showAuthPrompt by viewModel.showAuthPrompt.collectAsStateWithLifecycle()
     val extra = LocalExtraColors.current
     var showContactPicker by remember { mutableStateOf(false) }
+    val snackbarHostState = remember { SnackbarHostState() }
+    LaunchedEffect(Unit) {
+        viewModel.snackbar.collect { msg ->
+            snackbarHostState.showSnackbar(msg)
+        }
+    }
 
-    LazyColumn(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(UITokens.CardInnerPadding)
-            .background(MaterialTheme.colorScheme.background),
-        verticalArrangement = Arrangement.spacedBy(UITokens.SpaceMedium)
-    ) {
+    Scaffold(
+        snackbarHost = { SnackbarHost(snackbarHostState) }
+    ) { padding ->
+        LazyColumn(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(padding)
+                .padding(UITokens.CardInnerPadding)
+                .background(MaterialTheme.colorScheme.background),
+            verticalArrangement = Arrangement.spacedBy(UITokens.SpaceMedium)
+        ) {
         item {
             Text(
                 LocalizedString.get("split_bill"),
@@ -239,6 +249,7 @@ fun SplitScreen(onAuthRequired: () -> Unit, viewModel: SplitViewModel = hiltView
                 showContactPicker = false
             }
         )
+    }
     }
 }
 
