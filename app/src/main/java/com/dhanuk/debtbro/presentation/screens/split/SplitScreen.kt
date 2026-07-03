@@ -28,6 +28,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import android.provider.ContactsContract
 import com.dhanuk.debtbro.presentation.theme.LocalExtraColors
 import com.dhanuk.debtbro.presentation.theme.UITokens
 import com.dhanuk.debtbro.util.formatCurrency
@@ -349,45 +350,84 @@ fun ContactPickerBottomSheet(
     val extra = LocalExtraColors.current
 
     // P0-2 (2026-07-03): runtime READ_CONTACTS gate. Some OEM ROMs (Xiaomi /
-    // Vivo / Oppo) throw SecurityException when reading the URI returned by
-    // ActivityResultContracts.PickContact if READ_CONTACTS has not been
-    // declared AND granted — even though the AOSP contract intends to allow
-    // one-shot reads with a temporary URI permission. We declare
+    // Vivo / Oppo) throw SecurityException when reading contacts if
+    // READ_CONTACTS has not been declared AND granted. We declare
     // READ_CONTACTS in the manifest AND request it at runtime before
-    // launching the picker, so the cursor query below doesn't crash.
+    // querying, so the cursor reads below don't crash.
+    //
+    // Crash #2 fix (2026-07-03): the previous implementation used
+    // ActivityResultContracts.PickContact() and queried the returned contact
+    // lookup URI with CommonDataKinds.StructuredName.DISPLAY_NAME — whose
+    // constant value is "data1". "data1" is only a valid column on
+    // CommonDataKinds.* data-row URIs, NOT on a contact lookup URI, so the
+    // provider threw IllegalArgumentException 'Invalid column data1'
+    // (SplitScreen.kt:328, Crashlytics 94720452). We now query
+    // CommonDataKinds.Phone.CONTENT_URI directly, which legitimately exposes
+    // "data1" via Phone.NUMBER, and let the user tap a contact from the list.
     var permissionDenied by remember { mutableStateOf(false) }
-    val contactPickerLauncher = rememberLauncherForActivityResult(
-        ActivityResultContracts.PickContact()
-    ) { uri ->
-        uri?.let {
-            // Wrap the cursor read in a try/catch — even with the runtime
-            // grant, ROM-level contacts providers can still throw if the
-            // user revoked permission mid-flight or the picker returned a
-            // cross-user URI. Better to silently abort than to crash the
-            // SplitScreen.
-            val name = runCatching {
+    var contacts by remember { mutableStateOf<List<Pair<String, String>>>(emptyList()) }
+    var loaded by remember { mutableStateOf(false) }
+
+    fun loadContacts() {
+        try {
+            val uri = ContactsContract.CommonDataKinds.Phone.CONTENT_URI
+            val projection = arrayOf(
+                ContactsContract.CommonDataKinds.Phone.DISPLAY_NAME,
+                ContactsContract.CommonDataKinds.Phone.NUMBER
+            )
+            val cursor = runCatching {
                 context.contentResolver.query(
-                    it, arrayOf(
-                        android.provider.ContactsContract.CommonDataKinds.StructuredName.DISPLAY_NAME
-                    ), null, null, null
-                )?.use { c ->
-                    if (c.moveToFirst()) {
-                        val nameIndex = c.getColumnIndex(android.provider.ContactsContract.CommonDataKinds.StructuredName.DISPLAY_NAME)
-                        if (nameIndex >= 0) c.getString(nameIndex) else null
-                    } else null
-                }
+                    uri,
+                    projection,
+                    null,
+                    null,
+                    "${ContactsContract.CommonDataKinds.Phone.DISPLAY_NAME} ASC"
+                )
             }.getOrNull()
-            if (!name.isNullOrBlank()) onContactSelected(name)
+            cursor?.use { c ->
+                val nameIdx = c.getColumnIndex(ContactsContract.CommonDataKinds.Phone.DISPLAY_NAME)
+                val numIdx = c.getColumnIndex(ContactsContract.CommonDataKinds.Phone.NUMBER)
+                if (nameIdx >= 0 && numIdx >= 0) {
+                    val seen = mutableSetOf<String>()
+                    val out = ArrayList<Pair<String, String>>()
+                    while (c.moveToNext()) {
+                        val name = c.getString(nameIdx) ?: continue
+                        val num = c.getString(numIdx) ?: continue
+                        if (name.isBlank() || num.isBlank()) continue
+                        if (seen.add(name)) {
+                            out.add(name to num)
+                        }
+                    }
+                    contacts = out
+                }
+            }
+        } catch (_: SecurityException) {
+            // Permission revoked between grant and query — silently fail
+            permissionDenied = true
         }
-        onDismiss()
+        loaded = true
     }
+
     val permissionLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.RequestPermission()
     ) { granted ->
         if (granted) {
-            contactPickerLauncher.launch(null)
+            loadContacts()
         } else {
             permissionDenied = true
+            loaded = true
+        }
+    }
+
+    LaunchedEffect(Unit) {
+        val granted = androidx.core.content.ContextCompat.checkSelfPermission(
+            context, android.Manifest.permission.READ_CONTACTS
+        ) == android.content.pm.PackageManager.PERMISSION_GRANTED
+        if (granted) {
+            loadContacts()
+        } else {
+            permissionDenied = false
+            permissionLauncher.launch(android.Manifest.permission.READ_CONTACTS)
         }
     }
 
@@ -410,26 +450,47 @@ fun ContactPickerBottomSheet(
                     textAlign = TextAlign.Center,
                     fontSize = UITokens.FontBody
                 )
-            }
-            Button(
-                onClick = {
-                    val granted = androidx.core.content.ContextCompat.checkSelfPermission(
-                        context, android.Manifest.permission.READ_CONTACTS
-                    ) == android.content.pm.PackageManager.PERMISSION_GRANTED
-                    if (granted) {
-                        contactPickerLauncher.launch(null)
-                    } else {
-                        permissionDenied = false
-                        permissionLauncher.launch(android.Manifest.permission.READ_CONTACTS)
+            } else if (!loaded) {
+                CircularProgressIndicator(
+                    color = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.size(UITokens.IconLarge)
+                )
+            } else {
+                LazyColumn(
+                    modifier = Modifier.fillMaxWidth().heightIn(max = 360.dp),
+                    verticalArrangement = Arrangement.spacedBy(UITokens.SpaceXS)
+                ) {
+                    items(contacts, key = { it.first + it.second }) { (name, num) ->
+                        Surface(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clip(UITokens.ShapeMedium)
+                                .clickable {
+                                    onContactSelected(name)
+                                    onDismiss()
+                                },
+                            color = MaterialTheme.colorScheme.surfaceVariant,
+                            shape = UITokens.ShapeMedium
+                        ) {
+                            Row(
+                                modifier = Modifier.padding(UITokens.SpaceSmall),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(UITokens.SpaceSmall)
+                            ) {
+                                Icon(
+                                    Icons.Default.Contacts,
+                                    LocalizedString.get("pick_contact"),
+                                    tint = MaterialTheme.colorScheme.primary,
+                                    modifier = Modifier.size(UITokens.IconMedium)
+                                )
+                                Column {
+                                    Text(name, color = MaterialTheme.colorScheme.onSurface, fontWeight = FontWeight.Bold)
+                                    Text(num, color = extra.subtitleGray, fontSize = UITokens.FontSmall)
+                                }
+                            }
+                        }
                     }
-                },
-                modifier = Modifier.fillMaxWidth().height(54.dp),
-                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
-                shape = UITokens.ShapeMedium
-            ) {
-                Icon(Icons.Default.Contacts, LocalizedString.get("pick_contact"), tint = MaterialTheme.colorScheme.onPrimary)
-                Spacer(Modifier.width(8.dp))
-                Text(LocalizedString.get("pick_contact"), color = MaterialTheme.colorScheme.onPrimary, fontWeight = FontWeight.Bold)
+                }
             }
         }
     }
