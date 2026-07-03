@@ -124,7 +124,7 @@ fun DebtListScreen(
 
             if (debts.isEmpty()) {
                 EmptyStateView(
-                    emoji = if (searchQuery.isNotEmpty()) "\uD83D\uDD0D" else "\uD83D\uDDF1\uFE0F",
+                    icon = if (searchQuery.isNotEmpty()) Icons.Default.Search else Icons.Default.AccountBalanceWallet,
                     title = if (searchQuery.isNotEmpty()) LocalizedString.get("no_results") else LocalizedString.get("no_debts"),
                     subtitle = if (searchQuery.isNotEmpty()) LocalizedString.get("try_different") else LocalizedString.get("empty_owed")
                 )
