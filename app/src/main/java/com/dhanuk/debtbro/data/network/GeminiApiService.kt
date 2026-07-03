@@ -48,29 +48,40 @@ interface GeminiApiService {
         /**
          * Models to attempt in order on each AI call.
          *
-         * Order matters: most widely-supported first to minimize wasted calls when
-         * a key works fine but the named variant is preview-only or regionally
-         * restricted. The previous ordering (gemini-2.5-flash-lite first) wasted
-         * ~5 seconds of latency on every healthy call because that name returned
-         * HTTP 400 for the user's free-tier key — the whole chain had to loop
-         * through all 6 candidates before producing a response.
+         * Updated 2026-07-03. The `gemini-2.0-flash-lite` family (and the
+         * bare `gemini-flash-lite` Google-deprecated aliases) were retired
+         * by AI Studio through 2026; the previous chain started there and —
+         * after the deprecations — every deployed APK hit HTTP 400/404 on
+         * every candidate. Primary is now `gemini-2.5-flash-lite`, the model
+         * the project's bundled `GEMINI_API_KEY_2_5_FLASH_LITE` secret is
+         * named after and the most widely-supported free-tier Flash-Lite on
+         * AI Studio as of July 2026.
          *
-         * `gemini-2.0-flash-lite` is the most reliable across all key tiers
-         * (free, paid, Vertex AI). `gemini-2.5-flash-lite` is kept at the very
-         * end for users whose keys are SPECIFICALLY scoped to that preview
-         * model — a small minority that pays the small latency cost intentionally.
+         * Order rationale, top-to-bottom:
+         *  - `gemini-2.5-flash-lite` — primary, name-matched to the GH secret.
+         *  - `gemini-2.5-flash` — slightly larger sibling, the safest
+         *    paid-tier fallback when 2.5-flash-lite is region-gated.
+         *  - `gemini-flash-lite-latest`, `gemini-flash-lite` — Google's
+         *    rolling aliases; cheap to keep in case 2.5-flash-lite is
+         *    renamed.
+         *  - `gemini-1.5-flash-latest` — long-stable legacy, kept as last
+         *    resort for keys restricted to the 1.5 family.
          *
-         * When the user adds a custom key in Settings, the same fallback chain
-         * applies — a key they're testing will quietly succeed against the most
-         * permissive model it has access to.
+         * `gemini-2.0-flash-lite` was previously retained at the tail for
+         * "log-line continuity" — dropped. Every healthy call would have
+         * paid a guaranteed 404 round-trip just to log a line nobody
+         * reads, and the 404-retry in
+         * [AiRepository.callGeminiWithFallback] makes the placeholder
+         * unnecessary: any future Google retirement of one of these
+         * candidates is now a gracefully-skipped failure rather than a
+         * chain short-circuit.
          */
         val MODEL_CANDIDATES: List<String> = listOf(
-            "gemini-2.0-flash-lite",
+            "gemini-2.5-flash-lite",
+            "gemini-2.5-flash",
             "gemini-flash-lite-latest",
             "gemini-flash-lite",
-            "gemini-1.5-flash-latest",
-            "gemini-2.5-flash",
-            "gemini-2.5-flash-lite"
+            "gemini-1.5-flash-latest"
         )
 
         fun buildUrl(model: String): String = "v1beta/models/$model:generateContent"

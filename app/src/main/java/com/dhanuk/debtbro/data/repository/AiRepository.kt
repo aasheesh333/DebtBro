@@ -104,10 +104,20 @@ class AiRepository @Inject constructor(
 
     /**
      * Calls Gemini with each model from [GeminiApiService.MODEL_CANDIDATES]
-     * until one returns 2xx. Only HTTP 400 (model-not-found / bad-request)
-     * triggers the next candidate — non-400 errors (401 invalid key, 403
-     * forbidden, 429 rate limited, network failure) bubble up unchanged so
-     * callers don't waste time retrying with the wrong reason.
+     * until one returns 2xx.
+     *
+     * Retry policy (updated 2026-07-03):
+     *  - HTTP 400 (bad-request / FAILED_PRECONDITION / safety-block) — try
+     *    next candidate. The previous code already did this.
+     *  - HTTP 404 (model-not-found, region-retired, alias renamed) — ALSO try
+     *    next candidate. Previously this short-circuited the whole chain,
+     *    which is why AI Studio's 2026 mid-year 2.x-flash-lite retirement
+     *    surfaced as a guaranteed failure even when the user's key was
+     *    perfectly healthy and an unretired model was further down the list.
+     *  - HTTP 401 / 403 (key invalid / restricted / region-locked) — bubble
+     *    up unchanged so the user sees the right error.
+     *  - HTTP 429 (rate limited) — bubble up; retrying wastes quota.
+     *  - Network failures / Cancellation — bubble up unchanged.
      */
     private suspend fun callGeminiWithFallback(
         apiKey: String,
@@ -129,11 +139,15 @@ class AiRepository @Inject constructor(
                 return Result.success(response)
             } catch (e: HttpException) {
                 lastError = e
-                if (e.code() != 400) {
+                // Both 400 (bad-request / FAILED_PRECONDITION) and 404
+                // (retired model / renamed alias) are treated as "try the next
+                // candidate" — re-aligned with the docstring above. Anything
+                // else (401/403/429/network) bubbles up unchanged.
+                if (e.code() != 400 && e.code() != 404) {
                     // Wrong key, forbidden, rate limited, etc. — don't retry.
                     return Result.failure(e)
                 }
-                Log.w("AiRepository", "Gemini 400 for model '$model': ${e.message?.take(120)}")
+                Log.w("AiRepository", "Gemini ${e.code()} for model '$model': ${e.message?.take(120)}")
             } catch (e: kotlinx.coroutines.CancellationException) {
                 throw e
             } catch (e: Exception) {
