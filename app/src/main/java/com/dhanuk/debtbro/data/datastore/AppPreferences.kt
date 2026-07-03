@@ -139,7 +139,7 @@ class AppPreferences(@ApplicationContext private val context: Context) {
      */
     suspend fun setSignedIn(provider: String?, name: String = "", email: String = "", photo: String = "") = context.dataStore.edit {
         it[Keys.IS_GOOGLE_SIGNED_IN] = provider != null
-        it[Keys.SIGN_IN_PROVIDER] = provider
+        if (provider != null) it[Keys.SIGN_IN_PROVIDER] = provider else it.remove(Keys.SIGN_IN_PROVIDER)
         it[Keys.GOOGLE_USER_NAME] = name
         it[Keys.GOOGLE_USER_EMAIL] = email
         it[Keys.GOOGLE_USER_PHOTO] = photo

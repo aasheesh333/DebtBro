@@ -272,12 +272,12 @@ object HtmlExporter {
                 // has already been destroyed` inside the export-coroutine
                 // and surfacing as the runtime crash from the
                 // `fix-google-signin-and-export-crash-…` branch.
-                @Volatile var destroyed = false
+                val destroyed = java.util.concurrent.atomic.AtomicBoolean(false)
                 var webViewRef: WebView? = null
 
                 fun destroyWebView() {
-                    if (destroyed) return
-                    destroyed = true
+                    if (destroyed.get()) return
+                    destroyed.set(true)
                     try { webViewRef?.destroy() } catch (_: Exception) {}
                     webViewRef = null
                 }
@@ -304,13 +304,13 @@ object HtmlExporter {
                 webView.webViewClient = object : WebViewClient() {
                     override fun onPageFinished(view: WebView?, url: String?) {
                         super.onPageFinished(view, url)
-                        if (destroyed || view == null) return
+                        if (destroyed.get() || view == null) return
                         view.postDelayed({
                             // If cancellation happened between scheduling
                             // and execution, abort before any view.measure
                             // call — those throw IllegalStateException once
                             // the WebView has been destroy()ed.
-                            if (destroyed) return@postDelayed
+                            if (destroyed.get()) return@postDelayed
                             try {
                                 val widthSpec = android.view.View.MeasureSpec.makeMeasureSpec(width, android.view.View.MeasureSpec.EXACTLY)
                                 val heightSpec = android.view.View.MeasureSpec.makeMeasureSpec(0, android.view.View.MeasureSpec.UNSPECIFIED)
@@ -324,7 +324,7 @@ object HtmlExporter {
                                     // WebView is still alive AND the coroutine
                                     // still wants a result before trying to draw
                                     // it. Otherwise destroy and bail.
-                                    if (destroyed) return@evaluateJavascript
+                                    if (destroyed.get()) return@evaluateJavascript
                                     try {
                                         val contentHeight = heightStr?.replace("\"", "")?.toIntOrNull() ?: 1350
                                         val actualHeight = maxOf(contentHeight, view.measuredHeight, height).coerceAtMost(2048)

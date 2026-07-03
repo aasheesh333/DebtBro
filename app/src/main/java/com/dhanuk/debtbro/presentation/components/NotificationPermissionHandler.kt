@@ -74,7 +74,7 @@ fun NotificationPermissionHandler(
         )
     }
     val rationaleDismissed by appPreferences.notificationRationaleDismissed
-        .collectAsStateWithLifecycle(initial = false)
+        .collectAsStateWithLifecycle(initialValue = false)
 
     val launcher = rememberLauncherForActivityResult(
         ActivityResultContracts.RequestPermission()
