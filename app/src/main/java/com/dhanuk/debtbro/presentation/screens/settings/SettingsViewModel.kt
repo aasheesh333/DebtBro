@@ -17,8 +17,6 @@ import com.dhanuk.debtbro.data.firebase.FirebaseRepository
 import com.dhanuk.debtbro.data.firebase.RealTimeSyncManager
 import com.dhanuk.debtbro.data.firebase.SyncManager
 import com.dhanuk.debtbro.data.repository.DebtRepository
-import com.dhanuk.debtbro.data.repository.AiRepository
-import com.dhanuk.debtbro.data.repository.ConnectionTestResult
 import com.dhanuk.debtbro.util.CsvExporter
 import com.dhanuk.debtbro.worker.AccountDeletionWorker
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -99,8 +97,7 @@ data class SettingsUiState(
     val themeMode: String = "SYSTEM",
     val isSigningOut: Boolean = false,
     val isDeletingAccount: Boolean = false,
-    val pendingDeletionTimestamp: Long = 0L,
-    val geminiApiKey: String = ""
+    val pendingDeletionTimestamp: Long = 0L
 )
 
 @HiltViewModel
@@ -112,7 +109,6 @@ class SettingsViewModel @Inject constructor(
     private val realTimeSyncManager: RealTimeSyncManager,
     private val firebaseRepository: FirebaseRepository,
     private val debts: DebtRepository,
-    private val ai: AiRepository,
     private val debtDao: DebtDao,
     private val paymentDao: PaymentDao,
     private val splitDao: SplitDao
@@ -264,17 +260,7 @@ class SettingsViewModel @Inject constructor(
             pendingDeletionTimestamp = deletion.pendingTs,
             linkedProviders = auth.linkedProviders()
         )
-    // P2-7 (2026-07-03): the user-pasted Gemini key now lives in
-    // EncryptedSharedPreferences (SecureStorage). The combination below
-    // prefers the SecureStorage flow; the legacy `prefs.geminiApiKey`
-    // DataStore slot is only read as a fallback for users who haven't
-    // yet been migrated by AiRepository. Once the migration runs, that
-    // slot is cleared and only the secure path emits non-blank.
-    }.combine(secureStorage.geminiApiKey) { ui, secureKey -> ui.copy(geminiApiKey = secureKey) }
-        .combine(prefs.geminiApiKey) { ui, legacyKey ->
-            if (ui.geminiApiKey.isBlank() && legacyKey.isNotBlank()) ui.copy(geminiApiKey = legacyKey)
-            else ui
-        }
+    }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), SettingsUiState())
 
     fun saveUserName(name: String) = viewModelScope.launch { prefs.saveUserName(name) }
@@ -290,46 +276,6 @@ class SettingsViewModel @Inject constructor(
     fun setExportFormat(format: String) = viewModelScope.launch { prefs.setExportFormat(format) }
     fun setThemeMode(mode: String) = viewModelScope.launch { prefs.setThemeMode(mode) }
     fun setCustomAvatarUri(uri: String) = viewModelScope.launch { prefs.setCustomAvatarUri(uri) }
-    fun saveGeminiKey(key: String) = viewModelScope.launch {
-        // P2-7 (2026-07-03): write the user-pasted Gemini key to
-        // EncryptedSharedPreferences (via SecureStorage) instead of the
-        // legacy plaintext DataStore slot. AiRepository reads from the
-        // encrypted path first; the DataStore slot is now a migration
-        // source only, cleared by AiRepository after the migration.
-        secureStorage.saveGeminiApiKey(key)
-    }
-
-    // ── AI Connection Test State ─────────────────────────────────────────────
-    // Exposed directly (not through the SettingsUiState combine pipeline) to
-    // avoid threading two more flows through that already-complex 5-input
-    // combine. Compose UI subscribes separately to these two StateFlows.
-    private val _aiTestRunning = MutableStateFlow(false)
-    val aiTestRunning: StateFlow<Boolean> = _aiTestRunning.asStateFlow()
-    private val _aiTestResult = MutableStateFlow<ConnectionTestResult?>(null)
-    val aiTestResult: StateFlow<ConnectionTestResult?> = _aiTestResult.asStateFlow()
-
-    fun testAiConnection() = viewModelScope.launch {
-        _aiTestRunning.value = true
-        _aiTestResult.value = null
-        try {
-            _aiTestResult.value = ai.runAiConnectionTest()
-        } catch (e: kotlinx.coroutines.CancellationException) {
-            throw e
-        } catch (e: Exception) {
-            _aiTestResult.value = ConnectionTestResult(
-                success = false,
-                keySource = "UNKNOWN",
-                keyPrefix = "(error)",
-                winningModel = null,
-                failureCode = null,
-                failureReason = e.message?.take(280) ?: "Unknown error",
-                userFacingHint = "Test crashed before reaching Gemini. " +
-                    "If this recurs, reinstall the app — DataStore may be corrupted."
-            )
-        } finally {
-            _aiTestRunning.value = false
-        }
-    }
 
     private val _showDeletionGraceAlert = MutableStateFlow(false)
     val showDeletionGraceAlert: StateFlow<Boolean> = _showDeletionGraceAlert.asStateFlow()
