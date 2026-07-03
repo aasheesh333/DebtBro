@@ -43,6 +43,18 @@ class DebtDetailViewModel @Inject constructor(
     private val adManager: AdManager
 ) : ViewModel() {
 
+    companion object {
+        /**
+         * P1-5: how long we wait for a deep-link firebaseId to resolve
+         * against the local Room cache before declaring the link
+         * unopenable. 5s is long enough for the typical full-sync path
+         * (Firestore pull → Room insert → flatMapLatest emits) but short
+         * enough that a user opening a stale / foreign share card isn't
+         * stuck on the "not found" screen silently.
+         */
+        private const val DEEP_LINK_TIMEOUT_MS = 5_000L
+    }
+
     /**
      * Resolves the `debtId` nav argument to a local Room Int id.
      *
@@ -66,12 +78,43 @@ class DebtDetailViewModel @Inject constructor(
         if (id == null) flowOf(null) else debtRepository.observeDebtById(id)
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), null)
 
+    /**
+     * P1-5 (2026-07-03): resolution-timeout flag for deep-link debtIds.
+     *
+     * `_resolvedDebtId` starts null and is set in [init] either synchronously
+     * (when the nav arg is an Int) or after a Firestore firebaseId lookup.
+     * If the firebaseId isn't found locally — e.g. the user opened a
+     * `debtbro://debt/<id>` link from a share card but the linked row isn't
+     * in Room yet — the lookup returns null and `_resolvedDebtId` stays null
+     * forever, leaving the user staring at the "Debt not found" screen with
+     * no feedback that we actually tried and gave up.
+     *
+     * This flag flips to `true` 5 seconds after init if the id hasn't
+     * resolved by then, and emits a toast so the user knows we timed out
+     * rather than silently failed. The screen still shows the "not found"
+     * view either way; this just adds feedback + a pop hint.
+     */
+    private val _resolutionTimedOut = MutableStateFlow(false)
+    val resolutionTimedOut: StateFlow<Boolean> = _resolutionTimedOut.asStateFlow()
+    var pendingDeepLinkToast: String? = null
+        private set
+
     init {
         viewModelScope.launch {
             val raw = savedStateHandle.get<String>("debtId")
                 ?: return@launch
             _resolvedDebtId.value = raw.toIntOrNull()
                 ?: debtRepository.getDebtByFirebaseId(raw)?.id
+            // If still unresolved, start a 5s timer so the user gets
+            // feedback rather than a silent "not found" screen.
+            if (_resolvedDebtId.value == null) {
+                kotlinx.coroutines.delay(DEEP_LINK_TIMEOUT_MS)
+                if (_resolvedDebtId.value == null) {
+                    _resolutionTimedOut.value = true
+                    pendingDeepLinkToast = "This debt link could not be opened."
+                    _toastEvent.emit(pendingDeepLinkToast!!)
+                }
+            }
         }
     }
 
@@ -141,7 +184,21 @@ class DebtDetailViewModel @Inject constructor(
     }
 
     fun generateRoast(activity: android.app.Activity? = null) = viewModelScope.launch {
-        val d = debt.value ?: return@launch
+        // P1-4 (2026-07-03): gate the button BEFORE any early-return path.
+        // Previously `isGeneratingAi` only flipped to true inside
+        // `generateRoastInternal`, which meant the offline-cached branch,
+        // the show-reward-ad branch, and the no-debt branch all returned
+        // without ever engaging the spinner — letting the user spam-tap
+        // the button and queue duplicate rewarded-ad callbacks.
+        if (isGeneratingAi.value) return@launch
+        isGeneratingAi.value = true
+
+        val d = debt.value
+        if (d == null) {
+            isGeneratingAi.value = false
+            _toastEvent.emit("Debt is still loading — try again in a moment")
+            return@launch
+        }
 
         if (!aiRepository.canRegenerate()) {
             // If offline, skip ad — show cached message instead
@@ -150,6 +207,7 @@ class DebtDetailViewModel @Inject constructor(
             val isOffline = connectivityManager?.activeNetwork == null
 
             if (isOffline) {
+                isGeneratingAi.value = false
                 if (!cached.isNullOrBlank()) {
                     aiMessage.value = cached
                 } else {
@@ -159,6 +217,11 @@ class DebtDetailViewModel @Inject constructor(
             }
 
             if (activity != null) {
+                // Hand off to the ad path. The ad callbacks resume
+                // `generateRoastInternal` which manages its own
+                // `isGeneratingAi` lifecycle; release our entry-point
+                // hold so the ad-flow can re-engage it cleanly.
+                isGeneratingAi.value = false
                 adManager.showRewardedAd(activity, onRewarded = {
                     viewModelScope.launch {
                         aiRepository.resetRegenerationCount()
@@ -173,6 +236,9 @@ class DebtDetailViewModel @Inject constructor(
                     _showRewardAd.value = false
                 })
             } else {
+                // Stays true until user taps dismiss / dialog closes — the
+                // reward dialog is itself the loading state, so we keep
+                // the spinner on behind it.
                 _showRewardAd.value = true
             }
             return@launch

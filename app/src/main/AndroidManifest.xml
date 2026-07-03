@@ -3,6 +3,20 @@
     xmlns:tools="http://schemas.android.com/tools">
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+
+    <!-- P0-2 (2026-07-03): READ_CONTACTS is required by the Split tab's
+         "pick from contacts" feature (ContactPickerBottomSheet uses
+         ActivityResultContracts.PickContact, which queries
+         ContactsContract via the returned URI). The contract returns a
+         content URI that the calling app can read WITHOUT a permanent
+         runtime grant on most Android versions, but the cursor query on
+         the URI fails with SecurityException on some OEM ROMs (Xiaomi /
+         Vivo / Oppo) when READ_CONTACTS is not declared AND granted, so
+         we declare + request the runtime grant to cover the OEM edge
+         cases. minSdk=26 — permission always requires explicit runtime
+         grant on API ≥ 23. -->
+    <uses-permission android:name="android.permission.READ_CONTACTS" />
+
     <!-- WRITE_EXTERNAL_STORAGE is required for the legacy CsvExporter
          path on API 26-28 (configures Environment.getExternalStoragePublicDirectory).
          maxSdkVersion=28 means it's silently dropped on API ≥ Q where

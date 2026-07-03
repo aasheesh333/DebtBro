@@ -19,8 +19,8 @@ app/src/main/java/com/dhanuk/debtbro/
 │   ├── datastore/          # DataStore Preferences (all user prefs)
 │   ├── db/                 # Room DB: DebtEntity, PaymentEntity, SplitEntity + DAOs
 │   ├── firebase/           # AuthManager, FirebaseRepository, RealTimeSyncManager, SyncManager
-│   ├── network/            # GroqApiService (Retrofit)
-│   └── repository/         # DebtRepository, PaymentRepository, SplitRepository, GroqRepository
+│   ├── network/            # GeminiApiService (Retrofit)
+│   └── repository/         # DebtRepository, PaymentRepository, SplitRepository, AiRepository
 ├── di/                     # Hilt modules: DatabaseModule, DataStoreModule, NetworkModule, RepositoryModule
 ├── presentation/
 │   ├── components/         # Reusable composables: DebtCard, ConfettiOverlay, GoogleSignInCard, etc.
@@ -47,7 +47,7 @@ app/src/main/java/com/dhanuk/debtbro/
 | Add a screen | `presentation/screens/` — create subdir w/ `*Screen.kt` + `*ViewModel.kt`, register in `NavGraph.kt` + `Screen.kt` |
 | Add a DB entity | `data/db/entity/` + `data/db/dao/` + `DebtBroDB.kt` |
 | Add a network API | `data/network/` + `di/NetworkModule.kt` |
-| Change AI prompts | `data/repository/GroqRepository.kt` — system prompts for 3 roast levels (MILD/SAVAGE/MEDIUM) |
+| Change AI prompts | `data/repository/AiRepository.kt` — system prompts for 3 roast levels (MILD/SPICY/MEDIUM) |
 | Change i18n strings | `util/LocalizedString.kt` — `get(code)` returns per-language string map |
 | Add export format | `util/` — follow HtmlExporter or CsvExporter patterns |
 | Add a pref | `data/datastore/AppPreferences.kt` — add key to `Keys` object + Flow + setter |
@@ -66,14 +66,14 @@ app/src/main/java/com/dhanuk/debtbro/
 
 - **Firebase config**: Must recreate `google-services.json` from CI secrets on each build. Not checked into repo.
 - **AdMob test IDs**: Hardcoded fallbacks in `AdManager.kt` for development (ca-app-pub-3940256099942544/*). Real IDs from `BuildConfig`.
-- **Groq API key**: Falls back to `BuildConfig.GROQ_API_KEY` if user hasn't set one in settings. Key in `local.properties` at build time.
+- **Gemini API key**: Falls back to `BuildConfig.GEMINI_API_KEY_2_5_FLASH_LITE` (CI secret `GEMINI_API_KEY_2_5_FLASH_LITE`) if the user hasn't set one in Settings. User-pasted keys are stored encrypted via `SecureStorage` (EncryptedSharedPreferences); a legacy plaintext DataStore slot is migrated on first read. Key in `local.properties` at build time as `GEMINI_API_KEY` (legacy) or `GEMINI_API_KEY_2_5_FLASH_LITE`.
 - **No tests**: Project has zero test files. (`test/` dir doesn't exist.)
-- **AI rate limiting**: `GroqRepository` has a 1s cooldown mutex. Daily regeneration cap = 5 free.
+- **AI rate limiting**: `AiRepository` has a 1s cooldown mutex. Daily regeneration cap = 5 free.
 - **Hardcoded `LocalizedString`: i18n is a giant object with inline string maps, not Android `strings.xml` resources. 18 languages.
 
 ## UNIQUE STYLES
 
-- **"Roast" feature**: AI generates WhatsApp-style nag messages in Hinglish/mixed languages. Three levels: MILD, MEDIUM, SAVAGE. Uses Groq (llama-3.3-70b-versatile).
+- **"Roast" feature**: AI generates WhatsApp-style nag messages in Hinglish/mixed languages. Three levels: MILD, MEDIUM, SPICY. Uses Gemini (gemini-2.5-flash-lite by default, with gemini-2.5-flash + gemini-flash-lite-latest as fallbacks).
 - **Export cards**: 4 HTML templates in `assets/html_templates/` rendered via WebView → Bitmap → share sheet. Templates: cyberpunk_debt, elegant_minimal, insta_vibe, wall_of_shame.
 - **Bottom sheet for AddDebt**: Not a full screen — `AddDebtBottomSheet` shown as modal from any tab.
 - **Dark-first**: Light theme exists but app defaults to dark. No color inversion issues expected.
@@ -93,7 +93,7 @@ app/src/main/java/com/dhanuk/debtbro/
 
 - Requires JDK 17, Android SDK 35.
 - CI builds signed APK on every push to any branch (`build.yml`). Creates GitHub Release only on `main`.
-- Secrets in CI: `KEYSTORE_BASE64`, `GOOGLE_SERVICES_JSON`, `GROQ_API_KEY`, AdMob/OneSignal keys, keystore passwords.
+- Secrets in CI: `KEYSTORE_BASE64`, `GOOGLE_SERVICES_JSON`, `GEMINI_API_KEY_2_5_FLASH_LITE`, AdMob/OneSignal keys, keystore passwords.
 - `keystore.jks` decoded from CI secret. Never commit `.jks` or `google-services.json`.
 - Gradle version catalog at `gradle/libs.versions.toml` — single source of truth for dependency versions.
 - Room DB version = 1 (no migrations yet). Schema export disabled.

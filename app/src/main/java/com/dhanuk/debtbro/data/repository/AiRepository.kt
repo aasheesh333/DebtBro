@@ -3,6 +3,7 @@ package com.dhanuk.debtbro.data.repository
 import android.util.Log
 import com.dhanuk.debtbro.BuildConfig
 import com.dhanuk.debtbro.data.datastore.AppPreferences
+import com.dhanuk.debtbro.data.datastore.SecureStorage
 import com.dhanuk.debtbro.data.db.entity.DebtEntity
 import com.dhanuk.debtbro.data.network.GeminiApiService
 import com.dhanuk.debtbro.data.network.GeminiContent
@@ -61,7 +62,8 @@ data class ConnectionTestResult(
     /** Human-readable form of [keySource] for direct on-screen display. */
     val sourceLabel: String
         get() = when (keySource) {
-            "USER_PASTED_IN_DATASTORE" -> "Your AI Setup save (overrides the bundled key)"
+            "USER_PASTED_IN_SECURE_STORAGE" -> "Your AI Setup save (encrypted, overrides the bundled key)"
+            "USER_PASTED_IN_DATASTORE" -> "Your AI Setup save (legacy plaintext slot — migrating to encrypted)"
             "BUNDLED_FROM_CI_SECRET_GEMINI_API_KEY_2_5_FLASH_LITE" -> "Bundled GitHub Actions secret"
             "LEGACY_BUILD_CONFIG_GEMINI_API_KEY" -> "Legacy local.properties key"
             else -> "No key resolved — set GEMINI_API_KEY_2_5_FLASH_LITE in repo Settings → Secrets, or paste one here"
@@ -71,7 +73,8 @@ data class ConnectionTestResult(
 @Singleton
 class AiRepository @Inject constructor(
     private val geminiApi: GeminiApiService,
-    private val prefs: AppPreferences
+    private val prefs: AppPreferences,
+    private val secureStorage: SecureStorage
 ) {
     companion object {
         const val MAX_FREE_REGENERATIONS = 5
@@ -139,15 +142,40 @@ class AiRepository @Inject constructor(
      * without leaking the secret value into logs.
      */
     private suspend fun apiKey(): String? {
+        // P2-7 (2026-07-03): SecureStorage (EncryptedSharedPreferences) is
+        // now the primary read path for the user-pasted Gemini key. The
+        // previous DataStore slot (`prefs.geminiApiKey`) is plain on disk,
+        // so we treat it as a migration source ONLY — one first-launch we
+        // copy any pre-existing DataStore key into SecureStorage and then
+        // clear it from DataStore, so existing users silently upgrade to
+        // the encrypted path without having to re-paste their key.
+        //
         // Trim every source — GitHub Actions secrets and user-pasted strings
         // routinely carry invisible trailing newlines/spaces. One un-trimmed
         // char becomes URL-encoded (e.g. %0A) in the ?key= query param and
         // Gemini rejects the whole request with HTTP 400.
-        val userKey = prefs.geminiApiKey.first().trim()
+        val secureKey = secureStorage.geminiApiKey.first().trim()
+        val legacyDataStoreKey = prefs.geminiApiKey.first().trim()
+        val userKey = when {
+            secureKey.isNotBlank() -> secureKey
+            legacyDataStoreKey.isNotBlank() -> {
+                // One-time migration: lift the legacy plain-DataStore key
+                // into SecureStorage, then best-effort clear the DataStore
+                // entry so it doesn't sit around on disk forever. Failures
+                // here are non-fatal — we still resolve `userKey` from the
+                // legacy value below for the current call.
+                runCatching {
+                    secureStorage.saveGeminiApiKey(legacyDataStoreKey)
+                    prefs.clearGeminiKey()
+                }
+                legacyDataStoreKey
+            }
+            else -> ""
+        }
         val bundled = BuildConfig.GEMINI_API_KEY_2_5_FLASH_LITE.trim()
         val legacy = BuildConfig.GEMINI_API_KEY.trim()
         val source = when {
-            userKey.isNotBlank() -> "USER_PASTED_IN_DATASTORE"
+            userKey.isNotBlank() -> if (secureKey.isNotBlank()) "USER_PASTED_IN_SECURE_STORAGE" else "USER_PASTED_IN_DATASTORE"
             bundled.isNotBlank() -> "BUNDLED_FROM_CI_SECRET_GEMINI_API_KEY_2_5_FLASH_LITE"
             legacy.isNotBlank() -> "LEGACY_BUILD_CONFIG_GEMINI_API_KEY"
             else -> "EMPTY_NO_KEY_RESOLVED"
@@ -310,7 +338,12 @@ Key rules:
 - 2-3 emojis for maximum impact
 - Think: "funniest WhatsApp forward ever" energy
 - Do NOT wrap your response in quotation marks
-- Every response must be COMPLETELY DIFFERENT from previous ones — vary phrases, metaphors, and tone"""
+- Every response must be COMPLETELY DIFFERENT from previous ones — vary phrases, metaphors, and tone
+- HARD GUARDRAIL (Play Store / OpenAI safety): no slurs, no hate speech, no
+  casteist/sexist/religious attacks, no body-shaming, no threats of violence,
+  and no real-people-names that would identify a non-public individual. If a
+  metaphor would lean into any of those, drop it and pick another. Keep it
+  playful — roast the lateness, never the person."""
             else -> """You are a clever, sarcastic Indian friend dropping a subtle money hint.$debtDirection
 Key rules:
 - Write 2-3 lines (140-180 characters total, push for longer not shorter)

@@ -119,6 +119,15 @@ class AppPreferences(@ApplicationContext private val context: Context) {
     }
     suspend fun saveUserName(name: String) = context.dataStore.edit { it[Keys.USER_NAME] = name.ifBlank { "Bro" } }
     suspend fun saveGeminiKey(key: String) = context.dataStore.edit { it[Keys.GEMINI_API_KEY] = key.trim() }
+
+    /**
+     * P2-7 (2026-07-03): clears the legacy plaintext Gemini key slot from
+     * DataStore after [SecureStorage] has been populated with the key.
+     * Used by the one-time migration in [com.dhanuk.debtbro.data.repository.AiRepository.apiKey].
+     *
+     * Safe to call even when the slot is already empty — `remove()` is idempotent.
+     */
+    suspend fun clearGeminiKey() = context.dataStore.edit { it.remove(Keys.GEMINI_API_KEY) }
     suspend fun setRoastLevel(level: String) = context.dataStore.edit { it[Keys.ROAST_LEVEL] = level }
     suspend fun setCurrency(c: String) = context.dataStore.edit { it[Keys.DEFAULT_CURRENCY] = c }
     suspend fun setGoogleSignedIn(value: Boolean, name: String = "", email: String = "", photo: String = "") = context.dataStore.edit {
@@ -195,4 +204,27 @@ class AppPreferences(@ApplicationContext private val context: Context) {
     }
 
     suspend fun clearAll() = context.dataStore.edit { it.clear() }
+
+    /**
+     * Clears user-session-related DataStore entries WITHOUT touching
+     * the user-set Gemini API key (per audit P1-3, 2026-07-03).
+     *
+     * `clearAll()` wipes everything including [Keys.GEMINI_API_KEY], so a
+     * sign-out / account-deletion flow would silently discard the user's
+     * own API key, forcing them to re-enter it after re-sign-in. This
+     * targeted helper preserves that key along with the
+     * [Keys.NOTIFICATION_RATIONALE_DISMISSED] flag so the user isn't
+     * re-prompted for notification permission after sign-out.
+     *
+     * Note (2026-07-03, P2-7): the user-set Gemini API key is also stored
+     * encrypted via [SecureStorage]; once that path is fully wired as the
+     * active read source, this DataStore key can be removed entirely.
+     */
+    suspend fun clearUserSession() = context.dataStore.edit { prefs ->
+        val preservedApiKey = prefs[Keys.GEMINI_API_KEY]
+        val preservedRationale = prefs[Keys.NOTIFICATION_RATIONALE_DISMISSED]
+        prefs.clear()
+        if (preservedApiKey != null) prefs[Keys.GEMINI_API_KEY] = preservedApiKey
+        if (preservedRationale != null) prefs[Keys.NOTIFICATION_RATIONALE_DISMISSED] = preservedRationale
+    }
 }

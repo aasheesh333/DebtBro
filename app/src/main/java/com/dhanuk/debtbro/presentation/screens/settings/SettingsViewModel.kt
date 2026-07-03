@@ -4,6 +4,9 @@ import android.app.Activity
 import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import androidx.work.ExistingWorkPolicy
+import androidx.work.OneTimeWorkRequestBuilder
+import androidx.work.WorkManager
 import com.dhanuk.debtbro.data.datastore.AppPreferences
 import com.dhanuk.debtbro.data.datastore.SecureStorage
 import com.dhanuk.debtbro.data.db.dao.DebtDao
@@ -17,7 +20,9 @@ import com.dhanuk.debtbro.data.repository.DebtRepository
 import com.dhanuk.debtbro.data.repository.AiRepository
 import com.dhanuk.debtbro.data.repository.ConnectionTestResult
 import com.dhanuk.debtbro.util.CsvExporter
+import com.dhanuk.debtbro.worker.AccountDeletionWorker
 import dagger.hilt.android.lifecycle.HiltViewModel
+import java.util.concurrent.TimeUnit
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -135,7 +140,7 @@ class SettingsViewModel @Inject constructor(
             } catch (_: Exception) { }
         }
         prefs.clearPendingDeletion()
-        prefs.clearAll()
+        prefs.clearUserSession()
         realTimeSyncManager.stopListening()
         debts.clearLocalData()
     }
@@ -259,8 +264,18 @@ class SettingsViewModel @Inject constructor(
             pendingDeletionTimestamp = deletion.pendingTs,
             linkedProviders = auth.linkedProviders()
         )
-    }.combine(prefs.geminiApiKey) { ui, key -> ui.copy(geminiApiKey = key) }
-    .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), SettingsUiState())
+    // P2-7 (2026-07-03): the user-pasted Gemini key now lives in
+    // EncryptedSharedPreferences (SecureStorage). The combination below
+    // prefers the SecureStorage flow; the legacy `prefs.geminiApiKey`
+    // DataStore slot is only read as a fallback for users who haven't
+    // yet been migrated by AiRepository. Once the migration runs, that
+    // slot is cleared and only the secure path emits non-blank.
+    }.combine(secureStorage.geminiApiKey) { ui, secureKey -> ui.copy(geminiApiKey = secureKey) }
+        .combine(prefs.geminiApiKey) { ui, legacyKey ->
+            if (ui.geminiApiKey.isBlank() && legacyKey.isNotBlank()) ui.copy(geminiApiKey = legacyKey)
+            else ui
+        }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), SettingsUiState())
 
     fun saveUserName(name: String) = viewModelScope.launch { prefs.saveUserName(name) }
     fun setRoastLevel(level: String) = viewModelScope.launch { prefs.setRoastLevel(level) }
@@ -275,7 +290,14 @@ class SettingsViewModel @Inject constructor(
     fun setExportFormat(format: String) = viewModelScope.launch { prefs.setExportFormat(format) }
     fun setThemeMode(mode: String) = viewModelScope.launch { prefs.setThemeMode(mode) }
     fun setCustomAvatarUri(uri: String) = viewModelScope.launch { prefs.setCustomAvatarUri(uri) }
-    fun saveGeminiKey(key: String) = viewModelScope.launch { prefs.saveGeminiKey(key) }
+    fun saveGeminiKey(key: String) = viewModelScope.launch {
+        // P2-7 (2026-07-03): write the user-pasted Gemini key to
+        // EncryptedSharedPreferences (via SecureStorage) instead of the
+        // legacy plaintext DataStore slot. AiRepository reads from the
+        // encrypted path first; the DataStore slot is now a migration
+        // source only, cleared by AiRepository after the migration.
+        secureStorage.saveGeminiApiKey(key)
+    }
 
     // ── AI Connection Test State ─────────────────────────────────────────────
     // Exposed directly (not through the SettingsUiState combine pipeline) to
@@ -378,7 +400,7 @@ class SettingsViewModel @Inject constructor(
         private const val GRACE_PERIOD_MS = 24 * 60 * 60 * 1000L
     }
 
-    fun requestAccountDeletion(onSuccess: () -> Unit) = viewModelScope.launch {
+    fun requestAccountDeletion(context: Context, onSuccess: () -> Unit) = viewModelScope.launch {
         // Best-effort: post to the configured Cloud Function BEFORE recording
         // the local 24-hour grace timestamp. If the HTTP fails or the URL is
         // missing, we still set the local timestamp so the user's experience
@@ -388,7 +410,44 @@ class SettingsViewModel @Inject constructor(
             auth.requestAccountDeletion(uid)
         }
         prefs.setPendingDeletionTimestamp(System.currentTimeMillis())
+        // P0-1 (2026-07-03): enqueue a WorkManager one-shot as a backup.
+        // If the user never reopens the app (uninstalled, lost device),
+        // the SettingsViewModel.init-block detection alone wouldn't fire
+        // — leaving the Firebase account data orphaned. This worker
+        // commits deletion 24h after the grace starts, also serves as
+        // a fallback if WorkManager fires under Doze constraints.
+        runCatching {
+            val workRequest = OneTimeWorkRequestBuilder<AccountDeletionWorker>()
+                .setInitialDelay(AccountDeletionWorker.GRACE_PERIOD_MS, TimeUnit.MILLISECONDS)
+                .build()
+            WorkManager.getInstance(context).enqueueUniqueWork(
+                AccountDeletionWorker.UNIQUE_WORK_NAME,
+                // KEEP (instead of REPLACE) so a re-tap on "Schedule Grace"
+                // during an existing pending grace doesn't reset the timer
+                // back to 24h from the second tap. The earliest grace start
+                // wins. (User can still cancel by signing back in.)
+                ExistingWorkPolicy.KEEP,
+                workRequest
+            )
+        }
         onSuccess()
+    }
+
+    /**
+     * P0-1 (2026-07-03): immediate account deletion path, paired with the
+     * grace path in the Settings delete-account dialog. Calls the existing
+     * [deleteAccount] implementation which already handles
+     * [FirebaseAuthRecentLoginRequiredException] via the [onReauthRequired]
+     * callback. On success, also cancels any pending WorkManager grace
+     * backup so the worker doesn't double-fire later.
+     */
+    fun requestImmediateDeletion(context: Context, onReauthRequired: () -> Unit, onFailure: (String) -> Unit) {
+        // Cancel any previously-scheduled grace backup — the user just
+        // chose immediate deletion, so the worker would be redundant.
+        runCatching {
+            WorkManager.getInstance(context).cancelUniqueWork(AccountDeletionWorker.UNIQUE_WORK_NAME)
+        }
+        deleteAccount(context, onReauthRequired, onFailure)
     }
 
     fun deleteAccount(context: Context, onReauthRequired: () -> Unit, onFailure: (String) -> Unit) = viewModelScope.launch {
@@ -405,7 +464,7 @@ class SettingsViewModel @Inject constructor(
                 auth.deleteAccount().onSuccess {
                     realTimeSyncManager.stopListening()
                     debts.clearLocalData()
-                    prefs.clearAll()
+                    prefs.clearUserSession()
                     secureStorage.clearSensitiveData()
                 }.onFailure { e ->
                     if (e is com.google.firebase.auth.FirebaseAuthRecentLoginRequiredException) {

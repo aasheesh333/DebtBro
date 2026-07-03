@@ -117,6 +117,7 @@ fun DebtDetailScreen(onBack: () -> Unit, onAuthRequired: () -> Unit = {}, viewMo
         containerColor = MaterialTheme.colorScheme.background
     ) { padding ->
         val d = debt
+        val timedOut by viewModel.resolutionTimedOut.collectAsStateWithLifecycle()
         if (d == null) {
             Box(modifier = Modifier.fillMaxSize().padding(padding), contentAlignment = Alignment.Center) {
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
@@ -124,7 +125,24 @@ fun DebtDetailScreen(onBack: () -> Unit, onAuthRequired: () -> Unit = {}, viewMo
                     Spacer(Modifier.height(16.dp))
                     Text("Debt not found", color = MaterialTheme.colorScheme.onSurface, fontSize = UITokens.FontSubhead, fontWeight = FontWeight.Bold)
                     Spacer(Modifier.height(8.dp))
-                    Text("It might have been deleted.", color = extra.subtitleGray, fontSize = UITokens.FontBody)
+                    Text(
+                        if (timedOut) "This shared link could not be opened. It may have been deleted, or its data isn't synced to this device yet."
+                        else "It might have been deleted.",
+                        color = extra.subtitleGray,
+                        fontSize = UITokens.FontBody,
+                        textAlign = TextAlign.Center,
+                        modifier = Modifier.padding(horizontal = 32.dp)
+                    )
+                    if (timedOut) {
+                        Spacer(Modifier.height(16.dp))
+                        Button(
+                            onClick = onBack,
+                            colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
+                            shape = UITokens.ShapeMedium
+                        ) {
+                            Text("Go back")
+                        }
+                    }
                 }
             }
             return@Scaffold

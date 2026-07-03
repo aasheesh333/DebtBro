@@ -526,31 +526,89 @@ fun SettingsScreen(viewModel: SettingsViewModel = hiltViewModel()) {
     }
 
     // ── Delete Account Confirmation (GDPR) ─────────────────────────────────
+    // P0-1 (2026-07-03): two-button dialog. The user can pick **Delete
+    // Now** (immediate Firestore + Firebase Auth deletion via
+    // [SettingsViewModel.requestImmediateDeletion], also cancels any
+    // previously-scheduled WorkManager grace backup) or **Schedule 24-Hour
+    // Grace** (writes the pending timestamp, kicks off the WorkManager
+    // one-shot backup at 24h, and lets the user sign back in during the
+    // grace window to cancel the deletion). The two paths share the same
+    // underlying deletion code; the difference is just timing + the
+    // graceful undo window.
     if (showDeleteConfirm) {
+        var reauthMessage by remember { mutableStateOf<String?>(null) }
         AlertDialog(
             onDismissRequest = { showDeleteConfirm = false },
             containerColor = MaterialTheme.colorScheme.surface,
             title = { Text(LocalizedString.get("deletion_requested"), color = MaterialTheme.colorScheme.error) },
             text = {
-                Text(
-                    LocalizedString.get("deletion_grace_info"),
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
+                Column {
+                    Text(
+                        LocalizedString.get("deletion_grace_info"),
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    Spacer(Modifier.height(16.dp))
+                    Text(
+                        "Choose how to proceed:",
+                        color = MaterialTheme.colorScheme.onSurface,
+                        fontSize = UITokens.FontBody,
+                        fontWeight = FontWeight.Bold
+                    )
+                    Spacer(Modifier.height(4.dp))
+                    Text(
+                        "• Delete Now — immediate. Cannot be undone.\n" +
+                            "• Schedule 24-Hour Grace — reversible by signing back in within 24h.",
+                        color = extra.subtitleGray,
+                        fontSize = UITokens.FontBody
+                    )
+                    reauthMessage?.let { msg ->
+                        Spacer(Modifier.height(8.dp))
+                        Text(
+                            msg,
+                            color = MaterialTheme.colorScheme.error,
+                            fontSize = UITokens.FontBody
+                        )
+                    }
+                }
             },
             confirmButton = {
-                TextButton(
-                    onClick = {
-                        showDeleteConfirm = false
-                        viewModel.requestAccountDeletion { }
-                    },
-                    enabled = !state.isDeletingAccount
-                ) {
-                    if (state.isDeletingAccount) CircularProgressIndicator(modifier = Modifier.size(UITokens.IconSmall), strokeWidth = 2.dp)
-                    Text(LocalizedString.get("delete"), color = MaterialTheme.colorScheme.error)
+                Column(horizontalAlignment = Alignment.End) {
+                    TextButton(
+                        onClick = {
+                            showDeleteConfirm = false
+                            viewModel.requestImmediateDeletion(
+                                context = context,
+                                onReauthRequired = {
+                                    reauthMessage = "Re-sign in to confirm deletion — your last sign-in was too long ago for Firebase to allow account deletion."
+                                    showDeleteConfirm = true
+                                },
+                                onFailure = { msg ->
+                                    reauthMessage = msg
+                                    showDeleteConfirm = true
+                                }
+                            )
+                        },
+                        enabled = !state.isDeletingAccount
+                    ) {
+                        if (state.isDeletingAccount) CircularProgressIndicator(modifier = Modifier.size(UITokens.IconSmall), strokeWidth = 2.dp)
+                        Text("Delete Now", color = MaterialTheme.colorScheme.error, fontWeight = FontWeight.Bold)
+                    }
+                    Spacer(Modifier.height(4.dp))
+                    TextButton(
+                        onClick = {
+                            showDeleteConfirm = false
+                            viewModel.requestAccountDeletion(context) { }
+                        }
+                    ) {
+                        Text("Schedule 24-Hour Grace", color = MaterialTheme.colorScheme.primary)
+                    }
                 }
             },
             dismissButton = {
-                TextButton(onClick = { showDeleteConfirm = false }) {
+                TextButton(onClick = {
+                    showDeleteConfirm = false
+                    reauthMessage = null
+                }) {
                     Text(LocalizedString.get("cancel"), color = extra.subtitleGray)
                 }
             }

@@ -348,26 +348,47 @@ fun ContactPickerBottomSheet(
     val context = LocalContext.current
     val extra = LocalExtraColors.current
 
+    // P0-2 (2026-07-03): runtime READ_CONTACTS gate. Some OEM ROMs (Xiaomi /
+    // Vivo / Oppo) throw SecurityException when reading the URI returned by
+    // ActivityResultContracts.PickContact if READ_CONTACTS has not been
+    // declared AND granted — even though the AOSP contract intends to allow
+    // one-shot reads with a temporary URI permission. We declare
+    // READ_CONTACTS in the manifest AND request it at runtime before
+    // launching the picker, so the cursor query below doesn't crash.
+    var permissionDenied by remember { mutableStateOf(false) }
     val contactPickerLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.PickContact()
     ) { uri ->
         uri?.let {
-            val cursor = context.contentResolver.query(
-                it, arrayOf(
-                    android.provider.ContactsContract.CommonDataKinds.StructuredName.DISPLAY_NAME
-                ), null, null, null
-            )
-            cursor?.use { c ->
-                if (c.moveToFirst()) {
-                    val nameIndex = c.getColumnIndex(android.provider.ContactsContract.CommonDataKinds.StructuredName.DISPLAY_NAME)
-                    if (nameIndex >= 0) {
-                        val name = c.getString(nameIndex)
-                        if (name.isNotBlank()) onContactSelected(name)
-                    }
+            // Wrap the cursor read in a try/catch — even with the runtime
+            // grant, ROM-level contacts providers can still throw if the
+            // user revoked permission mid-flight or the picker returned a
+            // cross-user URI. Better to silently abort than to crash the
+            // SplitScreen.
+            val name = runCatching {
+                context.contentResolver.query(
+                    it, arrayOf(
+                        android.provider.ContactsContract.CommonDataKinds.StructuredName.DISPLAY_NAME
+                    ), null, null, null
+                )?.use { c ->
+                    if (c.moveToFirst()) {
+                        val nameIndex = c.getColumnIndex(android.provider.ContactsContract.CommonDataKinds.StructuredName.DISPLAY_NAME)
+                        if (nameIndex >= 0) c.getString(nameIndex) else null
+                    } else null
                 }
-            }
+            }.getOrNull()
+            if (!name.isNullOrBlank()) onContactSelected(name)
         }
         onDismiss()
+    }
+    val permissionLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.RequestPermission()
+    ) { granted ->
+        if (granted) {
+            contactPickerLauncher.launch(null)
+        } else {
+            permissionDenied = true
+        }
     }
 
     ModalBottomSheet(
@@ -382,8 +403,26 @@ fun ContactPickerBottomSheet(
             Icon(Icons.Default.ContactPage, LocalizedString.get("select_contact"), modifier = Modifier.size(UITokens.IconXXL), tint = MaterialTheme.colorScheme.primary)
             Text(LocalizedString.get("select_contact"), color = MaterialTheme.colorScheme.onSurface, fontSize = UITokens.FontTitle, fontWeight = FontWeight.Bold)
             Text(LocalizedString.get("pick_from_contacts_desc"), color = extra.subtitleGray, textAlign = TextAlign.Center)
+            if (permissionDenied) {
+                androidx.compose.material3.Text(
+                    "Contacts access was denied. Pick names manually instead.",
+                    color = MaterialTheme.colorScheme.error,
+                    textAlign = TextAlign.Center,
+                    fontSize = UITokens.FontBody
+                )
+            }
             Button(
-                onClick = { contactPickerLauncher.launch(null) },
+                onClick = {
+                    val granted = androidx.core.content.ContextCompat.checkSelfPermission(
+                        context, android.Manifest.permission.READ_CONTACTS
+                    ) == android.content.pm.PackageManager.PERMISSION_GRANTED
+                    if (granted) {
+                        contactPickerLauncher.launch(null)
+                    } else {
+                        permissionDenied = false
+                        permissionLauncher.launch(android.Manifest.permission.READ_CONTACTS)
+                    }
+                },
                 modifier = Modifier.fillMaxWidth().height(54.dp),
                 colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
                 shape = UITokens.ShapeMedium
