@@ -115,7 +115,7 @@ fun AddDebtBottomSheet(
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Text("Add Debt", color = MaterialTheme.colorScheme.onSurface, fontSize = 22.sp, fontWeight = FontWeight.Bold)
+                Text(LocalizedString.get("add_debt_title"), color = MaterialTheme.colorScheme.onSurface, fontSize = 22.sp, fontWeight = FontWeight.Bold)
                 IconButton(onClick = onDismiss) {
                     Icon(Icons.Default.Close, contentDescription = LocalizedString.get("cancel"), tint = MaterialTheme.colorScheme.onSurface)
                 }
@@ -126,8 +126,8 @@ fun AddDebtBottomSheet(
                 onValueChange = {
                     if (it.length <= 30) personName = it.trimStart()
                 },
-                label = { Text("Person Name *") },
-                placeholder = { Text("Rahul, Priya, John...") },
+                label = { Text(LocalizedString.get("person_name_required")) },
+                placeholder = { Text(LocalizedString.get("person_name_placeholder")) },
                 singleLine = true,
                 modifier = Modifier.fillMaxWidth(),
                 keyboardOptions = KeyboardOptions(
@@ -170,7 +170,7 @@ fun AddDebtBottomSheet(
                 isError = (amount.isEmpty() || amount == "0") && triedToSave,
                 supportingText = {
                     if ((amount.isEmpty() || amount == "0") && triedToSave) {
-                        Text("Enter a valid amount", color = MaterialTheme.colorScheme.error)
+                        Text(LocalizedString.get("enter_valid_amount"), color = MaterialTheme.colorScheme.error)
                     }
                 }
             )
@@ -214,11 +214,11 @@ fun AddDebtBottomSheet(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.SpaceBetween
                 ) {
-                    Text("Avatar", color = extra.subtitleGray, fontSize = UITokens.FontSmall)
+                    Text(LocalizedString.get("avatar_label"), color = extra.subtitleGray, fontSize = UITokens.FontSmall)
                     TextButton(onClick = { showEmojiPicker = true }) {
                         Icon(Icons.Default.EmojiEmotions, contentDescription = LocalizedString.get("emoji"), tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(UITokens.IconSmall))
                         Spacer(Modifier.width(UITokens.SpaceTiny))
-                        Text("From device", color = MaterialTheme.colorScheme.primary, fontSize = UITokens.FontCaption)
+                        Text(LocalizedString.get("from_device"), color = MaterialTheme.colorScheme.primary, fontSize = UITokens.FontCaption)
                     }
                 }
 
@@ -289,8 +289,8 @@ fun AddDebtBottomSheet(
             OutlinedTextField(
                 value = description,
                 onValueChange = { if (it.length <= 100) description = it },
-                label = { Text("Description (optional)") },
-                placeholder = { Text("Lunch, rent, trip...") },
+                label = { Text(LocalizedString.get("description_optional")) },
+                placeholder = { Text(LocalizedString.get("description_placeholder")) },
                 modifier = Modifier.fillMaxWidth(),
                 maxLines = 2,
                 trailingIcon = {
@@ -304,7 +304,7 @@ fun AddDebtBottomSheet(
                 } ?: "",
                 onValueChange = {},
                 readOnly = true,
-                label = { Text("Due Date (optional)") },
+                label = { Text(LocalizedString.get("due_date_optional")) },
                 placeholder = { Text("Select due date") },
                 trailingIcon = {
                     Row {
@@ -326,8 +326,8 @@ fun AddDebtBottomSheet(
             OutlinedTextField(
                 value = notes,
                 onValueChange = { if (it.length <= 200) notes = it },
-                label = { Text("Notes (optional)") },
-                placeholder = { Text("Any extra context...") },
+                label = { Text(LocalizedString.get("notes_optional")) },
+                placeholder = { Text(LocalizedString.get("notes_placeholder")) },
                 modifier = Modifier.fillMaxWidth(),
                 maxLines = 3,
                 trailingIcon = {
@@ -343,13 +343,13 @@ fun AddDebtBottomSheet(
                     val amtValue = amount.toDoubleOrNull() ?: 0.0
                     when {
                         personName.isBlank() -> {
-                            Toast.makeText(context, "Please enter a name", Toast.LENGTH_SHORT).show()
+                            Toast.makeText(context, LocalizedString.get("please_enter_name_toast"), Toast.LENGTH_SHORT).show()
                         }
                         amtValue <= 0 -> {
-                            Toast.makeText(context, "Please enter a valid amount", Toast.LENGTH_SHORT).show()
+                            Toast.makeText(context, LocalizedString.get("please_enter_valid_amount_toast"), Toast.LENGTH_SHORT).show()
                         }
                         amtValue > 1_000_000_000 -> {
-                            Toast.makeText(context, "Amount seems too large. Please verify.", Toast.LENGTH_SHORT).show()
+                            Toast.makeText(context, LocalizedString.get("amount_too_large"), Toast.LENGTH_SHORT).show()
                         }
                         else -> {
                             viewModel.saveDebt(
@@ -382,7 +382,7 @@ fun AddDebtBottomSheet(
                     Icon(Icons.Default.Add, LocalizedString.get("add_debt"), tint = MaterialTheme.colorScheme.onPrimary)
                     Spacer(Modifier.width(UITokens.SpaceXS))
                     Text(
-                        "Add Debt",
+                        LocalizedString.get("add_debt_title"),
                         color = MaterialTheme.colorScheme.onPrimary,
                         fontWeight = FontWeight.Bold,
                         fontSize = 18.sp
@@ -395,7 +395,7 @@ fun AddDebtBottomSheet(
     if (showEmojiPicker) {
         AlertDialog(
             onDismissRequest = { showEmojiPicker = false },
-            title = { Text("Type or paste an emoji", color = MaterialTheme.colorScheme.onSurface) },
+            title = { Text(LocalizedString.get("type_or_paste_emoji"), color = MaterialTheme.colorScheme.onSurface) },
             text = {
                 OutlinedTextField(
                     value = customEmoji,
@@ -405,7 +405,7 @@ fun AddDebtBottomSheet(
                             selectedEmoji = it.take(2).trim()
                         }
                     },
-                    placeholder = { Text("Paste emoji here 😊") },
+                    placeholder = { Text(LocalizedString.get("paste_emoji_here")) },
                     singleLine = true
                 )
             },
