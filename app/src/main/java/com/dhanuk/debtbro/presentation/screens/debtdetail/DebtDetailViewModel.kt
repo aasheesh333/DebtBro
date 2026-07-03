@@ -15,6 +15,7 @@ import com.dhanuk.debtbro.data.repository.AiRepository
 import com.dhanuk.debtbro.data.repository.PaymentRepository
 import com.dhanuk.debtbro.util.CanvasExporter
 import com.dhanuk.debtbro.util.HtmlExporter
+import com.dhanuk.debtbro.util.LocalizedString
 import com.dhanuk.debtbro.util.shareTextToWhatsApp
 import com.dhanuk.debtbro.util.toReadableDate
 import java.text.SimpleDateFormat
@@ -111,7 +112,7 @@ class DebtDetailViewModel @Inject constructor(
                 kotlinx.coroutines.delay(DEEP_LINK_TIMEOUT_MS)
                 if (_resolvedDebtId.value == null) {
                     _resolutionTimedOut.value = true
-                    pendingDeepLinkToast = "This debt link could not be opened."
+                    pendingDeepLinkToast = LocalizedString.get("debt_link_not_opened")
                     _toastEvent.emit(pendingDeepLinkToast!!)
                 }
             }
@@ -196,7 +197,7 @@ class DebtDetailViewModel @Inject constructor(
         val d = debt.value
         if (d == null) {
             isGeneratingAi.value = false
-            _toastEvent.emit("Debt is still loading — try again in a moment")
+            _toastEvent.emit(LocalizedString.get("debt_still_loading_toast"))
             return@launch
         }
 
@@ -276,7 +277,7 @@ class DebtDetailViewModel @Inject constructor(
                 if (!cached.isNullOrBlank()) {
                     aiMessage.value = cached
                 } else {
-                    aiMessage.value = "No internet connection. Tap refresh when online."
+                    aiMessage.value = LocalizedString.get("no_internet_connection_toast")
                 }
             } else {
                 // Self-diagnostic on-device message — the user may have NO PC /
@@ -292,7 +293,7 @@ class DebtDetailViewModel @Inject constructor(
                     else "[HTTP ${ex.code()}] ${ex.message ?: "(no body)"}"
                 }
                 val detail = httpDetail ?: error.message ?: "Unknown error (try again in a moment)"
-                aiMessage.value = "Could not generate roast. $detail"
+                aiMessage.value = LocalizedString.get("could_not_generate_roast") + ". " + detail
             }
         }
         isGeneratingAi.value = false
@@ -370,12 +371,12 @@ class DebtDetailViewModel @Inject constructor(
             }
             HtmlExporter.shareImage(context, bitmap)
             kotlinx.coroutines.withContext(Dispatchers.Main) {
-                android.widget.Toast.makeText(context, "New design generated!", android.widget.Toast.LENGTH_SHORT).show()
+                android.widget.Toast.makeText(context, LocalizedString.get("new_design_generated_toast"), android.widget.Toast.LENGTH_SHORT).show()
             }
         } catch (e: Exception) {
             android.util.Log.e("DebtDetailVM", "shareCard failed: ${e.message}", e)
             kotlinx.coroutines.withContext(Dispatchers.Main) {
-                android.widget.Toast.makeText(context, "Failed to create image: ${e.message}", android.widget.Toast.LENGTH_LONG).show()
+                android.widget.Toast.makeText(context, LocalizedString.get("failed_to_create_image") + ": " + e.message, android.widget.Toast.LENGTH_LONG).show()
             }
         } finally {
             elapsedJob.cancel()
@@ -387,7 +388,7 @@ class DebtDetailViewModel @Inject constructor(
         val remaining = debt.amount - debt.amountPaid
         val dueDate = debt.dueDate?.let { 
             SimpleDateFormat("dd MMM yyyy", Locale.getDefault()).format(Date(it)) 
-        } ?: "No due date"
+        } ?: LocalizedString.get("no_due_date")
 
         val totalPaid = paymentList.sumOf { it.amount }
         val historyLines = paymentList.mapIndexed { i, p ->
@@ -482,7 +483,7 @@ class DebtDetailViewModel @Inject constructor(
                 context.startActivity(intent)
             }
             kotlinx.coroutines.withContext(Dispatchers.Main) {
-                android.widget.Toast.makeText(context, "New design generated!", android.widget.Toast.LENGTH_SHORT).show()
+                android.widget.Toast.makeText(context, LocalizedString.get("new_design_generated_toast"), android.widget.Toast.LENGTH_SHORT).show()
             }
         } catch (e: Exception) {
             android.util.Log.e("DebtDetailVM", "shareCard failed: ${e.message}", e)
