@@ -66,10 +66,11 @@ android {
         // CI ships an empty list; production release ignores this code path.
         buildConfigField("String", "TEST_DEVICE_IDS", "\"${escapedProp("TEST_DEVICE_IDS")}\"")
         buildConfigField("String", "ONESIGNAL_APP_ID", "\"${escapedProp("ONESIGNAL_APP_ID")}\"")
-        // ONESIGNAL_API_KEY intentionally NOT embedded in the APK — it's a REST
-        // API server key that belongs only in Cloud Functions / your push
-        // server. OneSignal v5 SDK needs just APP_ID on the client. Bundling
-        // it in BuildConfig made the secret trivially extractable via apkanalyzer.
+        // ONESIGNAL_API_KEY retained at the maintainer's explicit request — used
+        // for sending push notifications to users from the OneSignal dashboard.
+        // It's a REST API server key, so be aware it is extractable from the APK
+        // via apkanalyzer; rotate from the OneSignal dashboard if the APK leaks.
+        buildConfigField("String", "ONESIGNAL_API_KEY", "\"${escapedProp("ONESIGNAL_API_KEY")}\"")
 
         buildConfigField("String", "PACKAGE_NAME", "\"${escapedProp("PACKAGE_NAME").ifEmpty { "com.dhanuk.debtbro" }}\"")
         buildConfigField("Boolean", "ENABLE_CRASHLYTICS", "true")

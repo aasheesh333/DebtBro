@@ -75,6 +75,7 @@ jobs:
           ADMOB_INTERSTITIAL_ID: ${{ secrets.ADMOB_INTERSTITIAL_ID }}
           ADMOB_REWARDED_ID: ${{ secrets.ADMOB_REWARDED_ID }}
           ONESIGNAL_APP_ID: ${{ secrets.ONESIGNAL_APP_ID }}
+          ONESIGNAL_API_KEY: ${{ secrets.ONESIGNAL_API_KEY }}
           FIREBASE_PROJECT_ID: ${{ secrets.FIREBASE_PROJECT_ID }}
         run: |
           set -e
@@ -92,6 +93,7 @@ jobs:
           : "${ADMOB_INTERSTITIAL_ID:?ERROR: ADMOB_INTERSTITIAL_ID secret missing.}"
           : "${ADMOB_REWARDED_ID:?ERROR: ADMOB_REWARDED_ID secret missing.}"
           : "${ONESIGNAL_APP_ID:?ERROR: ONESIGNAL_APP_ID secret missing.}"
+          : "${ONESIGNAL_API_KEY:?ERROR: ONESIGNAL_API_KEY secret missing.}"
           : "${FIREBASE_PROJECT_ID:?ERROR: FIREBASE_PROJECT_ID secret missing.}"
           echo "All required secrets present."
 
@@ -117,6 +119,7 @@ jobs:
           ADMOB_INTERSTITIAL_ID=${{ secrets.ADMOB_INTERSTITIAL_ID }}
           ADMOB_REWARDED_ID=${{ secrets.ADMOB_REWARDED_ID }}
           ONESIGNAL_APP_ID=${{ secrets.ONESIGNAL_APP_ID }}
+          ONESIGNAL_API_KEY=${{ secrets.ONESIGNAL_API_KEY }}
           PACKAGE_NAME=${{ secrets.PACKAGE_NAME }}
           VERSION_CODE=${{ secrets.VERSION_CODE }}
           VERSION_NAME=${{ secrets.VERSION_NAME }}
