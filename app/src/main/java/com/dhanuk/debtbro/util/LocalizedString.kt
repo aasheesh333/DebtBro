@@ -376,6 +376,12 @@ object LocalizedString {
             "account_deletion_failed" to "Account deletion failed",
             "could_not_share_csv" to "Could not share CSV",
             "export_failed" to "Export failed",
+            // Shown on API ≤ 28 when WRITE_EXTERNAL_STORAGE is denied. The
+            // CSV is then written to app cache and shared via FileProvider
+            // (see CsvExporter fallback path) — the toast reassures the
+            // user the export still works, just not saved to Downloads.
+            "permission_denied_storage" to "Storage permission denied — exporting via share sheet instead of saving to Downloads",
+            "export_csv_share_fallback" to "CSV ready to share (not saved to Downloads — grant Storage permission for that)",
             "debt_still_loading_toast" to "Debt is still loading — try again in a moment",
             "no_internet_connection_toast" to "No internet connection. Tap refresh when online.",
             "debt_link_not_opened" to "This debt link could not be opened.",

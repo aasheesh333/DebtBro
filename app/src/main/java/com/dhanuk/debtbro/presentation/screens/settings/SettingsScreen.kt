@@ -1,6 +1,11 @@
 package com.dhanuk.debtbro.presentation.screens.settings
 
+import android.Manifest
 import android.app.Activity
+import android.content.pm.PackageManager
+import android.os.Build
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -20,6 +25,7 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.core.content.ContextCompat
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.dhanuk.debtbro.BuildConfig
@@ -56,6 +62,18 @@ fun SettingsScreen(viewModel: SettingsViewModel = hiltViewModel()) {
     var showReauthHint by remember { mutableStateOf(false) }
     var showLinkEmailDialog by remember { mutableStateOf(false) }
     val showDeletionGraceAlert by viewModel.showDeletionGraceAlert.collectAsStateWithLifecycle()
+
+    // CSV export: on API ≤ 28, WRITE_EXTERNAL_STORAGE must be requested at
+    // runtime. If the user denies, CsvExporter falls back to writing the
+    // file to app cache and sharing it via FileProvider (so the export
+    // still works — just not saved to the public Downloads folder). The
+    // launcher always forwards to exportCsv regardless of grant result;
+    // the only effect of denial is WHERE the CSV lands.
+    val csvPermissionLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.RequestPermission()
+    ) { _ ->
+        viewModel.exportCsv(context)
+    }
 
     Box(modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) {
         LazyColumn(
@@ -277,7 +295,25 @@ fun SettingsScreen(viewModel: SettingsViewModel = hiltViewModel()) {
                             title = LocalizedString.get("export_csv"),
                             subtitle = LocalizedString.get("export_csv_subtitle"),
                             icon = Icons.Default.FileUpload,
-                            onClick = { viewModel.exportCsv(context) }
+                            onClick = {
+                                // API ≤ 28 (P and below) requires runtime
+                                // WRITE_EXTERNAL_STORAGE for the public
+                                // Downloads write path. API ≥ Q uses
+                                // MediaStore (no permission needed).
+                                val needsPermission =
+                                    Build.VERSION.SDK_INT <= Build.VERSION_CODES.P &&
+                                    ContextCompat.checkSelfPermission(
+                                        context,
+                                        Manifest.permission.WRITE_EXTERNAL_STORAGE
+                                    ) != PackageManager.PERMISSION_GRANTED
+                                if (needsPermission) {
+                                    csvPermissionLauncher.launch(
+                                        Manifest.permission.WRITE_EXTERNAL_STORAGE
+                                    )
+                                } else {
+                                    viewModel.exportCsv(context)
+                                }
+                            }
                         )
                         HorizontalDivider(color = extra.divider)
                         var showClearConfirm by remember { mutableStateOf(false) }
