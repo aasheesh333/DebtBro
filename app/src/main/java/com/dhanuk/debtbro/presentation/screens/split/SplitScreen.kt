@@ -39,6 +39,7 @@ fun SplitScreen(onAuthRequired: () -> Unit, viewModel: SplitViewModel = hiltView
     val state by viewModel.state.collectAsStateWithLifecycle()
     val pastSplits by viewModel.pastSplits.collectAsStateWithLifecycle()
     val showAuthPrompt by viewModel.showAuthPrompt.collectAsStateWithLifecycle()
+    val splitsWithDebts by viewModel.splitsWithDebtsCreated.collectAsStateWithLifecycle()
     val extra = LocalExtraColors.current
     var showContactPicker by remember { mutableStateOf(false) }
     val snackbarHostState = remember { SnackbarHostState() }
@@ -209,7 +210,12 @@ fun SplitScreen(onAuthRequired: () -> Unit, viewModel: SplitViewModel = hiltView
         }
 
         items(pastSplits, key = { it.id }) { split ->
-            SplitItemCard(split, onGetAi = { viewModel.getAiSummary(it) }, onCreateDebts = { viewModel.createDebtsFromSplit(it) })
+            SplitItemCard(
+                split,
+                onGetAi = { viewModel.getAiSummary(it) },
+                onCreateDebts = { viewModel.createDebtsFromSplit(it) },
+                debtsCreated = split.id in splitsWithDebts
+            )
         }
     }
 
@@ -297,7 +303,7 @@ fun AddParticipantRow(
 }
 
 @Composable
-fun SplitItemCard(split: com.dhanuk.debtbro.data.db.entity.SplitEntity, onGetAi: (com.dhanuk.debtbro.data.db.entity.SplitEntity) -> Unit, onCreateDebts: (com.dhanuk.debtbro.data.db.entity.SplitEntity) -> Unit) {
+fun SplitItemCard(split: com.dhanuk.debtbro.data.db.entity.SplitEntity, onGetAi: (com.dhanuk.debtbro.data.db.entity.SplitEntity) -> Unit, onCreateDebts: (com.dhanuk.debtbro.data.db.entity.SplitEntity) -> Unit, debtsCreated: Boolean = false) {
     val extra = LocalExtraColors.current
     Card(
         modifier = Modifier.fillMaxWidth(),
@@ -339,7 +345,11 @@ fun SplitItemCard(split: com.dhanuk.debtbro.data.db.entity.SplitEntity, onGetAi:
 
                 TextButton(
                     onClick = { onCreateDebts(split) },
-                    colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.primary)
+                    enabled = !debtsCreated,
+                    colors = ButtonDefaults.textButtonColors(
+                        contentColor = MaterialTheme.colorScheme.primary,
+                        disabledContentColor = extra.subtitleGray
+                    )
                 ) {
                     Icon(Icons.Default.LibraryAdd, LocalizedString.get("create_debts"), modifier = Modifier.size(UITokens.IconSmall))
                     Spacer(Modifier.width(UITokens.SpaceTiny))

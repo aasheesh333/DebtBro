@@ -52,6 +52,11 @@ class SplitViewModel @Inject constructor(
     private val _showAuthPrompt = MutableStateFlow(false)
     val showAuthPrompt: StateFlow<Boolean> = _showAuthPrompt.asStateFlow()
 
+    // Track splits that have already had debts created this session — prevents
+    // duplicate-debt spam on rapid CREATE_DEBTS button taps (Wave 3 Issue 1).
+    private val _splitsWithDebtsCreated = MutableStateFlow<Set<Int>>(emptySet())
+    val splitsWithDebtsCreated = _splitsWithDebtsCreated.asStateFlow()
+
     fun dismissAuthPrompt() { _showAuthPrompt.value = false }
 
     val pastSplits: StateFlow<List<SplitEntity>> = splits.getAllSplits()
@@ -126,10 +131,27 @@ class SplitViewModel @Inject constructor(
             _state.value = _state.value.copy(isLoading = false)
             onCreated(createdSplit)
             syncIfSignedIn()
+            // Clear the Create Bill form so the Create Bill button re-disables
+            // (participants.size > 1 → false) and the user can't accidentally
+            // re-submit the same bill twice. ListView pastSplits re-renders
+            // from the splits Flow. (Wave 3 Issue 1.)
+            // Preserve currencySymbol — the init { prefs.defaultCurrency }
+            // collector above only updates _state when the *DataStore* value
+            // changes, not on every reset; so wiping it here would briefly
+            // lose the user's currency selection until the next prefs emit.
+            _state.value = SplitUiState(currencySymbol = _state.value.currencySymbol)
         }.onFailure { _snackbar.tryEmit("Couldn't create split: ${it.message ?: "unknown error"}") }
     }
 
     fun createDebtsFromSplit(split: SplitEntity) = viewModelScope.launch {
+        // Idempotency guard: one session, one tap. Prevents the in-session
+        // "tap-spam creates duplicate debt rows" bug (Wave 3 Issue 1).
+        // In-memory only — app restart resets the set, which is acceptable
+        // per scope; a Room boolean column would require a migration.
+        if (split.id in _splitsWithDebtsCreated.value) {
+            _snackbar.tryEmit(LocalizedString.get("debts_already_created_for_split"))
+            return@launch
+        }
         runCatching {
             val names: List<String> = Gson().fromJson(
                 split.participants,
@@ -146,6 +168,7 @@ class SplitViewModel @Inject constructor(
                     )
                 )
             }
+            _splitsWithDebtsCreated.value = _splitsWithDebtsCreated.value + split.id
             syncIfSignedIn()
         }.onFailure { _snackbar.tryEmit("Couldn't create debts from split: ${it.message ?: "unknown error"}") }
     }

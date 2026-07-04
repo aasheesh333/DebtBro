@@ -394,6 +394,7 @@ object LocalizedString {
             "name_page_subtitle" to "We'll personalize your experience",
             "password_reset_email_sent" to "Password reset email sent",
             "send_reset_email" to "Send reset email",
+            "debts_already_created_for_split" to "Debts already created for this split",
         )
     private fun hiStrings(): Map<String, String> = mapOf(
             "nav_home" to "होम",
@@ -694,6 +695,7 @@ object LocalizedString {
             "name_page_subtitle" to "हम आपका अनुभव पर्सनलाइज़ करेंगे",
             "password_reset_email_sent" to "पासवर्ड रीसेट ईमेल भेज दिया",
             "send_reset_email" to "रीसेट ईमेल भेजें",
+            "debts_already_created_for_split" to "इस स्प्लिट के लिए ऋण पहले ही बना दिए गए हैं",
         )
     private fun esStrings(): Map<String, String> = mapOf(
             "nav_home" to "Inicio",
@@ -991,6 +993,7 @@ object LocalizedString {
             "name_page_subtitle" to "Personalizaremos tu experiencia",
             "password_reset_email_sent" to "Correo de restablecimiento de contraseña enviado",
             "send_reset_email" to "Enviar correo de restablecimiento",
+            "debts_already_created_for_split" to "Ya se crearon deudas para este gasto compartido",
         )
     private fun frStrings(): Map<String, String> = mapOf(
             "nav_home" to "Accueil",
@@ -1288,6 +1291,7 @@ object LocalizedString {
             "name_page_subtitle" to "Nous personnaliserons votre expérience",
             "password_reset_email_sent" to "E-mail de réinitialisation du mot de passe envoyé",
             "send_reset_email" to "Envoyer l'e-mail de réinitialisation",
+            "debts_already_created_for_split" to "Les dettes ont déjà été créées pour ce partage",
         )
     private fun deStrings(): Map<String, String> = mapOf(
             "nav_home" to "Startseite",
@@ -1585,6 +1589,7 @@ object LocalizedString {
             "name_page_subtitle" to "Wir personalisieren deine Erfahrung",
             "password_reset_email_sent" to "E-Mail zum Zurücksetzen des Passworts gesendet",
             "send_reset_email" to "Reset-E-Mail senden",
+            "debts_already_created_for_split" to "Für diese Aufteilung wurden bereits Schulden erstellt",
         )
     private fun jaStrings(): Map<String, String> = mapOf(
             "nav_home" to "ホーム",
@@ -1882,6 +1887,7 @@ object LocalizedString {
             "name_page_subtitle" to "あなたの体験をパーソナライズします",
             "password_reset_email_sent" to "パスワードリセットメールを送信しました",
             "send_reset_email" to "リセットメールを送信",
+            "debts_already_created_for_split" to "この割り勘の借金はすでに作成されています",
         )
         // ── Marathi (mr) ──────────────────────────────────────────────────────────
         // Marathi shares the Devanagari script with Hindi. Most of the strings come
@@ -2184,6 +2190,7 @@ object LocalizedString {
             "name_page_subtitle" to "आम्ही तुमचा अनुभव पर्सनलाइज करू",
             "password_reset_email_sent" to "पासवर्ड रिसेट ईमेल पाठवला",
             "send_reset_email" to "रिसेट ईमेल पाठवा",
+            "debts_already_created_for_split" to "या विभाजनासाठी कर्ज आधीच तयार केले आहे",
         )
         // ── Punjabi (pa) ──────────────────────────────────────────────────────────
         // Gurmukhi users typically read Hindi too. We use Hindi base for readability.
@@ -2483,6 +2490,7 @@ object LocalizedString {
             "name_page_subtitle" to "ਅਸੀਂ ਤੁਹਾਡੇ ਤਜਰਬੇ ਨੂੰ ਨਿੱਜੀ ਬਣਾਵਾਂਗੇ",
             "password_reset_email_sent" to "ਪਾਸਵਰਡ ਰੀਸੈਟ ਈਮੇਲ ਭੇਜ ਦਿੱਤਾ",
             "send_reset_email" to "ਰੀਸੈਟ ਈਮੇਲ ਭੇਜੋ",
+            "debts_already_created_for_split" to "ਇਸ ਸਪਲਿਟ ਲਈ ਕਰਜ਼ੇ ਪਹਿਲਾਂ ਹੀ ਬਣਾਏ ਜਾ ਚੁੱਕੇ ਹਨ",
         )
         // ── Gujarati (gu) ──────────────────────────────────────────────────────────
         // Close to Hindi family; Devanagari script.
@@ -2782,6 +2790,7 @@ object LocalizedString {
             "name_page_subtitle" to "અમે તમારો અનુભવ વ્યક્તિગત કરીશું",
             "password_reset_email_sent" to "પાસવર્ડ રીસેટ ઈમેલ મોકલી",
             "send_reset_email" to "રીસેટ ઈમેલ મોકલો",
+            "debts_already_created_for_split" to "આ સ્પ્લિટ માટે ઋણ પહેલાથી બનાવ્યા છે",
         )
         // ── Bengali (bn) ───────────────────────────────────────────────────────────
         // Bengali script is distinct from Devanagari; we ship a partial Bengali
@@ -3085,6 +3094,7 @@ object LocalizedString {
             "name_page_subtitle" to "আমরা আপনার অভিজ্ঞতা ব্যক্তিগতকরণ করব",
             "password_reset_email_sent" to "পাসওয়ার্ড রিসেট ইমেল পাঠানো হয়েছে",
             "send_reset_email" to "রিসেট ইমেল পাঠান",
+            "debts_already_created_for_split" to "এই ভাগের জন্য ঋণ ইতিমধ্যেই তৈরি করা হয়েছে",
         )
     private fun ptStrings(): Map<String, String> = mapOf(
             "nav_home" to "Início",
@@ -3382,6 +3392,7 @@ object LocalizedString {
             "name_page_subtitle" to "Personalizaremos sua experiência",
             "password_reset_email_sent" to "E-mail de redefinição de senha enviado",
             "send_reset_email" to "Enviar e-mail de redefinição",
+            "debts_already_created_for_split" to "Já foram criadas dívidas para este rastreio",
         )
     private fun arStrings(): Map<String, String> = mapOf(
             "nav_home" to "الرئيسية",
@@ -3679,6 +3690,7 @@ object LocalizedString {
             "name_page_subtitle" to "سنخصص تجربتك",
             "password_reset_email_sent" to "تم إرسال بريد إعادة تعيين كلمة المرور",
             "send_reset_email" to "إرسال بريد إعادة التعيين",
+            "debts_already_created_for_split" to "تم إنشاء الديون مسبقاً لهذا التقسيم",
         )
     private fun zhStrings(): Map<String, String> = mapOf(
             "nav_home" to "首页",
@@ -3976,6 +3988,7 @@ object LocalizedString {
             "name_page_subtitle" to "我们会个性化你的体验",
             "password_reset_email_sent" to "密码重置邮件已发送",
             "send_reset_email" to "发送重置邮件",
+            "debts_already_created_for_split" to "这个分账已创建过债务",
         )
     private fun koStrings(): Map<String, String> = mapOf(
             "nav_home" to "홈",
@@ -4273,6 +4286,7 @@ object LocalizedString {
             "name_page_subtitle" to "귀하의 경험을 맞춤화하겠습니다",
             "password_reset_email_sent" to "비밀번호 재설정 이메일이 전송되었습니다",
             "send_reset_email" to "재설정 이메일 보내기",
+            "debts_already_created_for_split" to "이 정산에 대한 부채가 이미 생성되었습니다",
         )
     private fun ruStrings(): Map<String, String> = mapOf(
             "nav_home" to "Главная",
@@ -4570,6 +4584,7 @@ object LocalizedString {
             "name_page_subtitle" to "Мы персонализируем ваш опыт",
             "password_reset_email_sent" to "Письмо для сброса пароля отправлено",
             "send_reset_email" to "Отправить письмо для сброса",
+            "debts_already_created_for_split" to "Долги для этого разделения уже созданы",
         )
     private fun trStrings(): Map<String, String> = mapOf(
             "nav_home" to "Ana Sayfa",
@@ -4867,6 +4882,7 @@ object LocalizedString {
             "name_page_subtitle" to "Deneyiminizi kişiselleştireceğiz",
             "password_reset_email_sent" to "Şifre sıfırlama e-postası gönderildi",
             "send_reset_email" to "Sıfırlama e-postası gönder",
+            "debts_already_created_for_split" to "Bu bölüştürme için zaten borç oluşturuldu",
         )
     private fun itStrings(): Map<String, String> = mapOf(
             "nav_home" to "Home",
@@ -5164,6 +5180,7 @@ object LocalizedString {
             "name_page_subtitle" to "Personalizzeremo la tua esperienza",
             "password_reset_email_sent" to "Email di reimpostazione password inviata",
             "send_reset_email" to "Invia email di reimpostazione",
+            "debts_already_created_for_split" to "I debiti sono già stati creati per questa spesa condivisa",
         )
     private fun idStrings(): Map<String, String> = mapOf(
             "nav_home" to "Beranda",
@@ -5461,6 +5478,7 @@ object LocalizedString {
             "name_page_subtitle" to "Kami akan personalisasi pengalaman Anda",
             "password_reset_email_sent" to "Email atur ulang kata sandi telah dikirim",
             "send_reset_email" to "Kirim email atur ulang",
+            "debts_already_created_for_split" to "Hutang sudah dibuat untuk split ini",
         )
     private fun taStrings(): Map<String, String> = mapOf(
             "nav_home" to "முகப்பு",
@@ -5758,6 +5776,7 @@ object LocalizedString {
             "name_page_subtitle" to "உங்கள் அனுபவத்தை நாங்கள் தனிப்பயனாக்குவோம்",
             "password_reset_email_sent" to "கடவுச்சொல் மீட்டமை மின்னஞ்சல் அனுப்பப்பட்டது",
             "send_reset_email" to "மீட்டமை மின்னஞ்சலை அனுப்பவும்",
+            "debts_already_created_for_split" to "இந்தப் பிரிப்புக்கான கடன்கள் ஏற்கனவே உருவாக்கப்பட்டுள்ளன",
         )
     private fun teStrings(): Map<String, String> = mapOf(
             "nav_home" to "హోమ్",
@@ -6055,6 +6074,7 @@ object LocalizedString {
             "name_page_subtitle" to "మీ అనుభవాన్ని మేము వ్యక్తిగతీకరిస్తాము",
             "password_reset_email_sent" to "పాస్‌వర్డ్ రీసెట్ ఇమెయిల్ పంపబడింది",
             "send_reset_email" to "రీసెట్ ఇమెయిల్ పంపండి",
+            "debts_already_created_for_split" to "ఈ స్ప్లిట్ కోసం అప్పులు ఇప్పటికే సృష్టించబడ్డాయి",
         )
     private fun urStrings(): Map<String, String> = mapOf(
             "nav_home" to "ہوم",
@@ -6352,6 +6372,7 @@ object LocalizedString {
             "name_page_subtitle" to "ہم آپ کے تجربے کو ذاتی بنائیں گے",
             "password_reset_email_sent" to "پاس ورڈ ری سیٹ ای میل بھیج دی گئی",
             "send_reset_email" to "ری سیٹ ای میل بھیجیں",
+            "debts_already_created_for_split" to "اس سپلٹ کے لیے قرضے پہلے ہی بن چکے ہیں",
         )
     private fun swStrings(): Map<String, String> = mapOf(
             "nav_home" to "Nyumbani",
@@ -6649,6 +6670,7 @@ object LocalizedString {
             "name_page_subtitle" to "Tutaifanya uzoefu wako kuwa wa kibinafsi",
             "password_reset_email_sent" to "Barua pepe ya kuweka upya nenosiri imetumwa",
             "send_reset_email" to "Tuma barua pepe ya kuweka upya",
+            "debts_already_created_for_split" to "Deni tayari limeundwa kwa mgawanyiko huu",
         )
     private fun nlStrings(): Map<String, String> = mapOf(
             "nav_home" to "Home",
@@ -6946,6 +6968,7 @@ object LocalizedString {
             "name_page_subtitle" to "We personaliseren je ervaring",
             "password_reset_email_sent" to "E-mail voor wachtwoordherstel verzonden",
             "send_reset_email" to "Herstele-mail verzenden",
+            "debts_already_created_for_split" to "Schuld is al aangemaakt voor deze splitsing",
         )
     private fun plStrings(): Map<String, String> = mapOf(
             "nav_home" to "Strona główna",
@@ -7243,6 +7266,7 @@ object LocalizedString {
             "name_page_subtitle" to "Spersonalizujemy Twoje doświadczenie",
             "password_reset_email_sent" to "E-mail resetowania hasła wysłany",
             "send_reset_email" to "Wyślij e-mail resetowania",
+            "debts_already_created_for_split" to "Długi dla tego podziału zostały już utworzone",
         )
     private fun viStrings(): Map<String, String> = mapOf(
             "nav_home" to "Trang chủ",
@@ -7540,5 +7564,6 @@ object LocalizedString {
             "name_page_subtitle" to "Chúng tôi sẽ cá nhân hóa trải nghiệm của bạn",
             "password_reset_email_sent" to "Email đặt lại mật khẩu đã được gửi",
             "send_reset_email" to "Gửi email đặt lại",
+            "debts_already_created_for_split" to "Nợ đã được tạo cho lần chia đơn này",
         )
 }
