@@ -40,7 +40,10 @@ fun SplitScreen(onAuthRequired: () -> Unit, viewModel: SplitViewModel = hiltView
     val pastSplits by viewModel.pastSplits.collectAsStateWithLifecycle()
     val showAuthPrompt by viewModel.showAuthPrompt.collectAsStateWithLifecycle()
     val splitsWithDebts by viewModel.splitsWithDebtsCreated.collectAsStateWithLifecycle()
+    val showRewardAd by viewModel.showRewardAd.collectAsStateWithLifecycle()
     val extra = LocalExtraColors.current
+    val context = LocalContext.current
+    val activity = context as? android.app.Activity
     var showContactPicker by remember { mutableStateOf(false) }
     val snackbarHostState = remember { SnackbarHostState() }
     LaunchedEffect(Unit) {
@@ -48,6 +51,7 @@ fun SplitScreen(onAuthRequired: () -> Unit, viewModel: SplitViewModel = hiltView
             snackbarHostState.showSnackbar(msg)
         }
     }
+    LaunchedEffect(Unit) { viewModel.preloadRewardedAd(context) }
 
     Scaffold(
         snackbarHost = { SnackbarHost(snackbarHostState) }
@@ -169,7 +173,7 @@ fun SplitScreen(onAuthRequired: () -> Unit, viewModel: SplitViewModel = hiltView
                     }
 
                     Button(
-                        onClick = { viewModel.createSplit { viewModel.getAiSummary(it) } },
+                        onClick = { viewModel.createSplit { viewModel.getAiSummary(it, activity) } },
                         modifier = Modifier
                             .fillMaxWidth()
                             .height(UITokens.ButtonHeight),
@@ -212,7 +216,7 @@ fun SplitScreen(onAuthRequired: () -> Unit, viewModel: SplitViewModel = hiltView
         items(pastSplits, key = { it.id }) { split ->
             SplitItemCard(
                 split,
-                onGetAi = { viewModel.getAiSummary(it) },
+                onGetAi = { viewModel.getAiSummary(it, activity) },
                 onCreateDebts = { viewModel.createDebtsFromSplit(it) },
                 debtsCreated = split.id in splitsWithDebts
             )
@@ -254,6 +258,30 @@ fun SplitScreen(onAuthRequired: () -> Unit, viewModel: SplitViewModel = hiltView
                 viewModel.addParticipant(name)
                 showContactPicker = false
             }
+        )
+    }
+
+    // Reward-ad dialog (Wave 3 Issue 2). Shown when AI Take is tapped after the
+    // daily 5-free cap and no Activity is available for a direct ad launch
+    // (e.g. tapped from a non-Activity compose host). Mirrors AnalyticsScreen.
+    if (showRewardAd) {
+        AlertDialog(
+            onDismissRequest = { viewModel.dismissRewardAd() },
+            title = { Text(LocalizedString.get("watch_ad")) },
+            text = { Text(LocalizedString.get("free_regenerations_desc")) },
+            confirmButton = {
+                TextButton(onClick = {
+                    val pending = viewModel.pendingRewardSplit
+                    viewModel.dismissRewardAd()
+                    if (pending != null) viewModel.getAiSummary(pending, activity)
+                }) { Text(LocalizedString.get("watch_ad")) }
+            },
+            dismissButton = {
+                TextButton(onClick = { viewModel.dismissRewardAd() }) {
+                    Text(LocalizedString.get("later"))
+                }
+            },
+            containerColor = MaterialTheme.colorScheme.surface
         )
     }
     }

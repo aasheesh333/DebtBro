@@ -1,7 +1,9 @@
 package com.dhanuk.debtbro.presentation.screens.split
 
+import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.dhanuk.debtbro.data.ads.AdManager
 import com.dhanuk.debtbro.data.datastore.AppPreferences
 import com.dhanuk.debtbro.data.db.entity.DebtEntity
 import com.dhanuk.debtbro.data.db.entity.SplitEntity
@@ -40,7 +42,8 @@ class SplitViewModel @Inject constructor(
     private val ai: AiRepository,
     private val authManager: AuthManager,
     private val syncManager: SyncManager,
-    private val prefs: AppPreferences
+    private val prefs: AppPreferences,
+    private val adManager: AdManager
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(SplitUiState())
@@ -57,12 +60,26 @@ class SplitViewModel @Inject constructor(
     private val _splitsWithDebtsCreated = MutableStateFlow<Set<Int>>(emptySet())
     val splitsWithDebtsCreated = _splitsWithDebtsCreated.asStateFlow()
 
+    // Reward-ad gate for AI Take (Wave 3 Issue 2). Mirror AnalyticsViewModel:
+    // 5 free regenerations/day; once exhausted, gate behind a rewarded ad.
+    private val _showRewardAd = MutableStateFlow(false)
+    val showRewardAd: StateFlow<Boolean> = _showRewardAd.asStateFlow()
+    private val _remainingFree = MutableStateFlow(AiRepository.MAX_FREE_REGENERATIONS)
+    val remainingFree: StateFlow<Int> = _remainingFree.asStateFlow()
+    var pendingRewardSplit: SplitEntity? = null
+
+    fun dismissRewardAd() { _showRewardAd.value = false }
+    fun preloadRewardedAd(context: Context) { adManager.loadRewardedAd(context) }
+
     fun dismissAuthPrompt() { _showAuthPrompt.value = false }
 
     val pastSplits: StateFlow<List<SplitEntity>> = splits.getAllSplits()
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     init {
+        viewModelScope.launch {
+            _remainingFree.value = ai.remainingFreeRegenerations()
+        }
         viewModelScope.launch {
             prefs.defaultCurrency.collect { symbol ->
                 _state.value = _state.value.copy(currencySymbol = symbol)
@@ -173,7 +190,35 @@ class SplitViewModel @Inject constructor(
         }.onFailure { _snackbar.tryEmit("Couldn't create debts from split: ${it.message ?: "unknown error"}") }
     }
 
-    fun getAiSummary(split: SplitEntity) = viewModelScope.launch {
+    fun getAiSummary(split: SplitEntity, activity: android.app.Activity? = null) = viewModelScope.launch {
+        // Reward-ad gate (Wave 3 Issue 2). Mirrors AnalyticsViewModel.loadAiInsight:
+        // 5 free regenerations/day; once exhausted, force the user to watch a
+        // rewarded ad before we'll regenerate again. Offline → silent no-op.
+        if (!ai.canRegenerate()) {
+            val connectivityManager = activity?.getSystemService(android.content.Context.CONNECTIVITY_SERVICE) as? android.net.ConnectivityManager
+            val isOffline = connectivityManager?.activeNetwork == null
+            if (isOffline) return@launch
+            if (activity != null) {
+                adManager.showRewardedAd(activity, onRewarded = {
+                    viewModelScope.launch {
+                        ai.resetRegenerationCount()
+                        _remainingFree.value = ai.remainingFreeRegenerations()
+                        fetchAiSummaryInternal(split)
+                    }
+                }, onFailed = {
+                    adManager.loadRewardedAd(activity)
+                    _showRewardAd.value = false
+                })
+            } else {
+                pendingRewardSplit = split
+                _showRewardAd.value = true
+            }
+            return@launch
+        }
+        fetchAiSummaryInternal(split)
+    }
+
+    private fun fetchAiSummaryInternal(split: SplitEntity) = viewModelScope.launch {
         runCatching {
             val names: List<String> = Gson().fromJson(
                 split.participants,
@@ -185,7 +230,8 @@ class SplitViewModel @Inject constructor(
                 split.perPersonAmount,
                 names.size
             ).getOrElse { LocalizedString.get("everyone_owes_each_receipts_dont_lie").replace("{currency}", _state.value.currencySymbol).replace("{amount}", String.format("%.2f", split.perPersonAmount)) }
-
+            ai.incrementRegenerationCount()
+            _remainingFree.value = ai.remainingFreeRegenerations()
             splits.updateAiSummary(split.id, summary)
             if (_state.value.title == split.title) {
                 _state.value = _state.value.copy(aiSummary = summary)
