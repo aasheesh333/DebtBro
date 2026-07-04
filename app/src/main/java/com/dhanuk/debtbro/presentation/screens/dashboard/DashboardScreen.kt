@@ -115,7 +115,8 @@ fun DashboardScreen(
                 StatsCard(
                     totalOwedToMe = state.totalOwedToMe,
                     totalIOwe = state.totalIOwe,
-                    recoveryRate = state.recoveryRate
+                    recoveryRate = state.recoveryRate,
+                    currency = state.currency
                 )
             }
 
@@ -216,7 +217,7 @@ fun DashboardScreen(
 }
 
 @Composable
-fun StatsCard(totalOwedToMe: Double, totalIOwe: Double, recoveryRate: Int) {
+fun StatsCard(totalOwedToMe: Double, totalIOwe: Double, recoveryRate: Int, currency: String = "₹") {
     val extra = LocalExtraColors.current
     Card(
         modifier = Modifier.fillMaxWidth(),
@@ -227,7 +228,7 @@ fun StatsCard(totalOwedToMe: Double, totalIOwe: Double, recoveryRate: Int) {
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                 Column {
                     Text(LocalizedString.get("total_owed_to_me"), color = extra.subtitleGray, fontSize = UITokens.FontSmall)
-                    Text(formatCurrency(totalOwedToMe), color = MaterialTheme.colorScheme.primary, fontSize = UITokens.FontDisplay, fontWeight = FontWeight.ExtraBold)
+                    Text(formatCurrency(totalOwedToMe, currency), color = MaterialTheme.colorScheme.primary, fontSize = UITokens.FontDisplay, fontWeight = FontWeight.ExtraBold)
                 }
                     Box(
                     modifier = Modifier.size(UITokens.AvatarLarge).clip(CircleShape).background(MaterialTheme.colorScheme.primary.copy(alpha = 0.1f)),
@@ -240,7 +241,7 @@ fun StatsCard(totalOwedToMe: Double, totalIOwe: Double, recoveryRate: Int) {
             Row(modifier = Modifier.fillMaxWidth()) {
                 Column(Modifier.weight(1f)) {
                     Text(LocalizedString.get("i_owe"), color = extra.subtitleGray, fontSize = UITokens.FontCaption)
-                    Text(formatCurrency(totalIOwe), color = DangerRed, fontSize = 16.sp, fontWeight = FontWeight.Bold)
+                    Text(formatCurrency(totalIOwe, currency), color = DangerRed, fontSize = 16.sp, fontWeight = FontWeight.Bold)
                 }
                 Column(Modifier.weight(1f), horizontalAlignment = Alignment.End) {
                     Text(LocalizedString.get("recovery_rate"), color = extra.subtitleGray, fontSize = 12.sp)

@@ -144,7 +144,8 @@ class SplitViewModel @Inject constructor(
                 title = s.title.ifBlank { "Untitled split" },
                 totalAmount = total,
                 participants = Gson().toJson(s.participants),
-                perPersonAmount = s.perPerson
+                perPersonAmount = s.perPerson,
+                currency = s.currencySymbol
             )
             val id = splits.insertSplit(split).toInt()
             val createdSplit = split.copy(id = id)
@@ -190,6 +191,12 @@ class SplitViewModel @Inject constructor(
                         personName = name,
                         personEmoji = "🍽️",
                         amount = split.perPersonAmount,
+                        // Propagate the split's currency so the spawned
+                        // debt renders + sums consistently with the bill.
+                        // Without this the DebtEntity default "₹" would
+                        // silently override for any user whose default
+                        // currency differs from the split's symbol.
+                        currency = split.currency,
                         description = split.title,
                         type = "THEY_OWE_ME"
                     )
@@ -243,7 +250,11 @@ class SplitViewModel @Inject constructor(
                 split.totalAmount,
                 split.perPersonAmount,
                 names.size
-            ).getOrElse { LocalizedString.get("everyone_owes_each_receipts_dont_lie").replace("{currency}", _state.value.currencySymbol).replace("{amount}", String.format("%.2f", split.perPersonAmount)) }
+            ).getOrElse {
+                LocalizedString.get("everyone_owes_each_receipts_dont_lie")
+                    .replace("{currency}", split.currency)
+                    .replace("{amount}", String.format("%.2f", split.perPersonAmount))
+            }
             ai.incrementRegenerationCount()
             _remainingFree.value = ai.remainingFreeRegenerations()
             splits.updateAiSummary(split.id, summary)

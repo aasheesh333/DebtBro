@@ -13,7 +13,7 @@ import com.dhanuk.debtbro.data.db.entity.SplitEntity
 
 @Database(
     entities = [DebtEntity::class, PaymentEntity::class, SplitEntity::class],
-    version = 3,
+    version = 4,
     exportSchema = false
 )
 abstract class DebtBroDB : RoomDatabase() {
@@ -44,6 +44,20 @@ abstract class DebtBroDB : RoomDatabase() {
             }
         }
 
-        val ALL_MIGRATIONS = listOf(MIGRATION_1_2, MIGRATION_2_3)
+        // Adds SplitEntity.currency so splits remember the symbol the
+        // user originally entered for the bill. Existing rows get "₹"
+        // (the historical hardcoded default) — preserves prior display
+        // behavior for already-stored splits. SQLite `ALTER TABLE … ADD
+        // COLUMN` with a NOT NULL constraint requires a DEFAULT clause;
+        // we use the literal "₹" (single-byte UTF-8, no escaping needed).
+        val MIGRATION_3_4: Migration = object : Migration(3, 4) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                try {
+                    db.execSQL("ALTER TABLE splits ADD COLUMN currency TEXT NOT NULL DEFAULT '₹'")
+                } catch (_: Exception) { }
+            }
+        }
+
+        val ALL_MIGRATIONS = listOf(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4)
     }
 }

@@ -23,6 +23,13 @@ class AppPreferences(@ApplicationContext private val context: Context) {
         val GEMINI_API_KEY = stringPreferencesKey("gemini_api_key")
         val ROAST_LEVEL = stringPreferencesKey("roast_level")
         val DEFAULT_CURRENCY = stringPreferencesKey("default_currency")
+        // One-time gate: true once we've auto-set DEFAULT_CURRENCY from the
+        // device locale on the very first launch. Without it, "₹" (the
+        // default value of DEFAULT_CURRENCY) is indistinguishable from a
+        // user who saw "₹" auto-selected and chose to keep it. The gate
+        // ensures we auto-select once and only once; subsequent launches
+        // respect the persisted value even when it equals "₹".
+        val HAS_AUTO_SET_CURRENCY = booleanPreferencesKey("has_auto_set_currency")
         val IS_GOOGLE_SIGNED_IN = booleanPreferencesKey("is_google_signed_in")
         // signInProvider distinguishers "google" / "email" / null; exists
         // alongside IS_GOOGLE_SIGNED_IN for backwards read-compat with
@@ -88,6 +95,8 @@ class AppPreferences(@ApplicationContext private val context: Context) {
     val geminiApiKey: Flow<String> = context.dataStore.data.map { (it[Keys.GEMINI_API_KEY] ?: "").trim() }
     val roastLevel: Flow<String> = context.dataStore.data.map { it[Keys.ROAST_LEVEL]?.let { v -> if (v == "SAVAGE") "SPICY" else v } ?: "MEDIUM" }
     val defaultCurrency: Flow<String> = context.dataStore.data.map { it[Keys.DEFAULT_CURRENCY] ?: "₹" }
+    /** True once the locale-based auto-select has run on first launch. */
+    val hasAutoSetCurrency: Flow<Boolean> = context.dataStore.data.map { it[Keys.HAS_AUTO_SET_CURRENCY] ?: false }
     val isGoogleSignedIn: Flow<Boolean> = context.dataStore.data.map { it[Keys.IS_GOOGLE_SIGNED_IN] ?: false }
     /**
      * Auth provider used for the current session. `null` when signed out.
@@ -155,6 +164,8 @@ class AppPreferences(@ApplicationContext private val context: Context) {
     suspend fun clearGeminiKey() = context.dataStore.edit { it.remove(Keys.GEMINI_API_KEY) }
     suspend fun setRoastLevel(level: String) = context.dataStore.edit { it[Keys.ROAST_LEVEL] = level }
     suspend fun setCurrency(c: String) = context.dataStore.edit { it[Keys.DEFAULT_CURRENCY] = c }
+    /** Marks that the first-launch currency auto-select has run. */
+    suspend fun markCurrencyAutoSet() = context.dataStore.edit { it[Keys.HAS_AUTO_SET_CURRENCY] = true }
     suspend fun setGoogleSignedIn(value: Boolean, name: String = "", email: String = "", photo: String = "") = context.dataStore.edit {
         it[Keys.IS_GOOGLE_SIGNED_IN] = value
         it[Keys.GOOGLE_USER_NAME] = name

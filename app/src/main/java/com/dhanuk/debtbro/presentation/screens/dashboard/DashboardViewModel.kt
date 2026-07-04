@@ -7,6 +7,7 @@ import com.dhanuk.debtbro.data.db.entity.DebtEntity
 import com.dhanuk.debtbro.data.firebase.AuthManager
 import com.dhanuk.debtbro.data.firebase.RealTimeSyncManager
 import com.dhanuk.debtbro.data.firebase.SyncManager
+import com.dhanuk.debtbro.data.repository.CurrencyRepository
 import com.dhanuk.debtbro.data.repository.DebtRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -32,7 +33,12 @@ data class DashboardUiState(
     val leaderboard: List<DebtEntity> = emptyList(),
     val isSignedIn: Boolean = false,
     val userPhoto: String = "",
-    val hasShownSignInPrompt: Boolean = true
+    val hasShownSignInPrompt: Boolean = true,
+    /** Symbol (e.g. "₹", "$") in which the monetary totals above are
+     *  denominated. DashboardScreen passes this to `formatCurrency`
+     *  so totals always render in the user's default currency even
+     *  when individual debts were entered under different currencies. */
+    val currency: String = "₹"
 )
 
 @HiltViewModel
@@ -41,25 +47,67 @@ class DashboardViewModel @Inject constructor(
     private val prefs: AppPreferences,
     private val authManager: AuthManager,
     private val syncManager: SyncManager,
-    private val realTimeSyncManager: RealTimeSyncManager
+    private val realTimeSyncManager: RealTimeSyncManager,
+    private val currencyRepository: CurrencyRepository
 ) : ViewModel() {
-    
+
     private val syncMutex = Mutex()
     private val _isRefreshing = MutableStateFlow(false)
     val isRefreshing: StateFlow<Boolean> = _isRefreshing.asStateFlow()
 
+    // Three-layer combine since Kotlin's `combine()` only has typed
+    // overloads up to 5 sources. We split the 6 reactive inputs across
+    // two layers:
+    //   Layer 1: combine(debts, currency, rates) -> Triple — collapses
+    //            the 3 most-frequently-changing sources into one typed
+    //            source so the outer combine stays at 5 typed args.
+    //   Layer 2: combine(layer1, name, signedIn, photo, shown) -> state.
+    // The triples carry the full rates map so totals recompute whenever
+    // the FX table refreshes on cold start (after the network round
+    // trip completes) — without this, totals would be stale-idempotent
+    // until the user manually pulled to refresh.
+    private data class DebtsAndCurrency(
+        val all: List<DebtEntity>,
+        val defaultCurrency: String
+    )
+
+    private val debtsAndCurrency: kotlinx.coroutines.flow.Flow<DebtsAndCurrency> =
+        combine(
+            debts.getAllDebts(),
+            prefs.defaultCurrency,
+            currencyRepository.rates
+        ) { all, cur, _ -> DebtsAndCurrency(all, cur) }
+
     val state: StateFlow<DashboardUiState> = combine(
-        debts.getAllDebts(),
+        debtsAndCurrency,
         prefs.userName,
         prefs.isGoogleSignedIn,
         prefs.googleUserPhoto,
         prefs.hasShownSignInPrompt
-    ) { all, name, signedIn, photo, shown ->
-        val owedToMe = all.filter { it.type == "THEY_OWE_ME" && it.status != "SETTLED" }.sumOf { it.amount - it.amountPaid }
-        val iOwe = all.filter { it.type == "I_OWE_THEM" && it.status != "SETTLED" }.sumOf { it.amount - it.amountPaid }
+    ) { dc, name, signedIn, photo, shown ->
+        val all = dc.all
+        val defaultCurrency = dc.defaultCurrency
 
-        val allTimeOwed = all.filter { it.type == "THEY_OWE_ME" }.sumOf { it.amount }
-        val allTimeSettled = all.filter { it.type == "THEY_OWE_ME" }.sumOf { it.amountPaid }
+        // Convert each debt's outstanding amount into the default
+        // currency before summing. Fall-back in CurrencyRepository.convert
+        // is identity (returns the amount unchanged) when rates aren't
+        // loaded yet or the debt's currency equals the default — so
+        // pre-FX-load behavior matches the legacy naive-sum path.
+        val owedToMe = all
+            .filter { it.type == "THEY_OWE_ME" && it.status != "SETTLED" }
+            .sumOf { currencyRepository.convert(it.amount - it.amountPaid, it.currency, defaultCurrency) }
+        val iOwe = all
+            .filter { it.type == "I_OWE_THEM" && it.status != "SETTLED" }
+            .sumOf { currencyRepository.convert(it.amount - it.amountPaid, it.currency, defaultCurrency) }
+
+        // Recovery rate is a ratio, so mixing currencies here would be
+        // misleading; convert both sums to the default currency first.
+        val allTimeOwed = all
+            .filter { it.type == "THEY_OWE_ME" }
+            .sumOf { currencyRepository.convert(it.amount, it.currency, defaultCurrency) }
+        val allTimeSettled = all
+            .filter { it.type == "THEY_OWE_ME" }
+            .sumOf { currencyRepository.convert(it.amountPaid, it.currency, defaultCurrency) }
         val recoveryRate = if (allTimeOwed > 0) ((allTimeSettled / allTimeOwed) * 100).toInt() else 100
 
         DashboardUiState(
@@ -75,7 +123,8 @@ class DashboardViewModel @Inject constructor(
                 .sortedByDescending { it.amount - it.amountPaid }.take(5),
             isSignedIn = signedIn,
             userPhoto = photo,
-            hasShownSignInPrompt = shown
+            hasShownSignInPrompt = shown,
+            currency = defaultCurrency
         )
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), DashboardUiState())
 

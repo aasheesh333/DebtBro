@@ -6,6 +6,7 @@ import androidx.lifecycle.viewModelScope
 import com.dhanuk.debtbro.data.datastore.AppPreferences
 import com.dhanuk.debtbro.data.db.entity.DebtEntity
 import com.dhanuk.debtbro.data.repository.DebtRepository
+import com.dhanuk.debtbro.data.repository.CurrencyRepository
 import com.dhanuk.debtbro.data.repository.NoApiKeyException
 import com.dhanuk.debtbro.data.repository.AiRepository
 import com.dhanuk.debtbro.util.LocalizedString
@@ -40,12 +41,24 @@ class AnalyticsViewModel @Inject constructor(
     private val repo: DebtRepository,
     private val ai: AiRepository,
     private val prefs: AppPreferences,
-    private val adManager: com.dhanuk.debtbro.data.ads.AdManager
+    private val adManager: com.dhanuk.debtbro.data.ads.AdManager,
+    private val currencyRepository: CurrencyRepository
 ) : ViewModel() {
     val aiInsight = MutableStateFlow("")
     val isLoadingInsight = MutableStateFlow(false)
     private val currency = prefs.defaultCurrency.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), "₹")
-    val state: StateFlow<AnalyticsUiState> = combine(repo.getAllDebts(), aiInsight, currency) { debts, _, curr -> compute(debts, curr) }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), AnalyticsUiState())
+    // Reactive convert on FX-cold-start-load — the totals recompute
+    // when the rates fetch resolves on app start. Without this, the
+    // first emission would compute totals using identity conversion
+    // (pre-FX-load) and the user would see stale sums until they
+    // revisited the screen or pulled to refresh.
+    val state: StateFlow<AnalyticsUiState> = combine(
+        repo.getAllDebts(),
+        aiInsight,
+        currency,
+        currencyRepository.rates
+    ) { debts, _, curr, _ -> compute(debts, curr) }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), AnalyticsUiState())
 
     private val _showRewardAd = MutableStateFlow(false)
     val showRewardAd: StateFlow<Boolean> = _showRewardAd.asStateFlow()
@@ -101,12 +114,19 @@ class AnalyticsViewModel @Inject constructor(
         }.hashCode().toString(16)
     }
     private fun compute(debts: List<DebtEntity>, curr: String): AnalyticsUiState {
-        val totalOwed = debts.filter { it.type == "THEY_OWE_ME" && it.status != "SETTLED" }.sumOf { it.amount - it.amountPaid }
-        val totalIOwe = debts.filter { it.type == "I_OWE_THEM" && it.status != "SETTLED" }.sumOf { it.amount - it.amountPaid }
-        val settled = debts.filter { it.status == "SETTLED" }.sumOf { it.amount }
-        val lent = debts.filter { it.type == "THEY_OWE_ME" }.sumOf { it.amount }
+        // Convert each debt's amount into the user's default currency
+        // before summing, so totals aren't a meaningless cross-currency
+        // mashup (e.g. "₹100 + $20 = 120"). Identity fall-back when
+        // rates aren't loaded yet — matches the legacy naive-sum path.
+        fun cv(amount: Double, from: String): Double =
+            currencyRepository.convert(amount, from, curr)
+
+        val totalOwed = debts.filter { it.type == "THEY_OWE_ME" && it.status != "SETTLED" }.sumOf { cv(it.amount - it.amountPaid, it.currency) }
+        val totalIOwe = debts.filter { it.type == "I_OWE_THEM" && it.status != "SETTLED" }.sumOf { cv(it.amount - it.amountPaid, it.currency) }
+        val settled = debts.filter { it.status == "SETTLED" }.sumOf { cv(it.amount, it.currency) }
+        val lent = debts.filter { it.type == "THEY_OWE_ME" }.sumOf { cv(it.amount, it.currency) }
         val worst = debts.filter { it.status != "SETTLED" }.minByOrNull { it.createdAt }?.personName ?: "Nobody yet"
-        val trusted = debts.filter { it.status == "SETTLED" }.groupBy { it.personName }.maxByOrNull { it.value.sumOf { d -> d.amount } }?.key ?: LocalizedString.get("no_winner_yet")
+        val trusted = debts.filter { it.status == "SETTLED" }.groupBy { it.personName }.maxByOrNull { it.value.sumOf { d -> cv(d.amount, d.currency) } }?.key ?: LocalizedString.get("no_winner_yet")
         val fmt = SimpleDateFormat("MMM", Locale.getDefault())
         val months = (5 downTo 0).map { back ->
             val cal = Calendar.getInstance().apply { add(Calendar.MONTH, -back) }
@@ -115,7 +135,7 @@ class AnalyticsViewModel @Inject constructor(
             val value = debts.filter {
                 val c = Calendar.getInstance().apply { timeInMillis = it.createdAt }
                 c.get(Calendar.YEAR) == year && fmt.format(c.time) == month && it.type == "THEY_OWE_ME"
-            }.sumOf { it.amount }
+            }.sumOf { cv(it.amount, it.currency) }
             month to value
         }
         return AnalyticsUiState(totalOwed, totalIOwe, settled, totalOwed - totalIOwe, if (lent > 0) ((settled / lent) * 100).toInt().coerceIn(0, 100) else 0, trusted, worst, months, curr)

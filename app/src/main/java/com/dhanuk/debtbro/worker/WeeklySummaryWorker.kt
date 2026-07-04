@@ -14,6 +14,7 @@ import com.dhanuk.debtbro.MainActivity
 import com.dhanuk.debtbro.R
 import com.dhanuk.debtbro.data.db.dao.DebtDao
 import com.dhanuk.debtbro.data.datastore.AppPreferences
+import com.dhanuk.debtbro.data.repository.CurrencyRepository
 import dagger.assisted.Assisted
 import dagger.assisted.AssistedInject
 
@@ -24,18 +25,34 @@ class WeeklySummaryWorker @AssistedInject constructor(
     @Assisted context: Context,
     @Assisted params: WorkerParameters,
     private val debtDao: DebtDao,
-    private val prefs: com.dhanuk.debtbro.data.datastore.AppPreferences
+    private val prefs: AppPreferences,
+    private val currencyRepository: CurrencyRepository
 ) : CoroutineWorker(context, params) {
     override suspend fun doWork(): Result {
         if (!prefs.notifyWeeklySummary.first()) return Result.success()
         ensureChannel()
+        // Refresh FX (throttled internally; safe to call every worker run)
+        // so the weekly summary totals reflect the latest available rates.
+        // Failure is non-fatal — CurrencyRepository.convert falls back to
+        // identity (returns amount unchanged) when no rates are loaded.
+        runCatching { currencyRepository.refreshIfNeeded() }
         val debts = debtDao.getAllDebtsOnce()
-        val currency = debts.firstOrNull()?.currency ?: "₹"
-        val owed = debts.filter { it.type == "THEY_OWE_ME" && it.status != "SETTLED" }.sumOf { it.amount - it.amountPaid }
-        val recovered = debts.filter { it.status == "SETTLED" && System.currentTimeMillis() - it.updatedAt < 7 * 86400000L }.sumOf { it.amount }
+        // Use the user's *default* currency for the summary notification.
+        // Previously we picked the first debt's currency which gave a
+        // meaningless mixed sum when the user had debts in multiple
+        // currencies (e.g. first debt $ → totals showed "$" but actually
+        // summed across $+₹). Now: convert each debt to defaultCurrency
+        // before summing; render via the user's default currency symbol.
+        val defaultCurrency = prefs.defaultCurrency.first()
+        fun cv(amount: Double, from: String): Double =
+            currencyRepository.convert(amount, from, defaultCurrency)
+        val owed = debts.filter { it.type == "THEY_OWE_ME" && it.status != "SETTLED" }
+            .sumOf { cv(it.amount - it.amountPaid, it.currency) }
+        val recovered = debts.filter { it.status == "SETTLED" && System.currentTimeMillis() - it.updatedAt < 7 * 86400000L }
+            .sumOf { cv(it.amount, it.currency) }
         val intent = PendingIntent.getActivity(applicationContext, 42, Intent(applicationContext, MainActivity::class.java), PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
-        val owedText = com.dhanuk.debtbro.util.formatCurrency(owed, currency)
-        val recoveredText = com.dhanuk.debtbro.util.formatCurrency(recovered, currency)
+        val owedText = com.dhanuk.debtbro.util.formatCurrency(owed, defaultCurrency)
+        val recoveredText = com.dhanuk.debtbro.util.formatCurrency(recovered, defaultCurrency)
         NotificationCompat.Builder(applicationContext, CHANNEL)
             .setSmallIcon(R.drawable.ic_notification)
             .setLargeIcon(android.graphics.BitmapFactory.decodeResource(applicationContext.resources, R.drawable.ic_launcher_foreground))

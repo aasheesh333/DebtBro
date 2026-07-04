@@ -17,6 +17,9 @@ import androidx.work.PeriodicWorkRequestBuilder
 import androidx.work.WorkManager
 import com.dhanuk.debtbro.data.ads.AdManager
 import com.dhanuk.debtbro.data.ads.AppOpenManager
+import com.dhanuk.debtbro.data.datastore.AppPreferences
+import com.dhanuk.debtbro.data.repository.CurrencyRepository
+import com.dhanuk.debtbro.util.autoCurrencyForLocale
 import com.google.android.gms.ads.MobileAds
 import com.google.android.ump.UserMessagingPlatform
 import com.google.firebase.analytics.FirebaseAnalytics
@@ -32,6 +35,7 @@ import com.dhanuk.debtbro.worker.WeeklySummaryWorker
 import dagger.hilt.android.HiltAndroidApp
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import java.util.concurrent.TimeUnit
 import javax.inject.Inject
@@ -41,6 +45,8 @@ class DebtBroApp : Application(), Configuration.Provider {
     @Inject lateinit var workerFactory: HiltWorkerFactory
     @Inject lateinit var adManager: AdManager
     @Inject lateinit var appOpenManager: AppOpenManager
+    @Inject lateinit var preferences: AppPreferences
+    @Inject lateinit var currencyRepository: CurrencyRepository
     override val workManagerConfiguration: Configuration
         get() = Configuration.Builder().setWorkerFactory(workerFactory).build()
 
@@ -127,6 +133,39 @@ class DebtBroApp : Application(), Configuration.Provider {
             param("theme_dark", "SYSTEM")
             param("version_name", BuildConfig.VERSION_NAME)
             param("version_code", BuildConfig.VERSION_CODE.toString())
+        }
+
+        // ── Locale-based default currency auto-select + FX rate refresh ─────────
+        // The auto-select runs at most ONCE per install: read the
+        // HAS_AUTO_SET_CURRENCY gate, and only when it's false do we read
+        // the device locale and write DEFAULT_CURRENCY. After writing we
+        // flip the gate so subsequent launches (and any future user
+        // language change) never silently override the user's persisted
+        // choice. FX refresh runs in parallel on every cold start; the
+        // repo internally throttles to once per 12h.
+        CoroutineScope(Dispatchers.IO).launch {
+            try {
+                val gate = preferences.hasAutoSetCurrency.first()
+                if (!gate) {
+                    val current = preferences.defaultCurrency.first()
+                    val detected = autoCurrencyForLocale()
+                    // Preserve an explicitly-set value (non-default) the
+                    // user may have written during onboarding before this
+                    // coroutine ran. Only write the detected locale currency
+                    // when current is still the DataStore default ("₹" and
+                    // equal to detected) OR current is unset. This avoids
+                    // clobbering an intentional choice while still seeding
+                    // a sensible default for the common cold-launch case.
+                    if (current == "₹" || current.isBlank()) {
+                        preferences.setCurrency(detected)
+                    }
+                    preferences.markCurrencyAutoSet()
+                    Log.d("DebtBroApp", "Auto-set default currency from locale: $detected (was '$current')")
+                }
+                currencyRepository.refreshIfNeeded()
+            } catch (e: Throwable) {
+                Log.w("DebtBroApp", "Currency auto-set/FX refresh failed: ${e.message}", e)
+            }
         }
     }
 

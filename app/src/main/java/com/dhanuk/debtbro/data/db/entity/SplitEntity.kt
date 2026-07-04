@@ -15,6 +15,12 @@ data class SplitEntity(
     val aiSummary: String? = null,
     val createdAt: Long = System.currentTimeMillis(),
     val updatedAt: Long = System.currentTimeMillis(),
+    /** Currency symbol (e.g. "₹", "$") in which [totalAmount] and
+     *  [perPersonAmount] were entered. Splits are NEVER currency-converted;
+     *  the bill is settled in the original currency. Persisted via
+     *  v3→v4 Room migration (the column is added with default '₹' to
+     *  match the historical behavior of pre-migration splits). */
+    val currency: String = "₹",
     val isSynced: Boolean = false
 ) {
     @Keep

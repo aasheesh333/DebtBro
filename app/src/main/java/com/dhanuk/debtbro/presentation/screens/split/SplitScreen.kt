@@ -175,7 +175,7 @@ fun SplitScreen(onAuthRequired: () -> Unit, viewModel: SplitViewModel = hiltView
                         ) {
                             Text(LocalizedString.get("per_person"), color = extra.subtitleGray, fontSize = UITokens.FontCaption)
                             Text(
-                                formatCurrency(state.perPerson),
+                                formatCurrency(state.perPerson, state.currencySymbol),
                                 color = MaterialTheme.colorScheme.primary,
                                 fontSize = 32.sp,
                                 fontWeight = FontWeight.ExtraBold
@@ -364,10 +364,10 @@ fun SplitItemCard(split: com.dhanuk.debtbro.data.db.entity.SplitEntity, onGetAi:
         Column(Modifier.padding(UITokens.CardInnerPadding), verticalArrangement = Arrangement.spacedBy(UITokens.SpaceXS)) {
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                 Text(split.title, color = MaterialTheme.colorScheme.onSurface, fontWeight = FontWeight.Bold, fontSize = 16.sp)
-                Text(formatCurrency(split.totalAmount), color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold)
+                Text(formatCurrency(split.totalAmount, split.currency), color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold)
             }
             Text(
-                "${formatCurrency(split.perPersonAmount)} ${LocalizedString.get("each")}",
+                "${formatCurrency(split.perPersonAmount, split.currency)} ${LocalizedString.get("each")}",
                 color = extra.subtitleGray,
                 fontSize = UITokens.FontSmall
             )
