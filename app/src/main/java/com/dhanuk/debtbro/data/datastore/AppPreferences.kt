@@ -63,6 +63,14 @@ class AppPreferences(@ApplicationContext private val context: Context) {
         // "permanently denied" route (`showSettings`) remains operational
         // because we only suppress _our_ rationale dialog.
         val NOTIFICATION_RATIONALE_DISMISSED = booleanPreferencesKey("notification_rationale_dismissed")
+        // Wave 3 (Tasks 14+15): cache the last AI insight shown on the
+        // Analytics tab alongside a content checksum of the debts list.
+        // On AnalyticsViewModel.init we compare the stored checksum to the
+        // current debts snapshot — match => reuse the cached insight text
+        // without re-hitting Gemini; mismatch => fetch fresh and rewrite
+        // both. Suppresses screen-switch refetch spam.
+        val LAST_AI_INSIGHT_TEXT = stringPreferencesKey("last_ai_insight_text")
+        val LAST_AI_INSIGHT_CHECKSUM = stringPreferencesKey("last_ai_insight_checksum")
     }
 
 
@@ -112,6 +120,10 @@ class AppPreferences(@ApplicationContext private val context: Context) {
     val pendingDeletionTimestamp: Flow<Long> = context.dataStore.data.map { it[Keys.PENDING_DELETION_TIMESTAMP] ?: 0L }
     val forgotPasswordLastSent: Flow<Long> = context.dataStore.data.map { it[Keys.FORGOT_PASSWORD_LAST_SENT] ?: 0L }
     val forgotPasswordDailyCount: Flow<Int> = context.dataStore.data.map { it[Keys.FORGOT_PASSWORD_DAILY_COUNT] ?: 0 }
+
+    // Wave 3 (Tasks 14+15): AI insight cache for the Analytics tab.
+    val lastAiInsightText: Flow<String?> = context.dataStore.data.map { it[Keys.LAST_AI_INSIGHT_TEXT] }
+    val lastAiInsightChecksum: Flow<String?> = context.dataStore.data.map { it[Keys.LAST_AI_INSIGHT_CHECKSUM] }
 
     suspend fun setOnboardingComplete(name: String) = context.dataStore.edit {
         it[Keys.HAS_COMPLETED_ONBOARDING] = true
@@ -201,6 +213,20 @@ class AppPreferences(@ApplicationContext private val context: Context) {
         val date = prefs[Keys.AI_REGENERATION_DATE] ?: ""
         val today = java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.getDefault()).format(java.util.Date())
         return if (date != today) 0 else count
+    }
+
+    /**
+     * Wave 3 (Tasks 14+15): persists the cached Analytics AI insight text
+     * alongside the checksum of the debts snapshot it was generated from.
+     * Callers should only invoke this after a successful Gemini generation
+     * (not on localized fallback texts) so cached text always reflects a
+     * real insight rather than an error message.
+     */
+    suspend fun setAiInsightCache(checksum: String, text: String) {
+        context.dataStore.edit {
+            it[Keys.LAST_AI_INSIGHT_TEXT] = text
+            it[Keys.LAST_AI_INSIGHT_CHECKSUM] = checksum
+        }
     }
 
     suspend fun clearAll() = context.dataStore.edit { it.clear() }

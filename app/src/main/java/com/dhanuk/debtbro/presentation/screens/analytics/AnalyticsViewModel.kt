@@ -64,11 +64,41 @@ class AnalyticsViewModel @Inject constructor(
         // AND auto-refreshes the insight when the user adds their first debt.
         // The in-function guard below is belt-and-suspenders for manual
         // refresh attempts against a still-empty wallet.
+        //
+        // Wave 3 (Tasks 14+15): before hitting Gemini, try a content-addressed
+        // cache hit — compare the current debts-checksum to the one stored
+        // alongside the last persisted insight. Match => reuse the cached
+        // text (no network); mismatch => fetch fresh and rewrite the cache.
+        // Suppresses screen-switch refetch spam when the user navigates
+        // between tabs without changing any debts.
         viewModelScope.launch {
             _remainingFree.value = ai.remainingFreeRegenerations()
             state.first { it.totalOwedToMe + it.totalIOwe > 0 }
-            loadAiInsight()
+            // Cache hit first — avoid network if debts unchanged since last fetch
+            val cachedText = prefs.lastAiInsightText.first()
+            val cachedChecksum = prefs.lastAiInsightChecksum.first()
+            val currentChecksum = checksumOf()
+            if (cachedText != null && cachedChecksum == currentChecksum) {
+                aiInsight.value = cachedText
+                isLoadingInsight.value = false
+            } else {
+                loadAiInsight()
+            }
         }
+    }
+
+    /**
+     * Wave 3 (Tasks 14+15): stable content checksum of the current debts
+     * snapshot. Sorted by id so insertion order doesn't shift the hash;
+     * concatenates id/amount/amountPaid/status/dueDate/personName so any
+     * add/remove/payment/settle/edit invalidates the cache. Hex string
+     * keeps the value compact for DataStore storage.
+     */
+    private suspend fun checksumOf(): String {
+        val debts = repo.getAllDebts().first()
+        return debts.sortedBy { it.id }.joinToString("|") {
+            "${it.id}:${it.amount}:${it.amountPaid}:${it.status}:${it.dueDate ?: 0L}:${it.personName}"
+        }.hashCode().toString(16)
     }
     private fun compute(debts: List<DebtEntity>, curr: String): AnalyticsUiState {
         val totalOwed = debts.filter { it.type == "THEY_OWE_ME" && it.status != "SETTLED" }.sumOf { it.amount - it.amountPaid }
@@ -140,12 +170,22 @@ class AnalyticsViewModel @Inject constructor(
                 return@launch
             }
             val result = ai.analyzeDebts(s.totalOwedToMe, s.totalIOwe, s.recoveryRate, s.worstOffender)
-            aiInsight.value = when {
+            val insightText = when {
                 result.isSuccess -> result.getOrThrow()
                 result.exceptionOrNull() is NoApiKeyException ->
                     LocalizedString.get("no_api_key_message")
                 else ->
                     LocalizedString.get("ai_error_message")
+            }
+            aiInsight.value = insightText
+            // Wave 3 (Tasks 14+15): persist the cache only on successful
+            // Gemini generation. Localized fallback texts (no_api_key /
+            // ai_error) must NOT be cached — those aren't real insights,
+            // and storing them would suppress legitimate refetches once the
+            // user fixes their API key or reconnects.
+            if (result.isSuccess) {
+                val checksum = checksumOf()
+                prefs.setAiInsightCache(checksum, insightText)
             }
             _remainingFree.value = ai.remainingFreeRegenerations()
         } finally {
