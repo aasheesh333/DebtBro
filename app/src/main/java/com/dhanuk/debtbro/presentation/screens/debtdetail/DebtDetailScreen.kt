@@ -88,6 +88,16 @@ fun DebtDetailScreen(onBack: () -> Unit, onAuthRequired: () -> Unit = {}, viewMo
         }
     }
 
+    // Interstitial after markSettled — driven by DebtDetailViewModel's
+    // showInterstitial SharedFlow so the screen stays UI-state-free and
+    // the AdManager 5-min cooldown self-throttles across all triggers.
+    LaunchedEffect(Unit) {
+        viewModel.showInterstitial.collect {
+            val activity = com.dhanuk.debtbro.util.ActivityFinder.find(context)
+            activity?.let { viewModel.showInterstitialIfReady(it) }
+        }
+    }
+
     Scaffold(
         topBar = {
             CenterAlignedTopAppBar(

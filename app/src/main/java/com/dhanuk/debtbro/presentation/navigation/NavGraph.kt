@@ -7,6 +7,7 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
@@ -14,8 +15,12 @@ import androidx.compose.material.icons.outlined.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.viewinterop.AndroidView
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
@@ -24,6 +29,7 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import androidx.navigation.navDeepLink
+import com.dhanuk.debtbro.data.ads.AdManager
 import com.dhanuk.debtbro.data.datastore.AppPreferences
 import com.dhanuk.debtbro.presentation.screens.adddebt.AddDebtBottomSheet
 import com.dhanuk.debtbro.presentation.screens.analytics.AnalyticsScreen
@@ -41,11 +47,12 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.ui.Alignment
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.material3.CircularProgressIndicator
+import com.google.android.gms.ads.AdView
 import kotlinx.coroutines.flow.first
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun DebtBroNavGraph(appPreferences: AppPreferences) {
+fun DebtBroNavGraph(appPreferences: AppPreferences, adManager: AdManager) {
     val navController = rememberNavController()
     var showAddDebt by remember { mutableStateOf(false) }
 
@@ -95,6 +102,16 @@ fun DebtBroNavGraph(appPreferences: AppPreferences) {
         bottomBar = {
             if (currentRoute in navTabRoutes) {
                 Column {
+                    // ── Banner ad (2026-07-04, Wave 5 Issue 21 3B.1) ─────────────
+                    // 320×50 banner AdView mounted in a Column above the bottom
+                    // NavigationBar so it persists across all 4 tabs without
+                    // blocking the navigation surface. The AdView's lifecycle
+                    // (pause / resume / destroy) is wired to the Compose
+                    // LocalLifecycleOwner via the LifecycleEventObserver below.
+                    // AdManager returns null in release when the banner ad-unit
+                    // ID isn't configured; in that case the slot collapses (no
+                    // empty box, no white gap).
+                    BannerAdSlot(adManager = adManager)
                     NavigationBar(
                         containerColor = MaterialTheme.colorScheme.surface,
                         tonalElevation = 0.dp
@@ -286,6 +303,55 @@ fun DebtBroNavGraph(appPreferences: AppPreferences) {
             onDismiss = { showAddDebt = false },
             onDebtAdded = { showAddDebt = false },
             onSignInRequired = { navController.navigate(Screen.Auth.route) }
+        )
+    }
+}
+
+/**
+ * Banner ad slot — mounted above the bottom NavigationBar in NavGraph.
+ *
+ * Lifecycle wiring: the AdView requires `pause()`, `resume()`, and
+ * `destroy()` calls on the host lifecycle events to be a good app citizen
+ * (otherwise ads keep doing background work after the user backgrounds the
+ * app). We hook into [LocalLifecycleOwner]'s ON_PAUSE / ON_RESUME /
+ * ON_DESTROY events and dispatch the corresponding AdView method.
+ *
+ * The AdView instance is held in `remember` so it survives recompositions
+ * but is keyed on the Activity instance (so a configuration change that
+ * recreates the Activity gets a new AdView).
+ *
+ * Returns nothing if AdManager has no banner ad-unit configured (release
+ * builds without ADMOB_BANNER_ID), collapsing the slot.
+ */
+@Composable
+private fun BannerAdSlot(adManager: AdManager) {
+    val context = LocalContext.current
+    val lifecycleOwner = LocalLifecycleOwner.current
+    // Construct the AdView once per Activity instance. Keyed on context so
+    // a configuration change that recreates the Activity gets a fresh AdView
+    // (the old one's destroy() runs via onDispose below).
+    var adView by remember(context) { mutableStateOf<AdView?>(adManager.createBannerAdView(context)) }
+
+    val currentAdView = adView
+    if (currentAdView != null) {
+        DisposableEffect(lifecycleOwner) {
+            val observer = LifecycleEventObserver { _, event ->
+                when (event) {
+                    Lifecycle.Event.ON_PAUSE -> currentAdView.pause()
+                    Lifecycle.Event.ON_RESUME -> currentAdView.resume()
+                    Lifecycle.Event.ON_DESTROY -> currentAdView.destroy()
+                    else -> {}
+                }
+            }
+            lifecycleOwner.lifecycle.addObserver(observer)
+            onDispose {
+                lifecycleOwner.lifecycle.removeObserver(observer)
+                currentAdView.destroy()
+            }
+        }
+        AndroidView(
+            factory = { currentAdView },
+            modifier = Modifier.fillMaxWidth()
         )
     }
 }

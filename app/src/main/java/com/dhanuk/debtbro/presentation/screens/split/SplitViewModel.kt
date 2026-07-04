@@ -68,6 +68,16 @@ class SplitViewModel @Inject constructor(
     val remainingFree: StateFlow<Int> = _remainingFree.asStateFlow()
     var pendingRewardSplit: SplitEntity? = null
 
+    // Interstitial trigger — emitted after createDebtsFromSplit so the
+    // screen can call adManager.showInterstitialIfReady(activity) on a
+    // natural task-complete transition. See DebtDetailViewModel for the
+    // rationale and 5-min cooldown behavior.
+    private val _showInterstitial = MutableSharedFlow<Unit>()
+    val showInterstitial: SharedFlow<Unit> = _showInterstitial.asSharedFlow()
+
+    fun showInterstitialIfReady(activity: android.app.Activity): Boolean =
+        adManager.showInterstitialIfReady(activity, onDismissed = { /* AdManager pre-loads next */ })
+
     fun dismissRewardAd() { _showRewardAd.value = false }
     fun preloadRewardedAd(context: Context) { adManager.loadRewardedAd(context) }
 
@@ -186,6 +196,10 @@ class SplitViewModel @Inject constructor(
                 )
             }
             _splitsWithDebtsCreated.value = _splitsWithDebtsCreated.value + split.id
+            // Interstitial at the "create debts from split — task complete"
+            // moment. AdMob's canonical natural-transition timing. The 5-min
+            // cooldown in AdManager self-throttles across all triggers.
+            _showInterstitial.tryEmit(Unit)
             syncIfSignedIn()
         }.onFailure { _snackbar.tryEmit("Couldn't create debts from split: ${it.message ?: "unknown error"}") }
     }

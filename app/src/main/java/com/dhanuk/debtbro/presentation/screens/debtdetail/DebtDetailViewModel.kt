@@ -174,6 +174,18 @@ class DebtDetailViewModel @Inject constructor(
     private val _toastEvent = MutableSharedFlow<String>()
     val toastEvent: SharedFlow<String> = _toastEvent.asSharedFlow()
 
+    // Interstitial trigger — emitted after markSettled so the screen can
+    // call adManager.showInterstitialIfReady(activity) on a natural
+    // task-complete transition. The 5-min cooldown in AdManager self-
+    // throttles across all interstitial triggers (AddDebt + markSettled +
+    // Split createDebtsFromSplit). AdMob's published policy explicitly
+    // permits interstitials at "task complete" moments.
+    private val _showInterstitial = MutableSharedFlow<Unit>()
+    val showInterstitial: SharedFlow<Unit> = _showInterstitial.asSharedFlow()
+
+    fun showInterstitialIfReady(activity: android.app.Activity): Boolean =
+        adManager.showInterstitialIfReady(activity, onDismissed = { /* AdManager pre-loads next */ })
+
     init {
         viewModelScope.launch {
             _remainingFree.value = aiRepository.remainingFreeRegenerations()
@@ -311,6 +323,9 @@ class DebtDetailViewModel @Inject constructor(
             if (remaining > 0) {
                 paymentRepository.recordPayment(d.id, remaining, "Full settlement")
                 _showConfetti.value = true
+                // Emit the interstitial trigger after the settlement is fully
+                // recorded so the ad's onDismissed doesn't race the toast.
+                _showInterstitial.tryEmit(Unit)
             }
         }
         syncIfSignedIn()

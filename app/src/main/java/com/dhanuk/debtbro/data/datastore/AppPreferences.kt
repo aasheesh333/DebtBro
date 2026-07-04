@@ -71,6 +71,15 @@ class AppPreferences(@ApplicationContext private val context: Context) {
         // both. Suppresses screen-switch refetch spam.
         val LAST_AI_INSIGHT_TEXT = stringPreferencesKey("last_ai_insight_text")
         val LAST_AI_INSIGHT_CHECKSUM = stringPreferencesKey("last_ai_insight_checksum")
+
+        // ── Ads (2026-07-04) ────────────────────────────────────────────────
+        // firstLaunchDone gates AppOpenAd: AdMob policy forbids app-open
+        //   ads on the very first launch ever. Set true after the first
+        //   MainActivity.onCreate completes.
+        // lastAppOpenAt throttles AppOpenAd to a 4-hour cooldown between
+        //   impressions, per AdMob's published app-open guidance.
+        val FIRST_LAUNCH_DONE = booleanPreferencesKey("first_launch_done")
+        val LAST_APP_OPEN_AT = longPreferencesKey("last_app_open_at")
     }
 
 
@@ -124,6 +133,10 @@ class AppPreferences(@ApplicationContext private val context: Context) {
     // Wave 3 (Tasks 14+15): AI insight cache for the Analytics tab.
     val lastAiInsightText: Flow<String?> = context.dataStore.data.map { it[Keys.LAST_AI_INSIGHT_TEXT] }
     val lastAiInsightChecksum: Flow<String?> = context.dataStore.data.map { it[Keys.LAST_AI_INSIGHT_CHECKSUM] }
+
+    // Ads (2026-07-04)
+    val firstLaunchDone: Flow<Boolean> = context.dataStore.data.map { it[Keys.FIRST_LAUNCH_DONE] ?: false }
+    val lastAppOpenAt: Flow<Long> = context.dataStore.data.map { it[Keys.LAST_APP_OPEN_AT] ?: 0L }
 
     suspend fun setOnboardingComplete(name: String) = context.dataStore.edit {
         it[Keys.HAS_COMPLETED_ONBOARDING] = true
@@ -228,6 +241,12 @@ class AppPreferences(@ApplicationContext private val context: Context) {
             it[Keys.LAST_AI_INSIGHT_CHECKSUM] = checksum
         }
     }
+
+    // ── Ads (2026-07-04) ──────────────────────────────────────────────────
+    /** Set once after the first MainActivity completes onCreate. */
+    suspend fun setFirstLaunchDone() = context.dataStore.edit { it[Keys.FIRST_LAUNCH_DONE] = true }
+    /** Persisted every time an AppOpenAd is shown; gates the 4h cooldown. */
+    suspend fun setLastAppOpenAt(ts: Long) = context.dataStore.edit { it[Keys.LAST_APP_OPEN_AT] = ts }
 
     suspend fun clearAll() = context.dataStore.edit { it.clear() }
 

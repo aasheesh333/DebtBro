@@ -53,6 +53,15 @@ fun SplitScreen(onAuthRequired: () -> Unit, viewModel: SplitViewModel = hiltView
     }
     LaunchedEffect(Unit) { viewModel.preloadRewardedAd(context) }
 
+    // Interstitial after createDebtsFromSplit — driven by SplitViewModel's
+    // showInterstitial SharedFlow. Same pattern as AddDebtBottomSheet and
+    // DebtDetailScreen.
+    LaunchedEffect(Unit) {
+        viewModel.showInterstitial.collect {
+            activity?.let { a -> viewModel.showInterstitialIfReady(a) }
+        }
+    }
+
     // Box (instead of an inner Scaffold) so we don't re-apply WindowInsets.systemBars
     // — the outer NavGraph Scaffold already accounts for the bottom nav bar inset.
     // The previous inner Scaffold caused a duplicate inset strip above the nav bar.

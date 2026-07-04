@@ -51,6 +51,12 @@ android {
         buildConfigField("String", "ADMOB_BANNER_ID", "\"${escapedProp("ADMOB_BANNER_ID")}\"")
         buildConfigField("String", "ADMOB_INTERSTITIAL_ID", "\"${escapedProp("ADMOB_INTERSTITIAL_ID")}\"")
         buildConfigField("String", "ADMOB_REWARDED_ID", "\"${escapedProp("ADMOB_REWARDED_ID")}\"")
+        // Comma-separated list of test device hashing IDs ad clicks during
+        // debug sessions don't count toward policy violation. Developers
+        // add their device's hashed advertising ID (visible in logcat on
+        // first ad load attempt) to local.properties: TEST_DEVICE_IDS=...
+        // CI ships an empty list; production release ignores this code path.
+        buildConfigField("String", "TEST_DEVICE_IDS", "\"${escapedProp("TEST_DEVICE_IDS")}\"")
         buildConfigField("String", "ONESIGNAL_APP_ID", "\"${escapedProp("ONESIGNAL_APP_ID")}\"")
         // ONESIGNAL_API_KEY is a REST API server secret - ideally should be in Cloud Functions only
         // Included here for backward compatibility with legacy OneSignal dashboard push workflows
