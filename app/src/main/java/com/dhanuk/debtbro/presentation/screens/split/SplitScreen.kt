@@ -53,16 +53,23 @@ fun SplitScreen(onAuthRequired: () -> Unit, viewModel: SplitViewModel = hiltView
     }
     LaunchedEffect(Unit) { viewModel.preloadRewardedAd(context) }
 
-    Scaffold(
-        snackbarHost = { SnackbarHost(snackbarHostState) }
-    ) { padding ->
+    // Box (instead of an inner Scaffold) so we don't re-apply WindowInsets.systemBars
+    // — the outer NavGraph Scaffold already accounts for the bottom nav bar inset.
+    // The previous inner Scaffold caused a duplicate inset strip above the nav bar.
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(MaterialTheme.colorScheme.background)
+    ) {
         LazyColumn(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(padding)
-                .padding(UITokens.CardInnerPadding)
-                .background(MaterialTheme.colorScheme.background),
-            verticalArrangement = Arrangement.spacedBy(UITokens.SpaceMedium)
+                .padding(horizontal = UITokens.ScreenHorizontalPadding),
+            verticalArrangement = Arrangement.spacedBy(UITokens.SpaceSmall),
+            contentPadding = PaddingValues(
+                top = UITokens.ScreenTopPadding,
+                bottom = UITokens.ScreenBottomPadding
+            )
         ) {
         item {
             Text(
@@ -222,6 +229,13 @@ fun SplitScreen(onAuthRequired: () -> Unit, viewModel: SplitViewModel = hiltView
             )
         }
     }
+
+    // SnackbarHost as a sibling of the LazyColumn — overlays the list
+    // for short-lived messages (e.g. "AI Take failed, try again").
+    SnackbarHost(
+        hostState = snackbarHostState,
+        modifier = Modifier.align(Alignment.BottomCenter)
+    )
 
     // Auth prompt is rendered OUTSIDE the LazyColumn so the AlertDialog
     // behaves as a top-level overlay (dim + center), not as a child slot
