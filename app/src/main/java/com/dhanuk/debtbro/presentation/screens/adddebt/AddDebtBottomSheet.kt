@@ -435,8 +435,17 @@ fun AddDebtBottomSheet(
             onDismissRequest = { showDatePicker = false },
             confirmButton = {
                 TextButton(onClick = {
-                    selectedDate = datePickerState.selectedDateMillis
-                    showDatePicker = false
+                    val picked = datePickerState.selectedDateMillis
+                    if (picked != null && picked < startOfTodayUtc) {
+                        Toast.makeText(
+                            context,
+                            "Due date cannot be in the past",
+                            Toast.LENGTH_SHORT
+                        ).show()
+                    } else {
+                        selectedDate = picked
+                        showDatePicker = false
+                    }
                 }) { Text("OK", color = MaterialTheme.colorScheme.primary) }
             },
             dismissButton = {
@@ -446,10 +455,7 @@ fun AddDebtBottomSheet(
             },
             colors = DatePickerDefaults.colors(containerColor = MaterialTheme.colorScheme.surface)
         ) {
-            DatePicker(
-                state = datePickerState,
-                datesPredicate = { millis -> millis >= startOfTodayUtc }
-            )
+            DatePicker(state = datePickerState)
         }
     }
 
