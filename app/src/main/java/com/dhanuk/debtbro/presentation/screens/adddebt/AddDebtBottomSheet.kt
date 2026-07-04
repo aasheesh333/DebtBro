@@ -400,7 +400,7 @@ fun AddDebtBottomSheet(
                 OutlinedTextField(
                     value = customEmoji,
                     onValueChange = {
-                        if (it.isNotEmpty()) {
+                        if (it.isNotEmpty() && it.length <= 8) {
                             customEmoji = it
                             selectedEmoji = it.take(2).trim()
                         }
@@ -422,6 +422,15 @@ fun AddDebtBottomSheet(
         val datePickerState = rememberDatePickerState(
             initialSelectedDateMillis = System.currentTimeMillis()
         )
+        val startOfTodayUtc = remember {
+            val cal = java.util.Calendar.getInstance().apply {
+                set(java.util.Calendar.HOUR_OF_DAY, 0)
+                set(java.util.Calendar.MINUTE, 0)
+                set(java.util.Calendar.SECOND, 0)
+                set(java.util.Calendar.MILLISECOND, 0)
+            }
+            cal.timeInMillis
+        }
         DatePickerDialog(
             onDismissRequest = { showDatePicker = false },
             confirmButton = {
@@ -437,7 +446,10 @@ fun AddDebtBottomSheet(
             },
             colors = DatePickerDefaults.colors(containerColor = MaterialTheme.colorScheme.surface)
         ) {
-            DatePicker(state = datePickerState)
+            DatePicker(
+                state = datePickerState,
+                datesPredicate = { millis -> millis >= startOfTodayUtc }
+            )
         }
     }
 
