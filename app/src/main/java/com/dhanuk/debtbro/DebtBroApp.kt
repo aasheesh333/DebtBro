@@ -76,8 +76,8 @@ class DebtBroApp : Application(), Configuration.Provider {
 
         // ── Ads ────────────────────────────────────────────────────────────────
         try {
-            MobileAds.initialize(this) { status ->
-                Log.d("DebtBroApp", "MobileAds init complete: ${status.adapterStatusByAdNetwork.size} adapter(s)")
+            MobileAds.initialize(this) {
+                Log.d("DebtBroApp", "MobileAds init complete")
                 adManager.loadInterstitial(this)
             }
         } catch (e: Exception) {
