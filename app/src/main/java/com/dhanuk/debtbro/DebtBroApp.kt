@@ -5,6 +5,8 @@ import android.net.ConnectivityManager
 import android.net.Network
 import android.net.NetworkCapabilities
 import android.net.NetworkRequest
+import android.os.Handler
+import android.os.Looper
 import android.util.Log
 import androidx.hilt.work.HiltWorkerFactory
 import androidx.work.Configuration
@@ -182,8 +184,15 @@ class DebtBroApp : Application(), Configuration.Provider {
                 if (now - lastNetworkRetryAt < 30_000L) return
                 lastNetworkRetryAt = now
                 Log.d("DebtBroApp", "Network restored — retrying ad loads.")
-                adManager.loadInterstitial(this@DebtBroApp)
-                adManager.loadRewardedAd(this@DebtBroApp)
+                // NetworkCallbacks fire on a background HandlerThread, but
+                // InterstitialAd.load / RewardedAd.load throw
+                // IllegalStateException(#008 Must be called on the main UI thread)
+                // unless dispatched on the main Looper. (Crashlytics 0697ffd1,
+                // AdManager.kt:151, regression from wave-5 NetworkCallback retry.)
+                Handler(Looper.getMainLooper()).post {
+                    adManager.loadInterstitial(this@DebtBroApp)
+                    adManager.loadRewardedAd(this@DebtBroApp)
+                }
             }
         })
     }
