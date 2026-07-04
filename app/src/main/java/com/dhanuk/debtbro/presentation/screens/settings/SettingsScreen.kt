@@ -413,7 +413,7 @@ fun SettingsScreen(viewModel: SettingsViewModel = hiltViewModel()) {
                     modifier = Modifier.fillMaxWidth().padding(vertical = 24.dp),
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
-                    Text("DebtBro v${BuildConfig.VERSION_NAME}", color = extra.subtitleGray, fontSize = UITokens.FontSmall)
+                    Text("DebtPayoff Pro v${BuildConfig.VERSION_NAME}", color = extra.subtitleGray, fontSize = UITokens.FontSmall)
                     Text(
                         if (state.isSignedIn) LocalizedString.get("cloud_backup_active") else LocalizedString.get("data_saved_locally"),
                         color = extra.subtitleGray.copy(alpha = 0.7f),

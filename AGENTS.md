@@ -1,4 +1,4 @@
-# PROJECT KNOWLEDGE BASE — DebtBro
+# PROJECT KNOWLEDGE BASE — DebtPayoff Pro
 
 **Generated:** 2026-05-19
 **Commit:** `efb066f`
@@ -6,7 +6,7 @@
 
 ## OVERVIEW
 
-DebtBro — Android (Kotlin/Jetpack Compose) app for tracking personal debts with AI-powered "roast" reminders, Firebase sync, expense splitting, and exportable shame cards. Single-module Gradle project.
+DebtPayoff Pro — Android (Kotlin/Jetpack Compose) app for tracking personal debts with AI-powered "roast" reminders, Firebase sync, expense splitting, and exportable shame cards. Single-module Gradle project.
 
 ## STRUCTURE
 

@@ -1,5 +1,5 @@
 <resources>
-    <string name="app_name">DebtBro</string>
+    <string name="app_name">DebtPayoff Pro</string>
     <!-- PR-validation stub. The release build at .github/workflows/build.yml
          injects the real google-services.json (via CI secret GOOGLE_SERVICES_JSON),
          which causes the google-services Gradle plugin to generate a values.xml

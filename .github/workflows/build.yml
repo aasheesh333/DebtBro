@@ -1,4 +1,4 @@
-name: DebtBro Release Build
+name: DebtPayoff Pro Release Build
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Builds the signed release APK + AAB on every push to main, on `v*` tag
@@ -144,14 +144,14 @@ jobs:
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: DebtBro-APK-${{ github.run_number }}
+          name: DebtPayoffPro-APK-${{ github.run_number }}
           path: app/build/outputs/apk/release/app-release.apk
           retention-days: 30
 
       - name: Upload AAB
         uses: actions/upload-artifact@v4
         with:
-          name: DebtBro-AAB-${{ github.run_number }}
+          name: DebtPayoffPro-AAB-${{ github.run_number }}
           path: app/build/outputs/bundle/release/app-release.aab
           retention-days: 30
 
@@ -160,7 +160,7 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           tag_name: v1.0.${{ github.run_number }}
-          name: "DebtBro v1.0.${{ github.run_number }}"
+          name: "DebtPayoff Pro v1.0.${{ github.run_number }}"
           files: |
             app/build/outputs/apk/release/app-release.apk
             app/build/outputs/bundle/release/app-release.aab

@@ -46,7 +46,7 @@ fun shareImageToWhatsApp(context: Context, bitmap: Bitmap, text: String) {
 
 fun copyToClipboard(context: Context, text: String) {
     val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
-    clipboard.setPrimaryClip(ClipData.newPlainText("DebtBro", text))
+    clipboard.setPrimaryClip(ClipData.newPlainText("DebtPayoff Pro", text))
 }
 
 fun shareFile(context: Context, uri: Uri, mimeType: String = "*/*") {

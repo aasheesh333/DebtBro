@@ -87,7 +87,7 @@ class OnboardingViewModel @Inject constructor(
         val result = auth.signInWithGoogle(activity)
         if (result.isSuccess) {
             val user = result.getOrThrow()
-            prefs.setSignedIn("google", user.displayName ?: _userName.value.ifBlank { "DebtBro user" }, user.email ?: "", user.photoUrl?.toString() ?: "")
+            prefs.setSignedIn("google", user.displayName ?: _userName.value.ifBlank { "DebtPayoff Pro user" }, user.email ?: "", user.photoUrl?.toString() ?: "")
             onResult(true)
         } else {
             _authError.value = result.exceptionOrNull()?.message ?: "Sign-in failed"
@@ -99,7 +99,7 @@ class OnboardingViewModel @Inject constructor(
         val result = auth.signUpWithEmailPassword(email, password)
         if (result.isSuccess) {
             val user = result.getOrThrow()
-            val displayName = name.ifBlank { _userName.value.ifBlank { "DebtBro user" } }
+            val displayName = name.ifBlank { _userName.value.ifBlank { "DebtPayoff Pro user" } }
             prefs.setSignedIn("email", displayName, user.email ?: email, "")
             if (_userName.value.isBlank() && name.isNotBlank()) _userName.value = name
             onResult(true, null)
@@ -114,7 +114,7 @@ class OnboardingViewModel @Inject constructor(
         val result = auth.signInWithEmailPassword(email, password)
         if (result.isSuccess) {
             val user = result.getOrThrow()
-            prefs.setSignedIn("email", user.displayName ?: _userName.value.ifBlank { "DebtBro user" }, user.email ?: email, "")
+            prefs.setSignedIn("email", user.displayName ?: _userName.value.ifBlank { "DebtPayoff Pro user" }, user.email ?: email, "")
             onResult(true, null)
         } else {
             val msg = result.exceptionOrNull()?.message ?: "Sign-in failed"

@@ -137,6 +137,6 @@ jobs:
         uses: actions/upload-artifact@v4
         if: success()
         with:
-          name: DebtBro-debug-APK-${{ github.run_number }}
+          name: DebtPayoffPro-debug-APK-${{ github.run_number }}
           path: app/build/outputs/apk/debug/app-debug.apk
           retention-days: 7

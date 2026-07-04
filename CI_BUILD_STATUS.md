@@ -1,4 +1,4 @@
-# DebtBro CI Build Status Report
+# DebtPayoff Pro CI Build Status Report
 
 **Generated:** 2026-06-26
 **Repository:** `aasheesh333/DebtBro`

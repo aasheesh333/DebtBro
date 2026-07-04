@@ -416,7 +416,7 @@ class DebtDetailViewModel @Inject constructor(
 
         val textMessage = when (debt.type) {
             "THEY_OWE_ME" -> buildString {
-                append("💰 *DebtBro - Payment Reminder*\n\n")
+                append("💰 *DebtPayoff Pro - Payment Reminder*\n\n")
                 append("*To:* ${debt.personName}\n")
                 append("*Total:* $totalStr\n")
                 append("*Paid:* $paidStr\n")
@@ -427,10 +427,10 @@ class DebtDetailViewModel @Inject constructor(
                 if (paymentList.isNotEmpty()) {
                     append("*Payment History:*\n$historyLines\n\n")
                 }
-                append("— Sent via DebtBro")
+                append("— Sent via DebtPayoff Pro")
             }
             else -> buildString {
-                append("🙏 *DebtBro - I Owe You*\n\n")
+                append("🙏 *DebtPayoff Pro - I Owe You*\n\n")
                 append("*From:* ${debt.personName}\n")
                 append("*Total:* $totalStr\n")
                 append("*Paid:* $paidStr\n")
@@ -441,7 +441,7 @@ class DebtDetailViewModel @Inject constructor(
                 if (paymentList.isNotEmpty()) {
                     append("*Payment History:*\n$historyLines\n\n")
                 }
-                append("— Sent via DebtBro")
+                append("— Sent via DebtPayoff Pro")
             }
         }
 

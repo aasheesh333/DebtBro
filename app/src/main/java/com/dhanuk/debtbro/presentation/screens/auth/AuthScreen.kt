@@ -353,7 +353,7 @@ private fun AuthHero(title: String) {
             )
             Spacer(Modifier.height(4.dp))
             Text(
-                "DebtBro",
+                "DebtPayoff Pro",
                 color = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.85f),
                 fontSize = 14.sp,
                 fontWeight = FontWeight.SemiBold

@@ -86,7 +86,7 @@ object CanvasExporter {
         val remaining = debt.amount - debt.amountPaid
         val amountStr = formatCurrency(remaining, debt.currency)
         val dueDate = debt.dueDate?.let { SimpleDateFormat("dd MMM yyyy", Locale.getDefault()).format(Date(it)) } ?: "No due date"
-        val message = aiMessage.ifBlank { debt.description.ifBlank { "DebtBro keeps score so you do not have to." } }
+        val message = aiMessage.ifBlank { debt.description.ifBlank { "DebtPayoff Pro keeps score so you do not have to." } }
 
         when (style) {
             0 -> drawWallOfShame(canvas, paint, debt, amountStr, dueDate, message, showDescription, showDueDate, showEmoji)
@@ -168,7 +168,7 @@ object CanvasExporter {
         paint.textAlign = Paint.Align.CENTER
         paint.textSize = 24f
         paint.color = Color.BLACK
-        canvas.drawText("DebtBro", (W / 2).toFloat(), (H - 80).toFloat(), paint)
+        canvas.drawText("DebtPayoff Pro", (W / 2).toFloat(), (H - 80).toFloat(), paint)
     }
 
     private fun drawInstaVibe(canvas: Canvas, paint: Paint, debt: DebtEntity, amount: String, dueDate: String, message: String, showDescription: Boolean, showDueDate: Boolean, showEmoji: Boolean) {
@@ -241,7 +241,7 @@ object CanvasExporter {
         paint.textAlign = Paint.Align.CENTER
         paint.textSize = 22f
         paint.color = Color.rgb(150, 150, 150)
-        canvas.drawText("DebtBro", (W / 2).toFloat(), (H - 60).toFloat(), paint)
+        canvas.drawText("DebtPayoff Pro", (W / 2).toFloat(), (H - 60).toFloat(), paint)
     }
 
     private fun drawElegantMinimal(canvas: Canvas, paint: Paint, debt: DebtEntity, amount: String, dueDate: String, message: String, showDescription: Boolean, showDueDate: Boolean, showEmoji: Boolean) {
@@ -310,7 +310,7 @@ object CanvasExporter {
         paint.textSize = 24f
         paint.color = Color.rgb(180, 150, 100)
         paint.isFakeBoldText = true
-        canvas.drawText("DebtBro", (W / 2).toFloat(), (H - 80).toFloat(), paint)
+        canvas.drawText("DebtPayoff Pro", (W / 2).toFloat(), (H - 80).toFloat(), paint)
 
         paint.color = Color.rgb(200, 180, 150)
         canvas.drawRect(0f, (H - 8).toFloat(), W.toFloat(), H.toFloat(), paint)
@@ -390,7 +390,7 @@ object CanvasExporter {
         paint.textAlign = Paint.Align.CENTER
         paint.textSize = 20f
         paint.color = cyan
-        canvas.drawText("DebtBro", (W / 2).toFloat(), (H - 60).toFloat(), paint)
+        canvas.drawText("DebtPayoff Pro", (W / 2).toFloat(), (H - 60).toFloat(), paint)
     }
 
     fun saveDebtCard(context: Context, bitmap: Bitmap): Uri {
@@ -420,7 +420,7 @@ object CanvasExporter {
             addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
         }
         try {
-            context.startActivity(Intent.createChooser(intent, "Share DebtBro card").apply {
+            context.startActivity(Intent.createChooser(intent, "Share DebtPayoff Pro card").apply {
                 addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
             })
         } catch (e: Exception) {

@@ -38,7 +38,7 @@ class WeeklySummaryWorker @AssistedInject constructor(
         val recoveredText = com.dhanuk.debtbro.util.formatCurrency(recovered, currency)
         NotificationCompat.Builder(applicationContext, CHANNEL)
             .setSmallIcon(R.drawable.ic_launcher)
-            .setContentTitle("DebtBro weekly summary")
+            .setContentTitle("DebtPayoff Pro weekly summary")
             .setContentText("Owed: $owedText • Recovered this week: $recoveredText")
             .setContentIntent(intent)
             .setAutoCancel(true)

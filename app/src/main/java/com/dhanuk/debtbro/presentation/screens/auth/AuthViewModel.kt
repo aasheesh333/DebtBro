@@ -229,7 +229,7 @@ class AuthViewModel @Inject constructor(
             _state.value = _state.value.copy(isBusy = false, errorRes = LocalizedString.get("auth_no_uid_returned"))
             return
         }
-        prefs.setSignedIn(provider, name ?: "DebtBro user", email ?: "", photo)
+        prefs.setSignedIn(provider, name ?: "DebtPayoff Pro user", email ?: "", photo)
         runCatching {
             realTimeSyncManager.startListening(uid)
             sync.fullSync(uid)

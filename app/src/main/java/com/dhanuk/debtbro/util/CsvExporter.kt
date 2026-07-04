@@ -14,7 +14,7 @@ import java.io.IOException
 import java.io.OutputStreamWriter
 
 /**
- * CSV export for DebtBro.
+ * CSV export for DebtPayoff Pro.
  *
  * Fix history:
  *  2026-07-03 first pass bumped minSdk from 26 → 29 and removed the
@@ -38,7 +38,7 @@ import java.io.OutputStreamWriter
 object CsvExporter {
     fun exportDebts(context: Context, debts: List<DebtEntity>): Result<Uri> = runCatching {
         if (debts.isEmpty()) throw IOException("No debts to export")
-        val fileName = "debtbro-${System.currentTimeMillis()}.csv"
+        val fileName = "debtpayoff-pro-${System.currentTimeMillis()}.csv"
 
         val uri = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
             writeToMediaStore(context, fileName, debts)
@@ -54,7 +54,7 @@ object CsvExporter {
         val values = android.content.ContentValues().apply {
             put(MediaStore.MediaColumns.DISPLAY_NAME, fileName)
             put(MediaStore.MediaColumns.MIME_TYPE, "text/csv")
-            put(MediaStore.MediaColumns.RELATIVE_PATH, "Download/DebtBro")
+            put(MediaStore.MediaColumns.RELATIVE_PATH, "Download/DebtPayoffPro")
         }
         val uri = context.contentResolver.insert(
             MediaStore.Downloads.EXTERNAL_CONTENT_URI, values
@@ -92,7 +92,7 @@ object CsvExporter {
         val downloadsDir = Environment.getExternalStoragePublicDirectory(
             Environment.DIRECTORY_DOWNLOADS
         )
-        val targetDir = File(downloadsDir, "DebtBro").apply { if (!exists()) mkdirs() }
+        val targetDir = File(downloadsDir, "DebtPayoffPro").apply { if (!exists()) mkdirs() }
         val file = File(targetDir, fileName)
         file.outputStream().use { stream -> writeCsv(stream, debts) }
         return androidx.core.content.FileProvider.getUriForFile(

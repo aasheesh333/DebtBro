@@ -310,7 +310,7 @@ class SettingsViewModel @Inject constructor(
 
     fun signInWithGoogle(activity: Activity) = viewModelScope.launch {
         auth.signInWithGoogle(activity).onSuccess { user ->
-            prefs.setGoogleSignedIn(true, user.displayName ?: "DebtBro user", user.email ?: "", user.photoUrl?.toString().orEmpty())
+            prefs.setGoogleSignedIn(true, user.displayName ?: "DebtPayoff Pro user", user.email ?: "", user.photoUrl?.toString().orEmpty())
             user.uid?.let { uid ->
                 // Server-side deletion-request check (the source of truth — a
                 // pending request could have been created on another device

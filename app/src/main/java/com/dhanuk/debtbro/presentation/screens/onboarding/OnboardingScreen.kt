@@ -206,7 +206,7 @@ fun Page1Welcome(selectedLanguage: String, onLanguageSelected: (com.dhanuk.debtb
     ) {
         Spacer(Modifier.height(32.dp))
         Text("\uD83D\uDCB8", fontSize = 80.sp)
-        Text("DebtBro", color = MaterialTheme.colorScheme.primary, fontSize = 48.sp, fontWeight = FontWeight.ExtraBold)
+        Text("DebtPayoff Pro", color = MaterialTheme.colorScheme.primary, fontSize = 48.sp, fontWeight = FontWeight.ExtraBold)
         Text(LocalizedString.get("app_tagline"), color = extra.subtitleGray, fontSize = 16.sp, textAlign = TextAlign.Center)
         Spacer(Modifier.height(32.dp))
         Text(LocalizedString.get("choose_language"), color = MaterialTheme.colorScheme.onSurface, fontSize = UITokens.FontSubhead, fontWeight = FontWeight.Bold, modifier = Modifier.padding(bottom = UITokens.CardInnerPadding))

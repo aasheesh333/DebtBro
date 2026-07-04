@@ -426,7 +426,7 @@ object HtmlExporter {
             addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
         }
         try {
-            context.startActivity(Intent.createChooser(intent, "Share DebtBro Card").apply {
+            context.startActivity(Intent.createChooser(intent, "Share DebtPayoff Pro Card").apply {
                 addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
             })
         } catch (e: Exception) {
