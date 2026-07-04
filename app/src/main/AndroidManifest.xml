@@ -4,6 +4,11 @@
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
 
+    <!-- Required on Android 13+ (API 33) so the Google Mobile Ads SDK can
+         access the Advertising ID used for ad personalization. If this
+         permission is removed, the SDK falls back to limited ad serving. -->
+    <uses-permission android:name="com.google.android.gms.permission.AD_ID" />
+
     <!-- P0-2 (2026-07-03): READ_CONTACTS is required by the Split tab's
          "pick from contacts" feature (ContactPickerBottomSheet uses
          ActivityResultContracts.PickContact, which queries

@@ -50,6 +50,7 @@ fun AddDebtBottomSheet(
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     val hapticFeedback = LocalHapticFeedback.current
     val context = LocalContext.current
+    val activity = context as? android.app.Activity
     val isLoading by viewModel.isLoading.collectAsStateWithLifecycle()
     val showAuthPrompt by viewModel.showAuthPrompt.collectAsStateWithLifecycle()
 
@@ -85,6 +86,12 @@ fun AddDebtBottomSheet(
 
     LaunchedEffect(Unit) {
         selectedCurrency = viewModel.getDefaultCurrency()
+    }
+
+    LaunchedEffect(Unit) {
+        viewModel.showInterstitial.collect {
+            activity?.let { a -> viewModel.showInterstitialIfReady(a) }
+        }
     }
 
     ModalBottomSheet(

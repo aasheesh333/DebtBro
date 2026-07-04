@@ -2,14 +2,18 @@ package com.dhanuk.debtbro.presentation.screens.adddebt
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.dhanuk.debtbro.data.ads.AdManager
 import com.dhanuk.debtbro.data.datastore.AppPreferences
 import com.dhanuk.debtbro.data.db.entity.DebtEntity
 import com.dhanuk.debtbro.data.firebase.AuthManager
 import com.dhanuk.debtbro.data.firebase.SyncManager
 import com.dhanuk.debtbro.data.repository.DebtRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
@@ -20,7 +24,8 @@ class AddDebtViewModel @Inject constructor(
     private val debtRepository: DebtRepository,
     private val prefs: AppPreferences,
     private val authManager: AuthManager,
-    private val syncManager: SyncManager
+    private val syncManager: SyncManager,
+    private val adManager: AdManager
 ) : ViewModel() {
 
     private val _isLoading = MutableStateFlow(false)
@@ -28,6 +33,9 @@ class AddDebtViewModel @Inject constructor(
 
     private val _showAuthPrompt = MutableStateFlow(false)
     val showAuthPrompt: StateFlow<Boolean> = _showAuthPrompt.asStateFlow()
+
+    private val _showInterstitial = MutableSharedFlow<Unit>()
+    val showInterstitial: SharedFlow<Unit> = _showInterstitial.asSharedFlow()
 
     fun dismissAuthPrompt() {
         _showAuthPrompt.value = false
@@ -78,12 +86,21 @@ class AddDebtViewModel @Inject constructor(
                 }
 
                 onSaved()
+                emitShowInterstitial()
             } catch (e: Exception) {
                 android.util.Log.e("AddDebtViewModel", "Failed to save debt: ${e.message}", e)
             } finally {
                 _isLoading.value = false
             }
         }
+    }
+
+    private fun emitShowInterstitial() = viewModelScope.launch {
+        _showInterstitial.emit(Unit)
+    }
+
+    fun showInterstitialIfReady(activity: android.app.Activity): Boolean {
+        return adManager.showInterstitialIfReady(activity, onDismissed = { /* AdManager already pre-loads the next ad */ })
     }
 
     suspend fun getDefaultCurrency(): String {

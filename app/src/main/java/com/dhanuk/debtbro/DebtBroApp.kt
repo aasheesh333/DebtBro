@@ -9,6 +9,7 @@ import androidx.work.ExistingPeriodicWorkPolicy
 import androidx.work.NetworkType
 import androidx.work.PeriodicWorkRequestBuilder
 import androidx.work.WorkManager
+import com.dhanuk.debtbro.data.ads.AdManager
 import com.google.android.gms.ads.MobileAds
 import com.google.firebase.analytics.FirebaseAnalytics
 import com.google.firebase.analytics.ktx.analytics
@@ -30,6 +31,7 @@ import javax.inject.Inject
 @HiltAndroidApp
 class DebtBroApp : Application(), Configuration.Provider {
     @Inject lateinit var workerFactory: HiltWorkerFactory
+    @Inject lateinit var adManager: AdManager
     override val workManagerConfiguration: Configuration
         get() = Configuration.Builder().setWorkerFactory(workerFactory).build()
 
@@ -74,7 +76,10 @@ class DebtBroApp : Application(), Configuration.Provider {
 
         // ── Ads ────────────────────────────────────────────────────────────────
         try {
-            MobileAds.initialize(this) {}
+            MobileAds.initialize(this) { status ->
+                Log.d("DebtBroApp", "MobileAds init complete: ${status.adapterStatusByAdNetwork.size} adapter(s)")
+                adManager.loadInterstitial(this)
+            }
         } catch (e: Exception) {
             Log.e("DebtBroApp", "MobileAds initialize failed", e)
         }
