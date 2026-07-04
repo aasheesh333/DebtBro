@@ -57,6 +57,21 @@
         <meta-data
             android:name="com.google.android.gms.ads.APPLICATION_ID"
             android:value="${ADMOB_APP_ID}" />
+        <!-- OneSignal notification icon + accent color.
+             ic_notification is a white silhouette derived from the app logo
+             (status-bar small icons MUST be white-on-transparent). The accent
+             color matches the app's primary green so the notification tint
+             reads as on-brand. Referenced as @drawable to share the same set
+             of density-bucketed PNGs produced from essential/logo.png. -->
+        <meta-data
+            android:name="com.onesignal.NotificationDefaultIconName"
+            android:resource="@drawable/ic_notification" />
+        <meta-data
+            android:name="com.onesignal.NotificationAccentColor.DEFAULT"
+            android:value="#00E5A0" />
+        <meta-data
+            android:name="com.onesignal.NotificationAccentColor"
+            android:value="#00E5A0" />
         <property
             android:name="android.adservices.AD_SERVICES_CONFIG"
             android:resource="@xml/gma_ad_services_config"
