@@ -38,7 +38,7 @@ class WeeklySummaryWorker @AssistedInject constructor(
         val recoveredText = com.dhanuk.debtbro.util.formatCurrency(recovered, currency)
         NotificationCompat.Builder(applicationContext, CHANNEL)
             .setSmallIcon(R.drawable.ic_notification)
-            .setLargeIcon(android.graphics.BitmapFactory.decodeResource(applicationContext.resources, R.mipmap.ic_launcher))
+            .setLargeIcon(android.graphics.BitmapFactory.decodeResource(applicationContext.resources, R.drawable.ic_launcher_foreground))
             .setColor(0xFF00E5A0.toInt())
             .setContentTitle("DebtPayoff Pro weekly summary")
             .setContentText("Owed: $owedText • Recovered this week: $recoveredText")

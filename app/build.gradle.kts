@@ -40,7 +40,15 @@ android {
         // The MediaStore path remains the default on API 29+.
         minSdk = 26
         targetSdk = 35
-        versionCode = (System.getenv("GITHUB_RUN_NUMBER")?.toIntOrNull() ?: localProp("VERSION_CODE").toIntOrNull() ?: 1)
+        // Precedence: explicit VERSION_CODE secret/property wins (you control
+        // Play Console monotonic-version increments); GITHUB_RUN_NUMBER acts
+        // as an auto-fallback for CI history runs; lastly 1 for local dev.
+        // NEVER let GITHUB_RUN_NUMBER override an explicit VERSION_CODE —
+        // that takes Play Console versioning out of your hands and makes
+        // every CI run a forced bump.
+        versionCode = (localProp("VERSION_CODE").toIntOrNull()
+            ?: System.getenv("GITHUB_RUN_NUMBER")?.toIntOrNull()
+            ?: 1)
         versionName = localProp("VERSION_NAME").ifEmpty { "1.0.0" }
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
@@ -58,9 +66,10 @@ android {
         // CI ships an empty list; production release ignores this code path.
         buildConfigField("String", "TEST_DEVICE_IDS", "\"${escapedProp("TEST_DEVICE_IDS")}\"")
         buildConfigField("String", "ONESIGNAL_APP_ID", "\"${escapedProp("ONESIGNAL_APP_ID")}\"")
-        // ONESIGNAL_API_KEY is a REST API server secret - ideally should be in Cloud Functions only
-        // Included here for backward compatibility with legacy OneSignal dashboard push workflows
-        buildConfigField("String", "ONESIGNAL_API_KEY", "\"${escapedProp("ONESIGNAL_API_KEY")}\"")
+        // ONESIGNAL_API_KEY intentionally NOT embedded in the APK — it's a REST
+        // API server key that belongs only in Cloud Functions / your push
+        // server. OneSignal v5 SDK needs just APP_ID on the client. Bundling
+        // it in BuildConfig made the secret trivially extractable via apkanalyzer.
 
         buildConfigField("String", "PACKAGE_NAME", "\"${escapedProp("PACKAGE_NAME").ifEmpty { "com.dhanuk.debtbro" }}\"")
         buildConfigField("Boolean", "ENABLE_CRASHLYTICS", "true")

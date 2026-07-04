@@ -65,6 +65,7 @@ jobs:
           KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
           KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
           PACKAGE_NAME: ${{ secrets.PACKAGE_NAME }}
+          VERSION_CODE: ${{ secrets.VERSION_CODE }}
           VERSION_NAME: ${{ secrets.VERSION_NAME }}
           # Gemini API key wired from repo secret.
           # AiRepository.kt reads both old + new keys for backwards compat.
@@ -74,7 +75,6 @@ jobs:
           ADMOB_INTERSTITIAL_ID: ${{ secrets.ADMOB_INTERSTITIAL_ID }}
           ADMOB_REWARDED_ID: ${{ secrets.ADMOB_REWARDED_ID }}
           ONESIGNAL_APP_ID: ${{ secrets.ONESIGNAL_APP_ID }}
-          ONESIGNAL_API_KEY: ${{ secrets.ONESIGNAL_API_KEY }}
           FIREBASE_PROJECT_ID: ${{ secrets.FIREBASE_PROJECT_ID }}
         run: |
           set -e
@@ -83,6 +83,7 @@ jobs:
           : "${KEYSTORE_PASSWORD:?ERROR: KEYSTORE_PASSWORD secret missing.}"
           : "${KEY_PASSWORD:?ERROR: KEY_PASSWORD secret missing.}"
           : "${PACKAGE_NAME:?ERROR: PACKAGE_NAME secret missing.}"
+          : "${VERSION_CODE:?ERROR: VERSION_CODE secret missing — must be an integer greater than the last uploaded Play Console versionCode.}"
           : "${VERSION_NAME:?ERROR: VERSION_NAME secret missing.}"
           # Gemini API key wired from repo secret.
           : "${GEMINI_API_KEY_2_5_FLASH_LITE:?ERROR: GEMINI_API_KEY_2_5_FLASH_LITE secret missing.}"
@@ -91,7 +92,6 @@ jobs:
           : "${ADMOB_INTERSTITIAL_ID:?ERROR: ADMOB_INTERSTITIAL_ID secret missing.}"
           : "${ADMOB_REWARDED_ID:?ERROR: ADMOB_REWARDED_ID secret missing.}"
           : "${ONESIGNAL_APP_ID:?ERROR: ONESIGNAL_APP_ID secret missing.}"
-          : "${ONESIGNAL_API_KEY:?ERROR: ONESIGNAL_API_KEY secret missing.}"
           : "${FIREBASE_PROJECT_ID:?ERROR: FIREBASE_PROJECT_ID secret missing.}"
           echo "All required secrets present."
 
@@ -117,7 +117,6 @@ jobs:
           ADMOB_INTERSTITIAL_ID=${{ secrets.ADMOB_INTERSTITIAL_ID }}
           ADMOB_REWARDED_ID=${{ secrets.ADMOB_REWARDED_ID }}
           ONESIGNAL_APP_ID=${{ secrets.ONESIGNAL_APP_ID }}
-          ONESIGNAL_API_KEY=${{ secrets.ONESIGNAL_API_KEY }}
           PACKAGE_NAME=${{ secrets.PACKAGE_NAME }}
           VERSION_CODE=${{ secrets.VERSION_CODE }}
           VERSION_NAME=${{ secrets.VERSION_NAME }}

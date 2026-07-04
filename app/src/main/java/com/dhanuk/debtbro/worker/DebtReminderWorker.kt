@@ -45,7 +45,7 @@ class DebtReminderWorker @AssistedInject constructor(
             val amountText = com.dhanuk.debtbro.util.formatCurrency(debt.amount - debt.amountPaid, debt.currency)
             NotificationCompat.Builder(applicationContext, CHANNEL)
                 .setSmallIcon(R.drawable.ic_notification)
-                .setLargeIcon(android.graphics.BitmapFactory.decodeResource(applicationContext.resources, R.mipmap.ic_launcher))
+                .setLargeIcon(android.graphics.BitmapFactory.decodeResource(applicationContext.resources, R.drawable.ic_launcher_foreground))
                 .setColor(0xFF00E5A0.toInt())
                 .setContentTitle("${debt.personName} has a DebtPayoff Pro reminder")
                 .setContentText("$amountText is still pending")
