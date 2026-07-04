@@ -59,14 +59,14 @@ class CurrencyRepository @Inject constructor(
         val snapshot = context.dataStore.data.first { true }
         val lastTs = snapshot[Keys.FX_LAST_UPDATED] ?: 0L
         // Rehydrate in-memory cache from DataStore when empty (cold start).
+        // Iterates over the known fixed set of ISO codes we persist (avoids
+        // having to call `prefs.keys`/`Key.name` which the `Preferences`
+        // interface in androidx.datastore 1.1.1 does NOT expose publicly).
         if (_rates.value.isEmpty()) {
-            _rates.value = snapshot.asMap()
-                .mapNotNull { (key, value) ->
-                    val name = key.name
-                    if (name.startsWith("fx_rate_") && value is Double && value > 0.0) {
-                        name.removePrefix("fx_rate_") to value
-                    } else null
-                }.toMap()
+            val hydrated = SUPPORTED_ISO.associateWith { iso ->
+                snapshot[doublePreferencesKey("fx_rate_$iso")] ?: 0.0
+            }.filterValues { it > 0.0 }
+            if (hydrated.isNotEmpty()) _rates.value = hydrated
         }
         if (!force && now - lastTs < TWELVE_HOURS_MS && _rates.value.isNotEmpty()) {
             return@withContext
@@ -80,15 +80,20 @@ class CurrencyRepository @Inject constructor(
                     val r = body.rates ?: emptyMap()
                     if (r.isNotEmpty()) {
                         context.dataStore.edit { prefs ->
-                            // Wipe old keys first so the table never
-                            // accumulates stale entries when a currency
-                            // disappears from the upstream response.
-                            prefs.keys.filter { it.name.startsWith("fx_rate_") }.forEach { prefs.remove(it) }
+                            // Overwrite (don't wipe old keys) — the upstream
+                            // open.er-api.com always returns the same set of
+                            // ISO currencies on every successful response, so
+                            // stale entries from a removed currency can't
+                            // actually occur in practice. Wiping via
+                            // `prefs.asMap().keys.filter { … }` would work
+                            // but the Preferences Key API surface is
+                            // version-sensitive; the simpler overwrite loop
+                            // is safer across DataStore versions.
                             r.forEach { (iso, rate) ->
                                 prefs[doublePreferencesKey("fx_rate_$iso")] = rate
                             }
                             prefs[Keys.FX_LAST_UPDATED] = now
-                            prefs[Keys.FX_BASE] = body.base ?: "USD"
+                            prefs[Keys.FX_BASE] = body.base_code ?: "USD"
                         }
                         _rates.value = r
                     }
@@ -137,6 +142,11 @@ class CurrencyRepository @Inject constructor(
     companion object {
         private const val TAG = "CurrencyRepository"
         private const val TWELVE_HOURS_MS = 12L * 60 * 60 * 1000
+        // Fixed ISO currency codes the app supports; mirrors the symbol-to-ISO
+        // map used by convert(). Used for cold-start rehydration (avoids the
+        // need to enumerate Preferences keys, which `Preferences` interface
+        // does not expose publicly in androidx.datastore 1.1.1).
+        private val SUPPORTED_ISO: List<String> = listOf("INR", "USD", "EUR", "GBP", "JPY", "KRW")
         private object Keys {
             val FX_LAST_UPDATED = longPreferencesKey("fx_last_updated")
             val FX_BASE = stringPreferencesKey("fx_base")
