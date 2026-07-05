@@ -33,7 +33,8 @@ import com.dhanuk.debtbro.data.ads.AdManager
 import com.dhanuk.debtbro.data.datastore.AppPreferences
 import com.dhanuk.debtbro.presentation.screens.adddebt.AddDebtBottomSheet
 import com.dhanuk.debtbro.presentation.screens.analytics.AnalyticsScreen
-import com.dhanuk.debtbro.presentation.screens.auth.AuthScreen
+import com.dhanuk.debtbro.presentation.screens.auth.SignUpScreen
+import com.dhanuk.debtbro.presentation.screens.auth.SignInScreen
 import com.dhanuk.debtbro.presentation.screens.dashboard.DashboardScreen
 import com.dhanuk.debtbro.presentation.screens.debtdetail.DebtDetailScreen
 import com.dhanuk.debtbro.presentation.screens.debtlist.DebtListScreen
@@ -276,7 +277,7 @@ fun DebtBroNavGraph(appPreferences: AppPreferences, adManager: AdManager) {
                     onDebtClick = { debtId -> navController.navigate(Screen.DebtDetail.createRoute(debtId)) }
                 )
             }
-            composable(Screen.Split.route) { SplitScreen(onAuthRequired = { navController.navigate(Screen.Auth.route) }) }
+            composable(Screen.Split.route) { SplitScreen(onAuthRequired = { navController.navigate(Screen.SignIn.route) }) }
             composable(Screen.Analytics.route) { AnalyticsScreen() }
             composable(Screen.Settings.route) { SettingsScreen() }
             composable(
@@ -286,12 +287,20 @@ fun DebtBroNavGraph(appPreferences: AppPreferences, adManager: AdManager) {
             ) {
                 DebtDetailScreen(
                     onBack = { navController.popBackStack() },
-                    onAuthRequired = { navController.navigate(Screen.Auth.route) }
+                    onAuthRequired = { navController.navigate(Screen.SignIn.route) }
                 )
             }
-            composable(Screen.Auth.route) {
-                AuthScreen(
+            composable(Screen.SignUp.route) {
+                SignUpScreen(
                     onAuthComplete = { navController.popBackStack() },
+                    onNavigateToSignIn = { navController.navigate(Screen.SignIn.route) { launchSingleTop = true } },
+                    onSkip = { navController.popBackStack() }
+                )
+            }
+            composable(Screen.SignIn.route) {
+                SignInScreen(
+                    onAuthComplete = { navController.popBackStack() },
+                    onNavigateToSignUp = { navController.navigate(Screen.SignUp.route) { launchSingleTop = true } },
                     onSkip = { navController.popBackStack() }
                 )
             }
@@ -302,7 +311,7 @@ fun DebtBroNavGraph(appPreferences: AppPreferences, adManager: AdManager) {
         AddDebtBottomSheet(
             onDismiss = { showAddDebt = false },
             onDebtAdded = { showAddDebt = false },
-            onSignInRequired = { navController.navigate(Screen.Auth.route) }
+            onSignInRequired = { navController.navigate(Screen.SignIn.route) }
         )
     }
 }

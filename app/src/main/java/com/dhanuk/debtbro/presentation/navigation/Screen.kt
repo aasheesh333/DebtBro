@@ -11,5 +11,6 @@ sealed class Screen(val route: String) {
     object Split : Screen("split")
     object Analytics : Screen("analytics")
     object Settings : Screen("settings")
-    object Auth : Screen("auth")
+    object SignUp : Screen("sign_up")
+    object SignIn : Screen("sign_in")
 }

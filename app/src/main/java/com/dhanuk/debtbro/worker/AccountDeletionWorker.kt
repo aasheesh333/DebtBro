@@ -66,11 +66,7 @@ class AccountDeletionWorker @AssistedInject constructor(
 
     companion object {
         const val UNIQUE_WORK_NAME = "account_deletion_grace_backup"
-        // 30 minutes — matches thePrivacy Policy "we complete account deletion
-        // within 30 minutes" wording. Shorter than the historical 24h because
-        // deletion is now driven server-side via Firestore (deletionRequests
-        // queue) plus this local failsafe, so we don't need a long cushion.
-        const val GRACE_PERIOD_MS = 30L * 60L * 1000L
+        const val GRACE_PERIOD_MS = 24L * 60L * 60L * 1000L
         private const val TAG = "AccountDeletionWorker"
     }
 

@@ -19,47 +19,34 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
-enum class AuthMode { SIGN_IN, SIGN_UP, FORGOT_PASSWORD }
+enum class SignInMode { SIGN_IN, FORGOT_PASSWORD }
 
-enum class PasswordStrength { WEAK, MEDIUM, STRONG }
-
-data class AuthUiState(
-    val mode: AuthMode = AuthMode.SIGN_IN,
+data class SignInUiState(
+    val mode: SignInMode = SignInMode.SIGN_IN,
     val email: String = "",
     val password: String = "",
-    val confirmPassword: String = "",
     val isBusy: Boolean = false,
     val errorRes: String? = null,
     val resetLinkSent: Boolean = false,
-    val resendCountdownSeconds: Int = 0,
-    val passwordStrength: PasswordStrength = PasswordStrength.WEAK
+    val resendCountdownSeconds: Int = 0
 )
 
 @HiltViewModel
-class AuthViewModel @Inject constructor(
+class SignInViewModel @Inject constructor(
     private val auth: AuthManager,
     private val prefs: AppPreferences,
     private val sync: SyncManager,
     private val realTimeSyncManager: RealTimeSyncManager
 ) : ViewModel() {
 
-    private val _state = MutableStateFlow(AuthUiState())
-    val state: StateFlow<AuthUiState> = _state.asStateFlow()
+    private val _state = MutableStateFlow(SignInUiState())
+    val state: StateFlow<SignInUiState> = _state.asStateFlow()
 
     private val _signedIn = MutableStateFlow(false)
     val signedIn: StateFlow<Boolean> = _signedIn.asStateFlow()
 
-    private val _verifyGateVisible = MutableStateFlow(false)
-    val verifyGateVisible: StateFlow<Boolean> = _verifyGateVisible.asStateFlow()
-
     private val _showGraceReLoginAlert = MutableStateFlow(false)
     val showGraceReLoginAlert: StateFlow<Boolean> = _showGraceReLoginAlert.asStateFlow()
-
-    init {
-        viewModelScope.launch {
-            prefs.isGoogleSignedIn.collect { _signedIn.value = it }
-        }
-    }
 
     private var countdownJob: Job? = null
 
@@ -68,18 +55,10 @@ class AuthViewModel @Inject constructor(
     }
 
     fun setPassword(value: String) {
-        _state.value = _state.value.copy(
-            password = value,
-            passwordStrength = computeStrength(value),
-            errorRes = null
-        )
+        _state.value = _state.value.copy(password = value, errorRes = null)
     }
 
-    fun setConfirmPassword(value: String) {
-        _state.value = _state.value.copy(confirmPassword = value, errorRes = null)
-    }
-
-    fun setMode(mode: AuthMode) {
+    fun setMode(mode: SignInMode) {
         countdownJob?.cancel()
         _state.value = _state.value.copy(
             mode = mode,
@@ -89,43 +68,13 @@ class AuthViewModel @Inject constructor(
         )
     }
 
-    fun dismissError() {
-        _state.value = _state.value.copy(errorRes = null)
-    }
-
-    fun resendVerificationEmail() = viewModelScope.launch {
-        auth.resendVerificationEmail()
-    }
-
-    fun refreshVerificationState() = viewModelScope.launch {
-        if (auth.reloadCurrentUser() && (auth.isGoogleProvider() || auth.isCurrentUserEmailVerified())) {
-            _verifyGateVisible.value = false
-        }
-    }
-
-    private fun isEmailValid(s: String): Boolean =
-        s.isNotBlank() && android.util.Patterns.EMAIL_ADDRESS.matcher(s).matches()
-
-    private fun computeStrength(pwd: String): PasswordStrength {
-        if (pwd.length < 6) return PasswordStrength.WEAK
-        val hasLetter = pwd.any { it.isLetter() }
-        val hasDigit = pwd.any { it.isDigit() }
-        val hasSymbol = pwd.any { !it.isLetterOrDigit() }
-        return when {
-            pwd.length >= 10 && hasLetter && hasDigit && hasSymbol -> PasswordStrength.STRONG
-            pwd.length >= 8 && ((hasLetter && hasDigit) || hasSymbol) -> PasswordStrength.MEDIUM
-            else -> PasswordStrength.WEAK
-        }
-    }
-
     fun signInWithGoogle(activity: Activity) {
         if (_state.value.isBusy) return
         _state.value = _state.value.copy(isBusy = true, errorRes = null)
         viewModelScope.launch {
             auth.signInWithGoogle(activity).fold(
                 onSuccess = { user ->
-                    _verifyGateVisible.value = false
-                    onAuthSuccess(user.uid, user.displayName, user.email ?: "", user.photoUrl?.toString().orEmpty(), "google")
+                    onAuthSuccess(user.uid, user.displayName ?: "DebtPayoff Pro user", user.email ?: "", user.photoUrl?.toString().orEmpty(), "google")
                 },
                 onFailure = { e ->
                     _state.value = _state.value.copy(isBusy = false, errorRes = e.message)
@@ -134,56 +83,31 @@ class AuthViewModel @Inject constructor(
         }
     }
 
-    fun submitEmailPassword() {
+    fun submit() {
         val current = _state.value
         if (current.isBusy) return
-        if (!isEmailValid(current.email)) {
-            _state.value = current.copy(errorRes = "email_required")
-            return
-        }
         when (current.mode) {
-            AuthMode.SIGN_IN -> doSignIn()
-            AuthMode.SIGN_UP -> doSignUp()
-            AuthMode.FORGOT_PASSWORD -> sendResetEmail()
+            SignInMode.SIGN_IN -> doSignIn()
+            SignInMode.FORGOT_PASSWORD -> sendResetEmail()
         }
     }
 
     private fun doSignIn() {
         val current = _state.value
-        if (current.password.length < 6) {
+        if (current.password.length < MIN_PASSWORD_LENGTH) {
             _state.value = current.copy(errorRes = "password_6_chars_min")
+            return
+        }
+        if (!isEmailValid(current.email)) {
+            _state.value = current.copy(errorRes = "email_required")
             return
         }
         _state.value = current.copy(isBusy = true, errorRes = null)
         viewModelScope.launch {
             auth.signInWithEmailPassword(current.email, current.password).fold(
-                onSuccess = { user -> onAuthSuccess(user.uid, user.displayName ?: "", user.email ?: "", "", "email") },
+                onSuccess = { user -> onAuthSuccess(user.uid, user.displayName ?: "DebtPayoff Pro user", user.email ?: "", "", "email") },
                 onFailure = { e ->
                     _state.value = _state.value.copy(isBusy = false, errorRes = e.message ?: "Sign-in failed")
-                }
-            )
-        }
-    }
-
-    private fun doSignUp() {
-        val current = _state.value
-        if (current.password.length < 6) {
-            _state.value = current.copy(errorRes = "password_6_chars_min")
-            return
-        }
-        if (current.password != current.confirmPassword) {
-            _state.value = current.copy(errorRes = "passwords_dont_match")
-            return
-        }
-        _state.value = current.copy(isBusy = true, errorRes = null)
-        viewModelScope.launch {
-            auth.signUpWithEmailPassword(current.email, current.password).fold(
-                onSuccess = { user ->
-                    _verifyGateVisible.value = true
-                    onAuthSuccess(user.uid, user.displayName ?: "", user.email ?: "", "", "email")
-                },
-                onFailure = { e ->
-                    _state.value = _state.value.copy(isBusy = false, errorRes = e.message ?: "Sign-up failed")
                 }
             )
         }
@@ -247,12 +171,12 @@ class AuthViewModel @Inject constructor(
         return (MAX_DAILY_RESETS - count).coerceAtLeast(0)
     }
 
-    private suspend fun onAuthSuccess(uid: String?, name: String?, email: String?, photo: String, provider: String) {
+    private suspend fun onAuthSuccess(uid: String?, displayName: String, email: String, photo: String, provider: String) {
         if (uid == null) {
             _state.value = _state.value.copy(isBusy = false, errorRes = LocalizedString.get("auth_no_uid_returned"))
             return
         }
-        prefs.setSignedIn(provider, name ?: "DebtPayoff Pro user", email ?: "", photo)
+        prefs.setSignedIn(provider, displayName, email, photo)
         runCatching {
             realTimeSyncManager.startListening(uid)
             sync.fullSync(uid)
