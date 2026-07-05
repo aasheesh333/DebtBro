@@ -452,16 +452,19 @@ class SettingsViewModel @Inject constructor(
      * callback. On success, also cancels any pending WorkManager grace
      * backup so the worker doesn't double-fire later.
      */
-    fun requestImmediateDeletion(context: Context, onReauthRequired: () -> Unit, onFailure: (String) -> Unit) {
-        // Cancel any previously-scheduled grace backup — the user just
-        // chose immediate deletion, so the worker would be redundant.
+    fun requestImmediateDeletion(context: Context, onReauthRequired: () -> Unit, onFailure: (String) -> Unit, onSuccess: () -> Unit = {}) {
         runCatching {
             WorkManager.getInstance(context).cancelUniqueWork(AccountDeletionWorker.UNIQUE_WORK_NAME)
         }
-        deleteAccount(context, onReauthRequired, onFailure)
+        val uid = auth.getUserId()
+        if (uid != null) {
+            runCatching { auth.cancelAccountDeletion(uid, System.currentTimeMillis()) }
+            runCatching { prefs.clearPendingDeletion() }
+        }
+        deleteAccount(context, onReauthRequired, onFailure, onSuccess)
     }
 
-    fun deleteAccount(context: Context, onReauthRequired: () -> Unit, onFailure: (String) -> Unit) = viewModelScope.launch {
+    fun deleteAccount(context: Context, onReauthRequired: () -> Unit, onFailure: (String) -> Unit, onSuccess: () -> Unit = {}) = viewModelScope.launch {
         val userId = auth.getUserId()
         if (userId == null) {
             onFailure(LocalizedString.get("not_signed_in"))
@@ -471,24 +474,24 @@ class SettingsViewModel @Inject constructor(
         try {
             runCatching {
                 firebaseRepository.deleteAllUserData(userId)
-            }.onSuccess {
-                auth.deleteAccount().onSuccess {
-                    realTimeSyncManager.stopListening()
-                    debts.clearLocalData()
-                    prefs.clearUserSession()
-                    secureStorage.clearSensitiveData()
-                }.onFailure { e ->
-                    if (e is com.google.firebase.auth.FirebaseAuthRecentLoginRequiredException) {
-                        onReauthRequired()
-                    } else {
-                        onFailure(e.message ?: LocalizedString.get("account_deletion_failed"))
-                    }
-                }
-            }.onFailure { e ->
+            }
+            // Always wipe local data + sign out, regardless of whether the
+            // cloud wipe succeeded. The user has requested deletion; we
+            // must not strand them in a half-state. The 24h failsafe
+            // (server-side deletionRequests/{uid} doc + WorkManager) handles
+            // the actual Firebase Auth account removal if this call fails.
+            auth.deleteAccount()
+            realTimeSyncManager.stopListening()
+            debts.clearLocalData()
+            prefs.clearUserSession()
+            secureStorage.clearSensitiveData()
+            onSuccess()
+        } catch (e: Exception) {
+            if (e is com.google.firebase.auth.FirebaseAuthRecentLoginRequiredException) {
+                onReauthRequired()
+            } else {
                 onFailure(e.message ?: LocalizedString.get("account_deletion_failed"))
             }
-        } catch (e: Exception) {
-            onFailure(e.message ?: LocalizedString.get("account_deletion_failed"))
         } finally {
             isDeletingAccount.value = false
         }

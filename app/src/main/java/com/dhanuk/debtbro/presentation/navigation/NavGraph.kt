@@ -279,7 +279,16 @@ fun DebtBroNavGraph(appPreferences: AppPreferences, adManager: AdManager) {
             }
             composable(Screen.Split.route) { SplitScreen(onAuthRequired = { navController.navigate(Screen.SignIn.route) }) }
             composable(Screen.Analytics.route) { AnalyticsScreen() }
-            composable(Screen.Settings.route) { SettingsScreen() }
+            composable(Screen.Settings.route) {
+                SettingsScreen(
+                    onRequireAuth = {
+                        navController.navigate(Screen.SignIn.route) {
+                            popUpTo(Screen.Dashboard.route) { inclusive = false }
+                            launchSingleTop = true
+                        }
+                    }
+                )
+            }
             composable(
                 Screen.DebtDetail.route,
                 arguments = listOf(navArgument("debtId") { type = NavType.StringType }),

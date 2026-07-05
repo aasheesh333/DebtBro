@@ -41,7 +41,10 @@ import com.dhanuk.debtbro.util.openUrl
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun SettingsScreen(viewModel: SettingsViewModel = hiltViewModel()) {
+fun SettingsScreen(
+    onRequireAuth: () -> Unit = {},
+    viewModel: SettingsViewModel = hiltViewModel()
+) {
     val state by viewModel.state.collectAsStateWithLifecycle()
     val context = LocalContext.current
     val extra = LocalExtraColors.current
@@ -49,7 +52,6 @@ fun SettingsScreen(viewModel: SettingsViewModel = hiltViewModel()) {
     var showSignOutConfirm by remember { mutableStateOf(false) }
     var showDeleteConfirm by remember { mutableStateOf(false) }
     var showReauthHint by remember { mutableStateOf(false) }
-    var reauthMessage by remember { mutableStateOf<String?>(null) }
     var showLinkEmailDialog by remember { mutableStateOf(false) }
     val showDeletionGraceAlert by viewModel.showDeletionGraceAlert.collectAsStateWithLifecycle()
 
@@ -452,6 +454,7 @@ fun SettingsScreen(viewModel: SettingsViewModel = hiltViewModel()) {
                     onClick = {
                         showSignOutConfirm = false
                         viewModel.signOut()
+                        onRequireAuth()
                     },
                     enabled = !state.isSigningOut
                 ) {
@@ -470,24 +473,14 @@ fun SettingsScreen(viewModel: SettingsViewModel = hiltViewModel()) {
     // ── Delete Account — single confirmation ─────────────────────────────
     if (showDeleteConfirm) {
         AlertDialog(
-            onDismissRequest = { showDeleteConfirm = false; reauthMessage = null },
+            onDismissRequest = { showDeleteConfirm = false },
             containerColor = MaterialTheme.colorScheme.surface,
             title = { Text(LocalizedString.get("deletion_requested"), color = MaterialTheme.colorScheme.error) },
             text = {
-                Column {
-                    Text(
-                        LocalizedString.get("deletion_grace_info"),
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                    reauthMessage?.let { msg ->
-                        Spacer(Modifier.height(8.dp))
-                        Text(
-                            msg,
-                            color = MaterialTheme.colorScheme.error,
-                            fontSize = UITokens.FontBody
-                        )
-                    }
-                }
+                Text(
+                    LocalizedString.get("deletion_grace_info"),
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
             },
             confirmButton = {
                 TextButton(
@@ -495,14 +488,11 @@ fun SettingsScreen(viewModel: SettingsViewModel = hiltViewModel()) {
                         showDeleteConfirm = false
                         viewModel.requestImmediateDeletion(
                             context = context,
-                            onReauthRequired = {
-                                reauthMessage = "Re-sign in to confirm deletion — your last sign-in was too long ago for Firebase to allow account deletion."
-                                showDeleteConfirm = true
-                            },
+                            onReauthRequired = { showReauthHint = true },
                             onFailure = { msg ->
-                                reauthMessage = msg
-                                showDeleteConfirm = true
-                            }
+                                android.widget.Toast.makeText(context, msg, android.widget.Toast.LENGTH_LONG).show()
+                            },
+                            onSuccess = { onRequireAuth() }
                         )
                     },
                     enabled = !state.isDeletingAccount
@@ -512,7 +502,7 @@ fun SettingsScreen(viewModel: SettingsViewModel = hiltViewModel()) {
                 }
             },
             dismissButton = {
-                TextButton(onClick = { showDeleteConfirm = false; reauthMessage = null }) {
+                TextButton(onClick = { showDeleteConfirm = false }) {
                     Text(LocalizedString.get("cancel"), color = extra.subtitleGray)
                 }
             }

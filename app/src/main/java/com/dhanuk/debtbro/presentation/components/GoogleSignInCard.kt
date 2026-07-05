@@ -179,15 +179,11 @@ fun GoogleSignInCard(
 
             if (isSignedIn) {
                 Row(
-                    horizontalArrangement = Arrangement.spacedBy(UITokens.SpaceXS),
-                    modifier = Modifier.padding(top = 4.dp)
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(top = 4.dp),
+                    horizontalArrangement = Arrangement.End
                 ) {
-                    if ("password" !in linkedProviders) {
-                        TextButton(onClick = onLinkEmail) {
-                            Text(LocalizedString.get("add_email_login"), fontSize = UITokens.FontCaption, color = MaterialTheme.colorScheme.primary)
-                        }
-                    }
-                    Spacer(modifier = Modifier.weight(1f))
                     TextButton(onClick = onDeleteAccount) {
                         Text(LocalizedString.get("delete_account"), fontSize = UITokens.FontCaption, color = MaterialTheme.colorScheme.error)
                     }
