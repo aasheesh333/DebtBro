@@ -69,9 +69,11 @@ fun DashboardScreen(
         viewModel.refresh()
     }
 
-    androidx.lifecycle.compose.LifecycleResumeEffect(Unit) {
+    androidx.lifecycle.compose.LifecycleResumeEffect(
+        key1 = Unit,
+        onPauseOrDisposeEffect = {}
+    ) {
         viewModel.refreshVerificationState()
-        onPauseOrDispose()
     }
 
     LaunchedEffect(state.hasShownSignInPrompt, state.isSignedIn) {
