@@ -135,7 +135,16 @@ class SignUpViewModel @Inject constructor(
             sync.fullSync(uid)
         }
         runCatching { checkGracePeriodOnSignIn(uid) }
-        _state.value = _state.value.copy(isBusy = false)
+        _state.value = _state.value.copy(
+            isBusy = false,
+            name = "",
+            email = "",
+            password = "",
+            confirmPassword = "",
+            passwordStrength = PasswordStrength.WEAK,
+            errorRes = null
+        )
+        if (!_showGraceReLoginAlert.value) _signedIn.value = true
     }
 
     private suspend fun checkGracePeriodOnSignIn(uid: String) {

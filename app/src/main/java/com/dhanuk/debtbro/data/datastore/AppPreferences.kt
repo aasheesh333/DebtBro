@@ -197,6 +197,11 @@ class AppPreferences(@ApplicationContext private val context: Context) {
         it[Keys.GOOGLE_USER_NAME] = name
         it[Keys.GOOGLE_USER_EMAIL] = email
         it[Keys.GOOGLE_USER_PHOTO] = photo
+        if (provider != null && name.isNotBlank()) {
+            it[Keys.USER_NAME] = name.ifBlank { "Bro" }
+        } else if (provider == null) {
+            it.remove(Keys.USER_NAME)
+        }
     }
     suspend fun setLastSyncedAt(ts: Long) = context.dataStore.edit { it[Keys.LAST_SYNCED_AT] = ts }
     suspend fun setRewardTimestamp(ts: Long) = context.dataStore.edit { it[Keys.REWARD_TIMESTAMP] = ts }

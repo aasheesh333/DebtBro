@@ -3,6 +3,8 @@ package com.dhanuk.debtbro.data.firebase
 import android.app.Activity
 import android.content.Context
 import androidx.credentials.ClearCredentialStateRequest
+import androidx.credentials.Credential
+import androidx.credentials.CustomCredential
 import androidx.credentials.CredentialManager
 import androidx.credentials.GetCredentialRequest
 import com.dhanuk.debtbro.R
@@ -46,15 +48,13 @@ class AuthManager @Inject constructor(
         )
 
         val credential = result.credential
-        if (credential is GoogleIdTokenCredential) {
-            val firebaseCredential = GoogleAuthProvider.getCredential(credential.idToken, null)
-            val authResult = auth.signInWithCredential(firebaseCredential).await()
-            val user = authResult.user ?: error("Firebase login failed")
-            if (user.uid.isBlank()) error("Firebase user missing UID")
-            user
-        } else {
-            error("Invalid credential type")
-        }
+        val googleIdTokenCredential = extractGoogleIdToken(credential)
+            ?: error("Invalid credential type: ${credential.type}")
+        val firebaseCredential = GoogleAuthProvider.getCredential(googleIdTokenCredential.idToken, null)
+        val authResult = auth.signInWithCredential(firebaseCredential).await()
+        val user = authResult.user ?: error("Firebase login failed")
+        if (user.uid.isBlank()) error("Firebase user missing UID")
+        user
     }.onFailure { e ->
         android.util.Log.e("AuthManager", "signInWithGoogle failed: ${e.message}", e)
     }
@@ -145,11 +145,11 @@ class AuthManager @Inject constructor(
             .build()
         val result = credentialManager.getCredential(activity, request)
         val credential = result.credential
-        if (credential is GoogleIdTokenCredential) {
-            val firebaseCredential = GoogleAuthProvider.getCredential(credential.idToken, null)
-            auth.currentUser?.reauthenticate(firebaseCredential)?.await()
-            Unit
-        } else error("Invalid credential type")
+        val googleIdTokenCredential = extractGoogleIdToken(credential)
+            ?: error("Invalid credential type: ${credential.type}")
+        val firebaseCredential = GoogleAuthProvider.getCredential(googleIdTokenCredential.idToken, null)
+        auth.currentUser?.reauthenticate(firebaseCredential)?.await()
+        Unit
     }.onFailure { e ->
         android.util.Log.e("AuthManager", "reauthenticateWithGoogle failed: ${e.message}", e)
     }
@@ -300,5 +300,15 @@ class AuthManager @Inject constructor(
         // Emit current value immediately
         trySend(auth.currentUser)
         awaitClose { auth.removeAuthStateListener(listener) }
+    }
+
+    private fun extractGoogleIdToken(credential: Credential): GoogleIdTokenCredential? {
+        return when {
+            credential is GoogleIdTokenCredential -> credential
+            credential is CustomCredential && credential.type == GoogleIdTokenCredential.TYPE_GOOGLE_ID_TOKEN_CREDENTIAL -> {
+                runCatching { GoogleIdTokenCredential.createFrom(credential.data) }.getOrNull()
+            }
+            else -> null
+        }
     }
 }
