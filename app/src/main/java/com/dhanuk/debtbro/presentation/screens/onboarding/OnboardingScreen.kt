@@ -39,6 +39,8 @@ import com.dhanuk.debtbro.presentation.theme.UITokens
 import com.dhanuk.debtbro.util.LocalizedString
 import kotlinx.coroutines.launch
 
+private val NAME_REGEX = Regex("^[\\p{L}][\\p{L} .\\-']{2,29}\$")
+
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun OnboardingScreen(onOnboardingComplete: () -> Unit) {
@@ -59,6 +61,7 @@ fun OnboardingScreen(onOnboardingComplete: () -> Unit) {
     var forgotPasswordEmail by remember { mutableStateOf("") }
     var authBusy by remember { mutableStateOf(false) }
     val authError by viewModel.authError.collectAsStateWithLifecycle()
+    val showGraceReLoginAlert by viewModel.showGraceReLoginAlert.collectAsStateWithLifecycle()
     val context = androidx.compose.ui.platform.LocalContext.current
     val activity = context as? android.app.Activity
 
@@ -74,8 +77,8 @@ fun OnboardingScreen(onOnboardingComplete: () -> Unit) {
                 modifier = Modifier.fillMaxWidth().padding(top = 32.dp, end = 16.dp),
                 horizontalArrangement = Arrangement.End
             ) {
-                if (pagerState.currentPage in 1..4) {
-                    TextButton(onClick = { scope.launch { pagerState.animateScrollToPage(5) } }) {
+                if (pagerState.currentPage in 1..3) {
+                    TextButton(onClick = { scope.launch { pagerState.animateScrollToPage(4) } }) {
                         Text(LocalizedString.get("skip"), color = extra.subtitleGray)
                     }
                 } else {
@@ -95,7 +98,11 @@ fun OnboardingScreen(onOnboardingComplete: () -> Unit) {
                     4 -> Page5aName(
                         name = name,
                         onNameChange = { viewModel.onNameChange(it) },
-                        onSkip = { viewModel.completeOnboarding(onOnboardingComplete) }
+                        onNext = {
+                            viewModel.onNameChange(name)
+                            scope.launch { pagerState.animateScrollToPage(pagerState.currentPage + 1) }
+                        },
+                        onSkip = { }
                     )
                     5 -> Page6Auth(
                         name = name,
@@ -135,7 +142,7 @@ fun OnboardingScreen(onOnboardingComplete: () -> Unit) {
                                 }
                             }
                         },
-                        onSkip = { viewModel.completeOnboarding(onOnboardingComplete) },
+                        onSkip = { },
                         onForgotPassword = { viewModel.showForgotPasswordDialog() },
                         forgotPasswordDialogState = ForgotPasswordDialogState(
                             visible = showForgotPasswordDialog,
@@ -168,7 +175,7 @@ fun OnboardingScreen(onOnboardingComplete: () -> Unit) {
                 }
 
                 val buttonEnabled = when (pagerState.currentPage) {
-                    4 -> name.isNotBlank()
+                    4 -> NAME_REGEX.matches(name)
                     else -> true
                 }
                 Button(
@@ -194,6 +201,30 @@ fun OnboardingScreen(onOnboardingComplete: () -> Unit) {
                 }
             }
         }
+    }
+
+    if (showGraceReLoginAlert) {
+        AlertDialog(
+            onDismissRequest = { viewModel.signOutFromGraceAlert() },
+            containerColor = MaterialTheme.colorScheme.surface,
+            title = { Text("Account deletion in progress", color = MaterialTheme.colorScheme.error) },
+            text = {
+                Text(
+                    "You're within the 30-minute account deletion grace window. Do you want to come back?",
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            },
+            confirmButton = {
+                TextButton(onClick = { viewModel.cancelDeletionViaGraceAlert() }) {
+                    Text("Log in and reactivate", color = MaterialTheme.colorScheme.primary)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { viewModel.signOutFromGraceAlert() }) {
+                    Text("Cancel", color = extra.subtitleGray)
+                }
+            }
+        )
     }
 }
 
@@ -297,9 +328,18 @@ fun Page4Sync() {
 fun Page5aName(
     name: String,
     onNameChange: (String) -> Unit,
+    onNext: () -> Unit,
     onSkip: () -> Unit
 ) {
     val extra = LocalExtraColors.current
+    var showRequiredError by remember { mutableStateOf(false) }
+    val isNotBlank = name.isNotBlank()
+    val isValid = NAME_REGEX.matches(name)
+    val errorMsg = when {
+        !isNotBlank && showRequiredError -> LocalizedString.get("name_required")
+        isNotBlank && !isValid -> LocalizedString.get("name_min_length_error")
+        else -> null
+    }
     Column(
         Modifier.fillMaxSize().padding(horizontal = 24.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
@@ -317,6 +357,12 @@ fun Page5aName(
             label = { Text(LocalizedString.get("your_name_label")) },
             placeholder = { Text(LocalizedString.get("name_example")) },
             singleLine = true,
+            isError = errorMsg != null,
+            supportingText = {
+                if (errorMsg != null) {
+                    Text(errorMsg, color = MaterialTheme.colorScheme.error, fontSize = UITokens.FontCaption)
+                }
+            },
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Text, capitalization = KeyboardCapitalization.Words),
             colors = OutlinedTextFieldDefaults.colors(
                 focusedBorderColor = MaterialTheme.colorScheme.primary,
@@ -329,6 +375,27 @@ fun Page5aName(
         )
         Spacer(Modifier.height(8.dp))
         Text(LocalizedString.get("name_change_hint"), color = extra.subtitleGray, fontSize = 12.sp, textAlign = TextAlign.Center)
+        Spacer(Modifier.height(16.dp))
+        Button(
+            onClick = {
+                if (!isNotBlank) {
+                    showRequiredError = true
+                } else if (isValid) {
+                    onNext()
+                }
+            },
+            enabled = isValid,
+            shape = RoundedCornerShape(28.dp),
+            colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary, disabledContainerColor = MaterialTheme.colorScheme.outline),
+            modifier = Modifier.fillMaxWidth().height(56.dp)
+        ) {
+            Text(
+                LocalizedString.get("next_button"),
+                color = if (isValid) MaterialTheme.colorScheme.onPrimary else extra.subtitleGray,
+                fontWeight = FontWeight.Bold,
+                fontSize = 18.sp
+            )
+        }
     }
 }
 
@@ -474,9 +541,6 @@ private fun Page6Auth(
             Text(err, color = MaterialTheme.colorScheme.error, fontSize = UITokens.FontCaption, textAlign = TextAlign.Center)
         }
         Spacer(Modifier.height(16.dp))
-        TextButton(onClick = onSkip) {
-            Text(LocalizedString.get("skip_for_now"), color = extra.subtitleGray)
-        }
         Text(LocalizedString.get("account_setup_skip_note"), color = extra.subtitleGray, fontSize = UITokens.FontCaption, textAlign = TextAlign.Center)
     }
     if (forgotPasswordDialogState.visible) {

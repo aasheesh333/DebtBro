@@ -108,6 +108,11 @@ val splashScreen = installSplashScreen()
         runUmpConsentFlow()
     }
 
+    override fun onResume() {
+        super.onResume()
+        CoroutineScope(Dispatchers.IO).launch { appPreferences.setLastAppActiveTime(System.currentTimeMillis()) }
+    }
+
     /**
      * Drives the UMP consent flow on every Activity onCreate. On first launch
      * in EEA, this shows the consent form dialog (loadAndShowConsentFormIfRequired).

@@ -17,6 +17,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.Button
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.HorizontalDivider
@@ -57,10 +58,11 @@ fun AuthScreen(onAuthComplete: () -> Unit, onSkip: () -> Unit) {
     val viewModel: AuthViewModel = hiltViewModel()
     val state by viewModel.state.collectAsStateWithLifecycle()
     val signedIn by viewModel.signedIn.collectAsStateWithLifecycle()
+    val showGraceReLoginAlert by viewModel.showGraceReLoginAlert.collectAsStateWithLifecycle()
     val extra = LocalExtraColors.current
 
     LaunchedEffect(signedIn) {
-        if (signedIn) onAuthComplete()
+        if (signedIn && !showGraceReLoginAlert) onAuthComplete()
     }
 
     Box(modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) {
@@ -312,6 +314,30 @@ fun AuthScreen(onAuthComplete: () -> Unit, onSkip: () -> Unit) {
                 Spacer(Modifier.height(16.dp))
             }
         }
+    }
+
+    if (showGraceReLoginAlert) {
+        AlertDialog(
+            onDismissRequest = { viewModel.signOutFromGraceAlert() },
+            containerColor = MaterialTheme.colorScheme.surface,
+            title = { Text("Account deletion in progress", color = MaterialTheme.colorScheme.error) },
+            text = {
+                Text(
+                    "You're within the 30-minute account deletion grace window. Do you want to come back?",
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            },
+            confirmButton = {
+                TextButton(onClick = { viewModel.cancelDeletionViaGraceAlert() }) {
+                    Text("Log in and reactivate", color = MaterialTheme.colorScheme.primary)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { viewModel.signOutFromGraceAlert() }) {
+                    Text("Cancel", color = extra.subtitleGray)
+                }
+            }
+        )
     }
 }
 

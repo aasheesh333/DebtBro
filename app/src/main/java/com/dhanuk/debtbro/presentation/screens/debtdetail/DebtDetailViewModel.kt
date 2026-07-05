@@ -13,6 +13,7 @@ import com.dhanuk.debtbro.data.firebase.SyncManager
 import com.dhanuk.debtbro.data.repository.DebtRepository
 import com.dhanuk.debtbro.data.repository.AiRepository
 import com.dhanuk.debtbro.data.repository.PaymentRepository
+import com.dhanuk.debtbro.worker.ReminderScheduler
 import com.dhanuk.debtbro.util.CanvasExporter
 import com.dhanuk.debtbro.util.HtmlExporter
 import com.dhanuk.debtbro.util.LocalizedString
@@ -41,7 +42,8 @@ class DebtDetailViewModel @Inject constructor(
     private val prefs: AppPreferences,
     private val authManager: AuthManager,
     private val syncManager: SyncManager,
-    private val adManager: AdManager
+    private val adManager: AdManager,
+    private val reminderScheduler: ReminderScheduler
 ) : ViewModel() {
 
     companion object {
@@ -322,11 +324,10 @@ class DebtDetailViewModel @Inject constructor(
             val remaining = d.amount - d.amountPaid
             if (remaining > 0) {
                 paymentRepository.recordPayment(d.id, remaining, "Full settlement")
-                _showConfetti.value = true
-                // Emit the interstitial trigger after the settlement is fully
-                // recorded so the ad's onDismissed doesn't race the toast.
-                _showInterstitial.tryEmit(Unit)
             }
+            runCatching { debtRepository.markSettled(d) }
+            _showConfetti.value = true
+            _showInterstitial.tryEmit(Unit)
         }
         syncIfSignedIn()
     }

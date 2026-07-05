@@ -55,6 +55,9 @@ class SplitViewModel @Inject constructor(
     private val _showAuthPrompt = MutableStateFlow(false)
     val showAuthPrompt: StateFlow<Boolean> = _showAuthPrompt.asStateFlow()
 
+    private val _showVerifyGate = MutableStateFlow(false)
+    val showVerifyGate: StateFlow<Boolean> = _showVerifyGate.asStateFlow()
+
     // Track splits that have already had debts created this session — prevents
     // duplicate-debt spam on rapid CREATE_DEBTS button taps (Wave 3 Issue 1).
     private val _splitsWithDebtsCreated = MutableStateFlow<Set<Int>>(emptySet())
@@ -82,6 +85,10 @@ class SplitViewModel @Inject constructor(
     fun preloadRewardedAd(context: Context) { adManager.loadRewardedAd(context) }
 
     fun dismissAuthPrompt() { _showAuthPrompt.value = false }
+    fun dismissVerifyGate() { _showVerifyGate.value = false }
+    fun resendVerificationEmail() = viewModelScope.launch {
+        authManager.resendVerificationEmail()
+    }
 
     val pastSplits: StateFlow<List<SplitEntity>> = splits.getAllSplits()
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
@@ -131,6 +138,10 @@ class SplitViewModel @Inject constructor(
     }
 
     fun createSplit(onCreated: (SplitEntity) -> Unit) = viewModelScope.launch {
+        if (!authManager.isGoogleProvider() && !authManager.isCurrentUserEmailVerified()) {
+            _showVerifyGate.value = true
+            return@launch
+        }
         // Local-first: persist unconditionally, sync only if a Firebase user
         // actually exists. Previously gated on prefs.isGoogleSignedIn which
         // blocked offline/"Skip for now" users from any primary action —

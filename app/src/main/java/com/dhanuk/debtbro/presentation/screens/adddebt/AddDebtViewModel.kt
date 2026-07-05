@@ -34,11 +34,22 @@ class AddDebtViewModel @Inject constructor(
     private val _showAuthPrompt = MutableStateFlow(false)
     val showAuthPrompt: StateFlow<Boolean> = _showAuthPrompt.asStateFlow()
 
+    private val _showVerifyGate = MutableStateFlow(false)
+    val showVerifyGate: StateFlow<Boolean> = _showVerifyGate.asStateFlow()
+
     private val _showInterstitial = MutableSharedFlow<Unit>()
     val showInterstitial: SharedFlow<Unit> = _showInterstitial.asSharedFlow()
 
     fun dismissAuthPrompt() {
         _showAuthPrompt.value = false
+    }
+
+    fun dismissVerifyGate() {
+        _showVerifyGate.value = false
+    }
+
+    fun resendVerificationEmail() = viewModelScope.launch {
+        authManager.resendVerificationEmail()
     }
 
     fun saveDebt(
@@ -53,6 +64,10 @@ class AddDebtViewModel @Inject constructor(
         onSaved: () -> Unit
     ) {
         viewModelScope.launch {
+            if (!authManager.isGoogleProvider() && !authManager.isCurrentUserEmailVerified()) {
+                _showVerifyGate.value = true
+                return@launch
+            }
             _isLoading.value = true
             try {
                 // Local-first: always persist to Room so offline users can use

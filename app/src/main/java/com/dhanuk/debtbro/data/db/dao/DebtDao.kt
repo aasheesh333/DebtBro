@@ -41,6 +41,15 @@ interface DebtDao {
     @Query("SELECT * FROM debts WHERE dueDate IS NOT NULL AND dueDate BETWEEN :from AND :to AND status != 'SETTLED'")
     suspend fun getDebtsDueBetween(from: Long, to: Long): List<DebtEntity>
 
+    @Query("SELECT * FROM debts WHERE dueDate IS NOT NULL AND reminderScheduled = 0 AND status != 'SETTLED' AND settled = 0")
+    suspend fun getUnscheduledDueDebts(): List<DebtEntity>
+
+    @Query("UPDATE debts SET reminderScheduled = 1, updatedAt = :now, isSynced = 0 WHERE id = :id")
+    suspend fun markReminderScheduled(id: Int, now: Long = System.currentTimeMillis())
+
+    @Query("UPDATE debts SET settled = :settled, status = :status, updatedAt = :now, isSynced = 0 WHERE id = :id")
+    suspend fun updateSettledStatus(id: Int, settled: Boolean, status: String, now: Long = System.currentTimeMillis())
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertDebt(debt: DebtEntity): Long
 

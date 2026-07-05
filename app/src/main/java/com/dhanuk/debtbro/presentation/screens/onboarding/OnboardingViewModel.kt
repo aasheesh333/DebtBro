@@ -5,10 +5,12 @@ import androidx.lifecycle.viewModelScope
 import com.dhanuk.debtbro.data.datastore.AppPreferences
 import com.dhanuk.debtbro.data.firebase.AuthManager
 import com.dhanuk.debtbro.util.LocalizedString
+import com.dhanuk.debtbro.worker.AccountDeletionWorker
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
@@ -37,6 +39,12 @@ class OnboardingViewModel @Inject constructor(
 
     private val _forgotPasswordError = MutableStateFlow<String?>(null)
     val forgotPasswordError: StateFlow<String?> = _forgotPasswordError.asStateFlow()
+
+    private val _verifyGateVisible = MutableStateFlow(false)
+    val verifyGateVisible: StateFlow<Boolean> = _verifyGateVisible.asStateFlow()
+
+    private val _showGraceReLoginAlert = MutableStateFlow(false)
+    val showGraceReLoginAlert: StateFlow<Boolean> = _showGraceReLoginAlert.asStateFlow()
 
     fun onNameChange(name: String) { _userName.value = name }
 
@@ -88,6 +96,8 @@ class OnboardingViewModel @Inject constructor(
         if (result.isSuccess) {
             val user = result.getOrThrow()
             prefs.setSignedIn("google", user.displayName ?: _userName.value.ifBlank { "DebtPayoff Pro user" }, user.email ?: "", user.photoUrl?.toString() ?: "")
+            _verifyGateVisible.value = false
+            checkGracePeriodOnSignIn(user.uid)
             onResult(true)
         } else {
             _authError.value = result.exceptionOrNull()?.message ?: "Sign-in failed"
@@ -102,6 +112,7 @@ class OnboardingViewModel @Inject constructor(
             val displayName = name.ifBlank { _userName.value.ifBlank { "DebtPayoff Pro user" } }
             prefs.setSignedIn("email", displayName, user.email ?: email, "")
             if (_userName.value.isBlank() && name.isNotBlank()) _userName.value = name
+            _verifyGateVisible.value = true
             onResult(true, null)
         } else {
             val msg = result.exceptionOrNull()?.message ?: "Sign-up failed"
@@ -110,17 +121,64 @@ class OnboardingViewModel @Inject constructor(
         }
     }
 
+    fun resendVerificationEmail() = viewModelScope.launch {
+        auth.resendVerificationEmail()
+    }
+
+    fun refreshVerificationState() = viewModelScope.launch {
+        if (auth.reloadCurrentUser()) {
+            if (auth.isGoogleProvider() || auth.isCurrentUserEmailVerified()) {
+                _verifyGateVisible.value = false
+            }
+        }
+    }
+
     fun signInEmailPassword(email: String, password: String, onResult: (Boolean, String?) -> Unit) = viewModelScope.launch {
         val result = auth.signInWithEmailPassword(email, password)
         if (result.isSuccess) {
             val user = result.getOrThrow()
             prefs.setSignedIn("email", user.displayName ?: _userName.value.ifBlank { "DebtPayoff Pro user" }, user.email ?: email, "")
+            checkGracePeriodOnSignIn(user.uid)
             onResult(true, null)
         } else {
             val msg = result.exceptionOrNull()?.message ?: "Sign-in failed"
             _authError.value = msg
             onResult(false, msg)
         }
+    }
+
+    private suspend fun checkGracePeriodOnSignIn(uid: String?) {
+        if (uid == null) return
+        val serverRequestedAt = runCatching { auth.checkDeletionRequest(uid) }.getOrNull()
+        val effectiveTs = serverRequestedAt ?: prefs.pendingDeletionTimestamp.first().takeIf { it > 0L }
+        if (effectiveTs != null && effectiveTs > 0L) {
+            val elapsed = System.currentTimeMillis() - effectiveTs
+            if (elapsed < GRACE_PERIOD_MS) {
+                prefs.setPendingDeletionTimestamp(effectiveTs)
+                _showGraceReLoginAlert.value = true
+            }
+        }
+    }
+
+    fun dismissGraceReLoginAlert() { _showGraceReLoginAlert.value = false }
+
+    fun cancelDeletionViaGraceAlert() = viewModelScope.launch {
+        val uid = auth.getUserId()
+        if (uid != null) {
+            runCatching { auth.cancelAccountDeletion(uid, System.currentTimeMillis()) }
+        }
+        prefs.clearPendingDeletion()
+        _showGraceReLoginAlert.value = false
+    }
+
+    fun signOutFromGraceAlert() = viewModelScope.launch {
+        auth.signOut()
+        prefs.setSignedIn(null)
+        _showGraceReLoginAlert.value = false
+    }
+
+    companion object {
+        private const val GRACE_PERIOD_MS = AccountDeletionWorker.GRACE_PERIOD_MS
     }
 
     fun dismissAuthError() { _authError.value = null }

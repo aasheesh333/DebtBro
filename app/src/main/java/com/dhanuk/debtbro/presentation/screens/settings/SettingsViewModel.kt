@@ -58,7 +58,8 @@ data class DisplaySettingsState(
 data class NotificationSettingsState(
     val notifyDailyReminder: Boolean = true,
     val notifyWeeklySummary: Boolean = true,
-    val notifyPaymentAlerts: Boolean = true
+    val notifyPaymentAlerts: Boolean = true,
+    val engagementNotificationsEnabled: Boolean = true
 )
 
 private data class SyncStateValue(
@@ -94,6 +95,7 @@ data class SettingsUiState(
     val notifyDailyReminder: Boolean = true,
     val notifyWeeklySummary: Boolean = true,
     val notifyPaymentAlerts: Boolean = true,
+    val engagementNotificationsEnabled: Boolean = true,
     val exportFormat: String = "CSV",
     val themeMode: String = "SYSTEM",
     val isSigningOut: Boolean = false,
@@ -224,12 +226,14 @@ class SettingsViewModel @Inject constructor(
     private val notificationSettingsState = combine(
         prefs.notifyDailyReminder,
         prefs.notifyWeeklySummary,
-        prefs.notifyPaymentAlerts
-    ) { daily, weekly, payment ->
+        prefs.notifyPaymentAlerts,
+        prefs.engagementNotificationsEnabled
+    ) { daily, weekly, payment, engagement ->
         NotificationSettingsState(
             notifyDailyReminder = daily,
             notifyWeeklySummary = weekly,
-            notifyPaymentAlerts = payment
+            notifyPaymentAlerts = payment,
+            engagementNotificationsEnabled = engagement
         )
     }
 
@@ -280,6 +284,7 @@ class SettingsViewModel @Inject constructor(
             notifyDailyReminder = notification.notifyDailyReminder,
             notifyWeeklySummary = notification.notifyWeeklySummary,
             notifyPaymentAlerts = notification.notifyPaymentAlerts,
+            engagementNotificationsEnabled = notification.engagementNotificationsEnabled,
             lastSynced = sync.lastSynced,
             isSyncing = sync.isSyncing,
             syncMessage = sync.syncMessage,
@@ -301,6 +306,7 @@ class SettingsViewModel @Inject constructor(
     fun setNotifyDailyReminder(value: Boolean) = viewModelScope.launch { prefs.setNotifyDailyReminder(value) }
     fun setNotifyWeeklySummary(value: Boolean) = viewModelScope.launch { prefs.setNotifyWeeklySummary(value) }
     fun setNotifyPaymentAlerts(value: Boolean) = viewModelScope.launch { prefs.setNotifyPaymentAlerts(value) }
+    fun setEngagementNotificationsEnabled(value: Boolean) = viewModelScope.launch { prefs.setEngagementNotificationsEnabled(value) }
     fun setExportFormat(format: String) = viewModelScope.launch { prefs.setExportFormat(format) }
     fun setThemeMode(mode: String) = viewModelScope.launch { prefs.setThemeMode(mode) }
     fun setCustomAvatarUri(uri: String) = viewModelScope.launch { prefs.setCustomAvatarUri(uri) }
@@ -349,6 +355,20 @@ class SettingsViewModel @Inject constructor(
     }
 
     fun dismissDeletionGraceAlert() { _showDeletionGraceAlert.value = false }
+
+    suspend fun checkGracePeriodOnSignIn(): Boolean {
+        return runCatching {
+            val uid = auth.getUserId() ?: return false
+            val serverRequestedAt = auth.checkDeletionRequest(uid) ?: return false
+            val elapsed = System.currentTimeMillis() - serverRequestedAt
+            if (elapsed < GRACE_PERIOD_MS) {
+                prefs.setPendingDeletionTimestamp(serverRequestedAt)
+                true
+            } else {
+                false
+            }
+        }.getOrDefault(false)
+    }
 
     fun cancelDeletion() = viewModelScope.launch {
         val uid = auth.getUserId()

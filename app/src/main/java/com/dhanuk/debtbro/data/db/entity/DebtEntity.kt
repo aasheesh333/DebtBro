@@ -26,7 +26,9 @@ data class DebtEntity(
     val aiRoastGenerated: String? = null,
     val notes: String? = null,
     val isSynced: Boolean = false,
-    val updatedAt: Long = System.currentTimeMillis()
+    val updatedAt: Long = System.currentTimeMillis(),
+    val reminderScheduled: Boolean = false,
+    val settled: Boolean = false
 ) {
     @Keep
     constructor() : this(

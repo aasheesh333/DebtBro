@@ -57,6 +57,11 @@ class AppPreferences(@ApplicationContext private val context: Context) {
         val NOTIFY_WEEKLY_SUMMARY = booleanPreferencesKey("notify_weekly_summary")
         val NOTIFY_PAYMENT_ALERTS = booleanPreferencesKey("notify_payment_alerts")
 
+        // ── Engagement notifications (Phase 5) ───────────────────────────────
+        val ENGAGEMENT_NOTIFICATIONS_ENABLED = booleanPreferencesKey("engagement_notifications_enabled")
+        val LAST_ENGAGEMENT_PUSH_TIME = longPreferencesKey("last_engagement_push_time")
+        val LAST_APP_ACTIVE_TIME = longPreferencesKey("last_app_active_time")
+
         // ── Export preferences ────────────────────────────────────────────────
         val EXPORT_FORMAT = stringPreferencesKey("export_format")
         val CUSTOM_AVATAR_URI = stringPreferencesKey("custom_avatar_uri")
@@ -123,6 +128,10 @@ class AppPreferences(@ApplicationContext private val context: Context) {
     val notifyDailyReminder: Flow<Boolean> = context.dataStore.data.map { it[Keys.NOTIFY_DAILY_REMINDER] ?: true }
     val notifyWeeklySummary: Flow<Boolean> = context.dataStore.data.map { it[Keys.NOTIFY_WEEKLY_SUMMARY] ?: true }
     val notifyPaymentAlerts: Flow<Boolean> = context.dataStore.data.map { it[Keys.NOTIFY_PAYMENT_ALERTS] ?: true }
+    val engagementNotificationsEnabled: Flow<Boolean> =
+        context.dataStore.data.map { it[Keys.ENGAGEMENT_NOTIFICATIONS_ENABLED] ?: true }
+    val lastEngagementPushTime: Flow<Long> = context.dataStore.data.map { it[Keys.LAST_ENGAGEMENT_PUSH_TIME] ?: 0L }
+    val lastAppActiveTime: Flow<Long> = context.dataStore.data.map { it[Keys.LAST_APP_ACTIVE_TIME] ?: 0L }
     /**
      * True once the user dismissed the notification-permission rationale
      * at least once. The rationale will not auto-popup on subsequent
@@ -201,6 +210,10 @@ class AppPreferences(@ApplicationContext private val context: Context) {
     suspend fun setNotifyDailyReminder(value: Boolean) = context.dataStore.edit { it[Keys.NOTIFY_DAILY_REMINDER] = value }
     suspend fun setNotifyWeeklySummary(value: Boolean) = context.dataStore.edit { it[Keys.NOTIFY_WEEKLY_SUMMARY] = value }
     suspend fun setNotifyPaymentAlerts(value: Boolean) = context.dataStore.edit { it[Keys.NOTIFY_PAYMENT_ALERTS] = value }
+    suspend fun setEngagementNotificationsEnabled(value: Boolean) =
+        context.dataStore.edit { it[Keys.ENGAGEMENT_NOTIFICATIONS_ENABLED] = value }
+    suspend fun setLastEngagementPushTime(ts: Long) = context.dataStore.edit { it[Keys.LAST_ENGAGEMENT_PUSH_TIME] = ts }
+    suspend fun setLastAppActiveTime(ts: Long) = context.dataStore.edit { it[Keys.LAST_APP_ACTIVE_TIME] = ts }
     suspend fun setNotificationRationaleDismissed(value: Boolean) =
         context.dataStore.edit { it[Keys.NOTIFICATION_RATIONALE_DISMISSED] = value }
     suspend fun setExportFormat(format: String) = context.dataStore.edit { it[Keys.EXPORT_FORMAT] = format }

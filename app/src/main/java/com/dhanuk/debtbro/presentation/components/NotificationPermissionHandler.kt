@@ -196,13 +196,13 @@ private fun NotificationRationaleDialog(onAllow: () -> Unit, onDeny: () -> Unit)
                 modifier = Modifier.size(40.dp)
             )
         },
-        title = { Text(LocalizedString.get("notification_permission_title"), fontWeight = FontWeight.Bold) },
+        title = { Text(LocalizedString.get("notif_rationale_title"), fontWeight = FontWeight.Bold) },
         text = {
             androidx.compose.foundation.layout.Column(
                 verticalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(8.dp)
             ) {
                 Text(
-                    LocalizedString.get("notification_permission_desc"),
+                    LocalizedString.get("notif_rationale_body"),
                     textAlign = TextAlign.Center
                 )
                 Text(
@@ -214,7 +214,7 @@ private fun NotificationRationaleDialog(onAllow: () -> Unit, onDeny: () -> Unit)
         },
         confirmButton = {
             Button(onClick = onAllow) {
-                Text(LocalizedString.get("allow"))
+                Text(LocalizedString.get("notif_rationale_allow"))
             }
         },
         dismissButton = {

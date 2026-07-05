@@ -69,6 +69,11 @@ fun DashboardScreen(
         viewModel.refresh()
     }
 
+    androidx.lifecycle.compose.LifecycleResumeEffect(Unit) {
+        viewModel.refreshVerificationState()
+        onPauseOrDispose()
+    }
+
     LaunchedEffect(state.hasShownSignInPrompt, state.isSignedIn) {
         if (!state.hasShownSignInPrompt && !state.isSignedIn) {
             delay(3000)

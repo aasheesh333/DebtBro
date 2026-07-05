@@ -8,6 +8,7 @@ import com.dhanuk.debtbro.data.firebase.AuthManager
 import com.dhanuk.debtbro.data.firebase.RealTimeSyncManager
 import com.dhanuk.debtbro.data.firebase.SyncManager
 import com.dhanuk.debtbro.util.LocalizedString
+import com.dhanuk.debtbro.worker.AccountDeletionWorker
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
@@ -48,6 +49,12 @@ class AuthViewModel @Inject constructor(
     private val _signedIn = MutableStateFlow(false)
     val signedIn: StateFlow<Boolean> = _signedIn.asStateFlow()
 
+    private val _verifyGateVisible = MutableStateFlow(false)
+    val verifyGateVisible: StateFlow<Boolean> = _verifyGateVisible.asStateFlow()
+
+    private val _showGraceReLoginAlert = MutableStateFlow(false)
+    val showGraceReLoginAlert: StateFlow<Boolean> = _showGraceReLoginAlert.asStateFlow()
+
     init {
         viewModelScope.launch {
             prefs.isGoogleSignedIn.collect { _signedIn.value = it }
@@ -86,6 +93,16 @@ class AuthViewModel @Inject constructor(
         _state.value = _state.value.copy(errorRes = null)
     }
 
+    fun resendVerificationEmail() = viewModelScope.launch {
+        auth.resendVerificationEmail()
+    }
+
+    fun refreshVerificationState() = viewModelScope.launch {
+        if (auth.reloadCurrentUser() && (auth.isGoogleProvider() || auth.isCurrentUserEmailVerified())) {
+            _verifyGateVisible.value = false
+        }
+    }
+
     private fun isEmailValid(s: String): Boolean =
         s.isNotBlank() && android.util.Patterns.EMAIL_ADDRESS.matcher(s).matches()
 
@@ -106,7 +123,10 @@ class AuthViewModel @Inject constructor(
         _state.value = _state.value.copy(isBusy = true, errorRes = null)
         viewModelScope.launch {
             auth.signInWithGoogle(activity).fold(
-                onSuccess = { user -> onAuthSuccess(user.uid, user.displayName, user.email ?: "", user.photoUrl?.toString().orEmpty(), "google") },
+                onSuccess = { user ->
+                    _verifyGateVisible.value = false
+                    onAuthSuccess(user.uid, user.displayName, user.email ?: "", user.photoUrl?.toString().orEmpty(), "google")
+                },
                 onFailure = { e ->
                     _state.value = _state.value.copy(isBusy = false, errorRes = e.message)
                 }
@@ -158,7 +178,10 @@ class AuthViewModel @Inject constructor(
         _state.value = current.copy(isBusy = true, errorRes = null)
         viewModelScope.launch {
             auth.signUpWithEmailPassword(current.email, current.password).fold(
-                onSuccess = { user -> onAuthSuccess(user.uid, user.displayName ?: "", user.email ?: "", "", "email") },
+                onSuccess = { user ->
+                    _verifyGateVisible.value = true
+                    onAuthSuccess(user.uid, user.displayName ?: "", user.email ?: "", "", "email")
+                },
                 onFailure = { e ->
                     _state.value = _state.value.copy(isBusy = false, errorRes = e.message ?: "Sign-up failed")
                 }
@@ -234,11 +257,42 @@ class AuthViewModel @Inject constructor(
             realTimeSyncManager.startListening(uid)
             sync.fullSync(uid)
         }
+        runCatching { checkGracePeriodOnSignIn(uid) }
         _state.value = _state.value.copy(isBusy = false)
+    }
+
+    private suspend fun checkGracePeriodOnSignIn(uid: String) {
+        val serverRequestedAt = runCatching { auth.checkDeletionRequest(uid) }.getOrNull()
+        val effectiveTs = serverRequestedAt ?: prefs.pendingDeletionTimestamp.first().takeIf { it > 0L }
+        if (effectiveTs != null && effectiveTs > 0L) {
+            val elapsed = System.currentTimeMillis() - effectiveTs
+            if (elapsed < GRACE_PERIOD_MS) {
+                prefs.setPendingDeletionTimestamp(effectiveTs)
+                _showGraceReLoginAlert.value = true
+            }
+        }
+    }
+
+    fun dismissGraceReLoginAlert() { _showGraceReLoginAlert.value = false }
+
+    fun cancelDeletionViaGraceAlert() = viewModelScope.launch {
+        val uid = auth.getUserId()
+        if (uid != null) {
+            runCatching { auth.cancelAccountDeletion(uid, System.currentTimeMillis()) }
+        }
+        prefs.clearPendingDeletion()
+        _showGraceReLoginAlert.value = false
+    }
+
+    fun signOutFromGraceAlert() = viewModelScope.launch {
+        auth.signOut()
+        prefs.setSignedIn(null)
+        _showGraceReLoginAlert.value = false
     }
 
     companion object {
         const val MAX_DAILY_RESETS = 5
         const val RESEND_COOLDOWN_SECONDS = 60
+        private const val GRACE_PERIOD_MS = AccountDeletionWorker.GRACE_PERIOD_MS
     }
 }

@@ -39,6 +39,7 @@ fun SplitScreen(onAuthRequired: () -> Unit, viewModel: SplitViewModel = hiltView
     val state by viewModel.state.collectAsStateWithLifecycle()
     val pastSplits by viewModel.pastSplits.collectAsStateWithLifecycle()
     val showAuthPrompt by viewModel.showAuthPrompt.collectAsStateWithLifecycle()
+    val showVerifyGate by viewModel.showVerifyGate.collectAsStateWithLifecycle()
     val splitsWithDebts by viewModel.splitsWithDebtsCreated.collectAsStateWithLifecycle()
     val showRewardAd by viewModel.showRewardAd.collectAsStateWithLifecycle()
     val extra = LocalExtraColors.current
@@ -268,6 +269,26 @@ fun SplitScreen(onAuthRequired: () -> Unit, viewModel: SplitViewModel = hiltView
             dismissButton = {
                 TextButton(onClick = { viewModel.dismissAuthPrompt() }) {
                     Text(LocalizedString.get("cancel"), color = extra.subtitleGray)
+                }
+            },
+            containerColor = MaterialTheme.colorScheme.surface
+        )
+    }
+
+    if (showVerifyGate) {
+        AlertDialog(
+            onDismissRequest = { viewModel.dismissVerifyGate() },
+            title = { Text("Email verification required") },
+            text = { Text("Please verify your email before adding debts or splits. Check your inbox (and spam folder).") },
+            confirmButton = {
+                TextButton(onClick = {
+                    viewModel.resendVerificationEmail()
+                    viewModel.dismissVerifyGate()
+                }) { Text("Resend email", color = MaterialTheme.colorScheme.primary) }
+            },
+            dismissButton = {
+                TextButton(onClick = { viewModel.dismissVerifyGate() }) {
+                    Text("Dismiss", color = extra.subtitleGray)
                 }
             },
             containerColor = MaterialTheme.colorScheme.surface

@@ -488,4 +488,25 @@ fun AddDebtBottomSheet(
             containerColor = MaterialTheme.colorScheme.surface
         )
     }
+
+    val showVerifyGate by viewModel.showVerifyGate.collectAsStateWithLifecycle()
+    if (showVerifyGate) {
+        AlertDialog(
+            onDismissRequest = { viewModel.dismissVerifyGate() },
+            title = { Text("Email verification required") },
+            text = { Text("Please verify your email before adding debts or splits. Check your inbox (and spam folder).") },
+            confirmButton = {
+                TextButton(onClick = {
+                    viewModel.resendVerificationEmail()
+                    viewModel.dismissVerifyGate()
+                }) { Text("Resend email", color = MaterialTheme.colorScheme.primary) }
+            },
+            dismissButton = {
+                TextButton(onClick = { viewModel.dismissVerifyGate() }) {
+                    Text("Dismiss", color = extra.subtitleGray)
+                }
+            },
+            containerColor = MaterialTheme.colorScheme.surface
+        )
+    }
 }

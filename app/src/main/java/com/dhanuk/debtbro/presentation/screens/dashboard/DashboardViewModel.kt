@@ -145,6 +145,10 @@ class DashboardViewModel @Inject constructor(
 
     fun dismissPrompt() = viewModelScope.launch { prefs.setHasShownSignInPrompt(true) }
 
+    fun refreshVerificationState() = viewModelScope.launch {
+        authManager.reloadCurrentUser()
+    }
+
     fun refresh() = viewModelScope.launch {
         if (_isRefreshing.value) return@launch
         _isRefreshing.value = true

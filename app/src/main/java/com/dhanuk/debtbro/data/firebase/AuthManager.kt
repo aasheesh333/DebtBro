@@ -88,9 +88,37 @@ class AuthManager @Inject constructor(
      */
     suspend fun signUpWithEmailPassword(email: String, password: String): Result<FirebaseUser> = runCatching {
         val result = auth.createUserWithEmailAndPassword(email, password).await()
-        result.user ?: error("Sign-up returned no user")
+        val user = result.user ?: error("Sign-up returned no user")
+        runCatching { user.sendEmailVerification().await() }
+            .onFailure { e ->
+                android.util.Log.w("AuthManager", "sendEmailVerification failed after signup: ${e.message}", e)
+            }
+        user
     }.onFailure { e ->
         android.util.Log.e("AuthManager", "signUpWithEmailPassword failed: ${e.message}", e)
+    }
+
+    suspend fun reloadCurrentUser(): Boolean = runCatching {
+        val user = FirebaseAuth.getInstance().currentUser ?: return@runCatching false
+        user.reload().await()
+        true
+    }.onFailure { e ->
+        android.util.Log.e("AuthManager", "reloadCurrentUser failed: ${e.message}", e)
+    }.getOrDefault(false)
+
+    fun isCurrentUserEmailVerified(): Boolean =
+        FirebaseAuth.getInstance().currentUser?.isEmailVerified ?: false
+
+    fun isGoogleProvider(): Boolean =
+        FirebaseAuth.getInstance().currentUser?.providerData
+            ?.any { it.providerId == "google.com" } ?: false
+
+    suspend fun resendVerificationEmail(): Result<Unit> = runCatching {
+        val user = auth.currentUser ?: error("Not signed in")
+        user.sendEmailVerification().await()
+        Unit
+    }.onFailure { e ->
+        android.util.Log.e("AuthManager", "resendVerificationEmail failed: ${e.message}", e)
     }
 
     /**

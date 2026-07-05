@@ -13,7 +13,7 @@ import com.dhanuk.debtbro.data.db.entity.SplitEntity
 
 @Database(
     entities = [DebtEntity::class, PaymentEntity::class, SplitEntity::class],
-    version = 4,
+    version = 5,
     exportSchema = false
 )
 abstract class DebtBroDB : RoomDatabase() {
@@ -58,6 +58,17 @@ abstract class DebtBroDB : RoomDatabase() {
             }
         }
 
-        val ALL_MIGRATIONS = listOf(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4)
+        val MIGRATION_4_5: Migration = object : Migration(4, 5) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                try {
+                    db.execSQL("ALTER TABLE debts ADD COLUMN reminderScheduled INTEGER NOT NULL DEFAULT 0")
+                } catch (_: Exception) { }
+                try {
+                    db.execSQL("ALTER TABLE debts ADD COLUMN settled INTEGER NOT NULL DEFAULT 0")
+                } catch (_: Exception) { }
+            }
+        }
+
+        val ALL_MIGRATIONS = listOf(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5)
     }
 }

@@ -19,7 +19,9 @@ import com.dhanuk.debtbro.data.ads.AdManager
 import com.dhanuk.debtbro.data.ads.AppOpenManager
 import com.dhanuk.debtbro.data.datastore.AppPreferences
 import com.dhanuk.debtbro.data.repository.CurrencyRepository
+import com.dhanuk.debtbro.data.repository.DebtRepository
 import com.dhanuk.debtbro.util.autoCurrencyForLocale
+import com.dhanuk.debtbro.worker.ReminderScheduler
 import com.google.android.gms.ads.MobileAds
 import com.google.android.ump.UserMessagingPlatform
 import com.google.firebase.analytics.FirebaseAnalytics
@@ -31,6 +33,7 @@ import com.google.firebase.perf.FirebasePerformance
 import com.onesignal.OneSignal
 import com.onesignal.debug.LogLevel
 import com.dhanuk.debtbro.worker.DebtReminderWorker
+import com.dhanuk.debtbro.worker.EngagementWorker
 import com.dhanuk.debtbro.worker.WeeklySummaryWorker
 import dagger.hilt.android.HiltAndroidApp
 import kotlinx.coroutines.CoroutineScope
@@ -47,6 +50,8 @@ class DebtBroApp : Application(), Configuration.Provider {
     @Inject lateinit var appOpenManager: AppOpenManager
     @Inject lateinit var preferences: AppPreferences
     @Inject lateinit var currencyRepository: CurrencyRepository
+    @Inject lateinit var debtRepository: DebtRepository
+    @Inject lateinit var reminderScheduler: ReminderScheduler
     override val workManagerConfiguration: Configuration
         get() = Configuration.Builder().setWorkerFactory(workerFactory).build()
 
@@ -127,6 +132,32 @@ class DebtBroApp : Application(), Configuration.Provider {
                 .setBackoffCriteria(androidx.work.BackoffPolicy.EXPONENTIAL, 10, TimeUnit.MINUTES)
                 .build()
         )
+        WorkManager.getInstance(this).enqueueUniquePeriodicWork(
+            "weekly-summary",
+            ExistingPeriodicWorkPolicy.UPDATE,
+            PeriodicWorkRequestBuilder<WeeklySummaryWorker>(7, TimeUnit.DAYS)
+                .setConstraints(workerConstraints)
+                .setBackoffCriteria(androidx.work.BackoffPolicy.EXPONENTIAL, 10, TimeUnit.MINUTES)
+                .build()
+        )
+
+        WorkManager.getInstance(this).enqueueUniquePeriodicWork(
+            "engagement_daily",
+            ExistingPeriodicWorkPolicy.KEEP,
+            PeriodicWorkRequestBuilder<EngagementWorker>(1, TimeUnit.DAYS)
+                .setConstraints(workerConstraints)
+                .setBackoffCriteria(androidx.work.BackoffPolicy.EXPONENTIAL, 10, TimeUnit.MINUTES)
+                .build()
+        )
+
+        // ── Reschedule per-debt due-date reminders lost across app kill ─────────
+        CoroutineScope(Dispatchers.IO).launch {
+            try {
+                reminderScheduler.rescheduleAll(debtRepository)
+            } catch (e: Throwable) {
+                Log.w("DebtBroApp", "Reminder reschedule failed: ${e.message}", e)
+            }
+        }
 
         // ── First-launch analytics ─────────────────────────────────────────────
         analytics.logEvent("app_launched") {
