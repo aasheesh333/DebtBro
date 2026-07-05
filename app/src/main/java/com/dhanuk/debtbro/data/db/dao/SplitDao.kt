@@ -19,6 +19,9 @@ interface SplitDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertSplit(split: SplitEntity): Long
 
+    @Insert(onConflict = OnConflictStrategy.IGNORE)
+    suspend fun insertSplitIfAbsent(split: SplitEntity): Long
+
     @Update
     suspend fun updateSplit(split: SplitEntity)
 

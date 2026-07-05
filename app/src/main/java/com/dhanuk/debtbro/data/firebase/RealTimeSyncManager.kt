@@ -134,7 +134,7 @@ class RealTimeSyncManager @Inject constructor(
         for (cloudSplit in cloudSplits) {
             if (cloudSplit.firebaseId.isNullOrBlank()) continue
             if (splitDao.getSplitByFirebaseId(cloudSplit.firebaseId) == null) {
-                splitDao.insertSplit(cloudSplit.copy(id = 0, isSynced = true))
+                splitDao.insertSplitIfAbsent(cloudSplit.copy(id = 0, isSynced = true))
             }
         }
     }

@@ -13,7 +13,7 @@ import com.dhanuk.debtbro.data.db.entity.SplitEntity
 
 @Database(
     entities = [DebtEntity::class, PaymentEntity::class, SplitEntity::class],
-    version = 5,
+    version = 6,
     exportSchema = false
 )
 abstract class DebtBroDB : RoomDatabase() {
@@ -69,6 +69,15 @@ abstract class DebtBroDB : RoomDatabase() {
             }
         }
 
-        val ALL_MIGRATIONS = listOf(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5)
+        val MIGRATION_5_6: Migration = object : Migration(5, 6) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                try {
+                    db.execSQL("DELETE FROM splits WHERE id NOT IN (SELECT MIN(id) FROM splits WHERE firebaseId IS NOT NULL GROUP BY firebaseId) AND firebaseId IS NOT NULL")
+                    db.execSQL("CREATE UNIQUE INDEX IF NOT EXISTS index_splits_firebaseId ON splits(firebaseId)")
+                } catch (_: Exception) { }
+            }
+        }
+
+        val ALL_MIGRATIONS = listOf(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6)
     }
 }
