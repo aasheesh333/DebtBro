@@ -452,7 +452,7 @@ class SettingsViewModel @Inject constructor(
      * callback. On success, also cancels any pending WorkManager grace
      * backup so the worker doesn't double-fire later.
      */
-    fun requestImmediateDeletion(context: Context, onReauthRequired: () -> Unit, onFailure: (String) -> Unit, onSuccess: () -> Unit = {}) {
+    fun requestImmediateDeletion(context: Context, onReauthRequired: () -> Unit, onFailure: (String) -> Unit, onSuccess: () -> Unit = {}) = viewModelScope.launch {
         runCatching {
             WorkManager.getInstance(context).cancelUniqueWork(AccountDeletionWorker.UNIQUE_WORK_NAME)
         }
@@ -461,7 +461,24 @@ class SettingsViewModel @Inject constructor(
             runCatching { auth.cancelAccountDeletion(uid, System.currentTimeMillis()) }
             runCatching { prefs.clearPendingDeletion() }
         }
-        deleteAccount(context, onReauthRequired, onFailure, onSuccess)
+        isDeletingAccount.value = true
+        try {
+            runCatching { firebaseRepository.deleteAllUserData(uid ?: "") }
+            auth.deleteAccount()
+            realTimeSyncManager.stopListening()
+            debts.clearLocalData()
+            prefs.clearUserSession()
+            secureStorage.clearSensitiveData()
+            onSuccess()
+        } catch (e: Exception) {
+            if (e is com.google.firebase.auth.FirebaseAuthRecentLoginRequiredException) {
+                onReauthRequired()
+            } else {
+                onFailure(e.message ?: LocalizedString.get("account_deletion_failed"))
+            }
+        } finally {
+            isDeletingAccount.value = false
+        }
     }
 
     fun deleteAccount(context: Context, onReauthRequired: () -> Unit, onFailure: (String) -> Unit, onSuccess: () -> Unit = {}) = viewModelScope.launch {
