@@ -4,6 +4,10 @@
 **Commit:** `efb066f`
 **Branch:** `fix-google-signin-and-export-crash-15964286147323028907`
 
+## OWNER PREFERENCES (PERMANENT)
+
+- **Response language:** Always reply to the user in **Hinglish written in Roman/English font** (e.g. "ye kaam ho gaya, ab next step karte hain"). NEVER use Devanagari script for conversation. Code, commit messages, file contents, reasoning, CI logs, and other technical artifacts stay in English (Hinglish would break tooling and searchability). Only the conversational text addressed to the user is in Roman Hinglish.
+
 ## OVERVIEW
 
 DebtPayoff Pro — Android (Kotlin/Jetpack Compose) app for tracking personal debts with AI-powered "roast" reminders, Firebase sync, expense splitting, and exportable shame cards. Single-module Gradle project.

@@ -66,7 +66,10 @@ fun SignInScreen(
 
     Box(modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) {
         Column(modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState())) {
-            AuthHero(title = LocalizedString.get("welcome_back"))
+            AuthHero(
+                title = LocalizedString.get("welcome_back"),
+                subtitle = "Pick up where you left off"
+            )
 
             Column(
                 modifier = Modifier.fillMaxWidth().padding(horizontal = 24.dp, vertical = 24.dp),

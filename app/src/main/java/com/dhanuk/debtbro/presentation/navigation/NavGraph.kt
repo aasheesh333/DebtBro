@@ -256,7 +256,7 @@ fun DebtBroNavGraph(appPreferences: AppPreferences, adManager: AdManager) {
             composable(Screen.Onboarding.route) {
                 OnboardingScreen(
                     onOnboardingComplete = {
-                        navController.navigate(Screen.Dashboard.route) {
+                        navController.navigate(Screen.SignUp.route) {
                             popUpTo(Screen.Onboarding.route) { inclusive = true }
                         }
                     }

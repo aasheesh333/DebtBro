@@ -63,7 +63,7 @@ fun authFieldColors() = OutlinedTextFieldDefaults.colors(
 )
 
 @Composable
-fun AuthHero(title: String) {
+fun AuthHero(title: String, subtitle: String = "DebtPayoff Pro") {
     Box(
         modifier = Modifier
             .fillMaxWidth()
@@ -90,7 +90,7 @@ fun AuthHero(title: String) {
             )
             Spacer(Modifier.height(4.dp))
             Text(
-                "DebtPayoff Pro",
+                subtitle,
                 color = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.85f),
                 fontSize = 14.sp,
                 fontWeight = FontWeight.SemiBold

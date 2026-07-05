@@ -66,7 +66,10 @@ fun SignUpScreen(
 
     Box(modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) {
         Column(modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState())) {
-            AuthHero(title = LocalizedString.get("create_account"))
+            AuthHero(
+                title = LocalizedString.get("create_account"),
+                subtitle = "Sign up to DebtPayoff Pro"
+            )
 
             Column(
                 modifier = Modifier.fillMaxWidth().padding(horizontal = 24.dp, vertical = 24.dp),
