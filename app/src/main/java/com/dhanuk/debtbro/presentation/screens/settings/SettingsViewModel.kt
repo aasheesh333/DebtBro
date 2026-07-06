@@ -453,22 +453,46 @@ class SettingsViewModel @Inject constructor(
      * backup so the worker doesn't double-fire later.
      */
     fun requestImmediateDeletion(context: Context, onReauthRequired: () -> Unit, onFailure: (String) -> Unit, onSuccess: () -> Unit = {}) = viewModelScope.launch {
-        runCatching {
-            WorkManager.getInstance(context).cancelUniqueWork(AccountDeletionWorker.UNIQUE_WORK_NAME)
-        }
         val uid = auth.getUserId()
-        if (uid != null) {
-            runCatching { auth.cancelAccountDeletion(uid, System.currentTimeMillis()) }
-            runCatching { prefs.clearPendingDeletion() }
+        if (uid == null) {
+            onFailure(LocalizedString.get("not_signed_in"))
+            return@launch
         }
+        // Schedule the cloud-side + WorkManager 24h failsafe rather than
+        // auth.deleteAccount() right now. Firebase must keep the account
+        // alive so the server's deletionRequests/{uid} doc stays valid.
+        // On a same-account re-login within 24h the SignIn/Settings flow
+        // shows the "Log in and reactivate vs Cancel" alert; if the user
+        // never returns, AccountDeletionWorker (or SettingsViewModel.init
+        // once they next sign in) commits the actual Firebase deletion.
+        val requestedAt = System.currentTimeMillis()
         isDeletingAccount.value = true
         try {
-            runCatching { firebaseRepository.deleteAllUserData(uid ?: "") }
-            auth.deleteAccount()
+            auth.requestAccountDeletion(uid, requestedAt)
+            prefs.setPendingDeletionTimestamp(requestedAt)
+            runCatching {
+                val workRequest = OneTimeWorkRequestBuilder<AccountDeletionWorker>()
+                    .setInitialDelay(AccountDeletionWorker.GRACE_PERIOD_MS, TimeUnit.MILLISECONDS)
+                    .build()
+                WorkManager.getInstance(context).enqueueUniqueWork(
+                    AccountDeletionWorker.UNIQUE_WORK_NAME,
+                    ExistingWorkPolicy.REPLACE,
+                    workRequest
+                )
+            }
+            // Wipe local data and sign out — the user expects to land on
+            // the SignIn screen, NOT for the Firebase account to vanish
+            // yet. That happens 24h later via the worker/init block.
             realTimeSyncManager.stopListening()
             debts.clearLocalData()
             prefs.clearUserSession()
             secureStorage.clearSensitiveData()
+            // clearUserSession wipes ALL prefs including the just-set
+            // pendingDeletionTimestamp. Re-write it so the Settings
+            // counter badge + init-block check fire correctly if the
+            // user relaunches before the worker fires.
+            prefs.setPendingDeletionTimestamp(requestedAt)
+            auth.signOut()
             onSuccess()
         } catch (e: Exception) {
             if (e is com.google.firebase.auth.FirebaseAuthRecentLoginRequiredException) {
