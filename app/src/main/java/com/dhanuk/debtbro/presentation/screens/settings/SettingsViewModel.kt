@@ -125,8 +125,14 @@ class SettingsViewModel @Inject constructor(
         viewModelScope.launch {
             // Local DataStore check: user may have requested deletion on this
             // device earlier and just relaunched the app past the grace window.
+            // Only honor the local timestamp when the stored UID matches the
+            // currently-signed-in UID — otherwise a foreign user's stale
+            // pending timestamp would falsely trigger commitAccountDeletion.
             val ts = prefs.pendingDeletionTimestamp.first()
-            if (ts > 0L && (System.currentTimeMillis() - ts) >= GRACE_PERIOD_MS) {
+            val storedUid = prefs.pendingDeletionUid.first()
+            val currentUid = auth.getUserId()
+            val uidMatchesLocal = storedUid.isNotBlank() && currentUid != null && storedUid == currentUid
+            if (ts > 0L && uidMatchesLocal && (System.currentTimeMillis() - ts) >= GRACE_PERIOD_MS) {
                 commitAccountDeletion()
                 return@launch
             }
@@ -146,7 +152,7 @@ class SettingsViewModel @Inject constructor(
                         // Within grace — surface the alert so the user can cancel.
                         // Also reflect this into local DataStore so the counter
                         // badge + dialog stay consistent across relaunches.
-                        prefs.setPendingDeletionTimestamp(serverRequestedAt)
+                        prefs.setPendingDeletionTimestamp(serverRequestedAt, uid)
                         _showDeletionGraceAlert.value = true
                     }
                 }
@@ -334,7 +340,7 @@ class SettingsViewModel @Inject constructor(
                         return@let
                     }
                     // Within window — mirror into local prefs and alert the user
-                    prefs.setPendingDeletionTimestamp(serverRequestedAt)
+                    prefs.setPendingDeletionTimestamp(serverRequestedAt, uid)
                     _showDeletionGraceAlert.value = true
                     return@let
                 }
@@ -362,7 +368,7 @@ class SettingsViewModel @Inject constructor(
             val serverRequestedAt = auth.checkDeletionRequest(uid) ?: return false
             val elapsed = System.currentTimeMillis() - serverRequestedAt
             if (elapsed < GRACE_PERIOD_MS) {
-                prefs.setPendingDeletionTimestamp(serverRequestedAt)
+                prefs.setPendingDeletionTimestamp(serverRequestedAt, uid)
                 true
             } else {
                 false
@@ -420,8 +426,8 @@ class SettingsViewModel @Inject constructor(
         val uid = auth.getUserId()
         if (uid != null) {
             auth.requestAccountDeletion(uid, requestedAt)
+            prefs.setPendingDeletionTimestamp(requestedAt, uid)
         }
-        prefs.setPendingDeletionTimestamp(requestedAt)
         // Failsafe worker: if the user uninstalls / loses the device during
         // the grace window, the SettingsViewModel.init path never runs (the
         // user never reopens the app). This WorkManager one-shot fires after
@@ -469,7 +475,7 @@ class SettingsViewModel @Inject constructor(
         isDeletingAccount.value = true
         try {
             auth.requestAccountDeletion(uid, requestedAt)
-            prefs.setPendingDeletionTimestamp(requestedAt)
+            prefs.setPendingDeletionTimestamp(requestedAt, uid)
             runCatching {
                 val workRequest = OneTimeWorkRequestBuilder<AccountDeletionWorker>()
                     .setInitialDelay(AccountDeletionWorker.GRACE_PERIOD_MS, TimeUnit.MILLISECONDS)
@@ -488,10 +494,10 @@ class SettingsViewModel @Inject constructor(
             prefs.clearUserSession()
             secureStorage.clearSensitiveData()
             // clearUserSession wipes ALL prefs including the just-set
-            // pendingDeletionTimestamp. Re-write it so the Settings
-            // counter badge + init-block check fire correctly if the
-            // user relaunches before the worker fires.
-            prefs.setPendingDeletionTimestamp(requestedAt)
+            // pendingDeletionTimestamp. Re-write it (with the requestor's
+            // UID) so the Settings counter badge + init-block check fire
+            // correctly if the user relaunches before the worker fires.
+            prefs.setPendingDeletionTimestamp(requestedAt, uid)
             auth.signOut()
             onSuccess()
         } catch (e: Exception) {

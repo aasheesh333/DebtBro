@@ -93,17 +93,31 @@ class AccountDeletionWorker @AssistedInject constructor(
         // regardless of Firebase outcome so the app's UX matches the
         // SettingsViewModel.init path. Return retry on any thrown
         // exception to give Firebase another shot iftemporarily down.
-        val userId = auth.getUserId()
+        // Use the UID stored alongside the deletion timestamp — by the
+        // time the worker fires (T+24h) the user may have switched
+        // accounts on this device, so `auth.getUserId()` cannot be
+        // trusted as the deletion target.
+        val targetUid = runCatching { prefs.pendingDeletionUid.first() }.getOrDefault("")
         return runCatching {
-            if (userId != null) {
-                firebaseRepository.deleteAllUserData(userId)
-                auth.deleteAccount()
+            val effUid = targetUid.ifBlank { auth.getUserId() }
+            if (!effUid.isNullOrBlank()) {
+                firebaseRepository.deleteAllUserData(effUid)
+                if (auth.getUserId() == effUid) {
+                    auth.deleteAccount()
+                    prefs.clearPendingDeletion()
+                    prefs.clearUserSession()
+                    secureStorage.clearSensitiveData()
+                    realTimeSyncManager.stopListening()
+                    debts.clearLocalData()
+                } else {
+                    // Currently signed in as a different UID — only clear
+                    // the pending-deletion record, leave the active user's
+                    // session intact.
+                    prefs.clearPendingDeletion()
+                }
+            } else {
+                prefs.clearPendingDeletion()
             }
-            prefs.clearPendingDeletion()
-            prefs.clearUserSession()
-            secureStorage.clearSensitiveData()
-            realTimeSyncManager.stopListening()
-            debts.clearLocalData()
             Log.i(TAG, "Account deletion committed via WorkManager backup")
             Result.success()
         }.getOrElse { e ->

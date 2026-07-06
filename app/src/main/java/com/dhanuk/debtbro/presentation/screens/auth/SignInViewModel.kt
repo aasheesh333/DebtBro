@@ -193,11 +193,17 @@ class SignInViewModel @Inject constructor(
 
     private suspend fun checkGracePeriodOnSignIn(uid: String) {
         val serverRequestedAt = runCatching { auth.checkDeletionRequest(uid) }.getOrNull()
-        val effectiveTs = serverRequestedAt ?: prefs.pendingDeletionTimestamp.first().takeIf { it > 0L }
+        val localTs = prefs.pendingDeletionTimestamp.first()
+        val localUid = prefs.pendingDeletionUid.first()
+        // Only fall back to the local timestamp if it belongs to THIS user.
+        // Without this gate, a stale pendingDeletionTimestamp left by userA
+        // would surface to userB on sign-in, falsely showing the grace alert.
+        val effectiveTs = serverRequestedAt
+            ?: localTs.takeIf { it > 0L && localUid == uid }
         if (effectiveTs != null && effectiveTs > 0L) {
             val elapsed = System.currentTimeMillis() - effectiveTs
             if (elapsed < GRACE_PERIOD_MS) {
-                prefs.setPendingDeletionTimestamp(effectiveTs)
+                prefs.setPendingDeletionTimestamp(effectiveTs, uid)
                 _showGraceReLoginAlert.value = true
             }
         }
