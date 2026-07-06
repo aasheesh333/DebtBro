@@ -63,6 +63,9 @@ fun SignUpScreen(
     LaunchedEffect(signedIn) {
         if (signedIn && !showVerifyAlert && !showGraceReLoginAlert) onAuthComplete()
     }
+    LaunchedEffect(showVerifyAlert) {
+        if (signedIn && !showVerifyAlert && !showGraceReLoginAlert) onAuthComplete()
+    }
 
     Box(modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) {
         Column(modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState())) {

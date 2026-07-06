@@ -168,6 +168,7 @@ class SignUpViewModel @Inject constructor(
         }
         prefs.clearPendingDeletion()
         _showGraceReLoginAlert.value = false
+        _signedIn.value = true
     }
 
     fun signOutFromGraceAlert() = viewModelScope.launch {

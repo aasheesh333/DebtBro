@@ -107,6 +107,16 @@ jobs:
         run: |
           jq empty app/google-services.json || (echo "Invalid google-services.json" && exit 1)
           grep -q '"package_name": "com.dhanuk.debtbro"' app/google-services.json || (echo "Wrong package_name in google-services.json" && exit 1)
+          # Google sign-in requires a Web Application OAuth client (client_type 3)
+          # so the google-services Gradle plugin can synthesize R.string.default_web_client_id.
+          # Without it the placeholder falls through and signInWithGoogle silently fails at runtime.
+          oauth_count=$(jq '[.client[].oauth_client[]? | select(.client_type == 3)] | length' app/google-services.json)
+          if [ "$oauth_count" -lt 1 ]; then
+            echo "ERROR: google-services.json missing oauth_client with client_type=3 (Web Application)"
+            echo "Google sign-in will silently fail without it. Add a Web Application OAuth client"
+            echo "from Firebase Console > Project settings > Auth > Sign-in method > Google > Web SDK configuration."
+            exit 1
+          fi
 
       - name: Create local.properties
         run: |

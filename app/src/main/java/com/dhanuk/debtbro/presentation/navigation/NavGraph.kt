@@ -301,16 +301,36 @@ fun DebtBroNavGraph(appPreferences: AppPreferences, adManager: AdManager) {
             }
             composable(Screen.SignUp.route) {
                 SignUpScreen(
-                    onAuthComplete = { navController.popBackStack() },
+                    onAuthComplete = {
+                        navController.navigate(Screen.Dashboard.route) {
+                            popUpTo(navController.graph.findStartDestination().id) { inclusive = true }
+                            launchSingleTop = true
+                        }
+                    },
                     onNavigateToSignIn = { navController.navigate(Screen.SignIn.route) { launchSingleTop = true } },
-                    onSkip = { navController.popBackStack() }
+                    onSkip = {
+                        navController.navigate(Screen.Dashboard.route) {
+                            popUpTo(navController.graph.findStartDestination().id) { inclusive = true }
+                            launchSingleTop = true
+                        }
+                    }
                 )
             }
             composable(Screen.SignIn.route) {
                 SignInScreen(
-                    onAuthComplete = { navController.popBackStack() },
+                    onAuthComplete = {
+                        navController.navigate(Screen.Dashboard.route) {
+                            popUpTo(navController.graph.findStartDestination().id) { inclusive = true }
+                            launchSingleTop = true
+                        }
+                    },
                     onNavigateToSignUp = { navController.navigate(Screen.SignUp.route) { launchSingleTop = true } },
-                    onSkip = { navController.popBackStack() }
+                    onSkip = {
+                        navController.navigate(Screen.Dashboard.route) {
+                            popUpTo(navController.graph.findStartDestination().id) { inclusive = true }
+                            launchSingleTop = true
+                        }
+                    }
                 )
             }
         }
