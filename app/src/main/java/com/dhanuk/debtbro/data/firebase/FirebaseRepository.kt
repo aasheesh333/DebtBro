@@ -197,9 +197,16 @@ class FirebaseRepository @Inject constructor(private val firestore: FirebaseFire
 
     /** Returns `requestedAt` epoch-ms if a PENDING request exists, else null. */
     suspend fun fetchDeletionRequest(userId: String): Long? {
+        // Surface Firestore permission failures loudly — a silent null here
+        // (caused by firestore.rules denying reads on deletionRequests/{uid})
+        // was the root cause of the "Delete now -> same id re-login shows no
+        // alert" bug. Don't let it recur invisibly.
         val snap = runCatching {
             firestore.collection("deletionRequests").document(userId).get().await()
-        }.getOrNull() ?: return null
+        }.getOrElse { e ->
+            android.util.Log.e("FirebaseRepository", "fetchDeletionRequest read failed for uid=$userId: ${e.message}", e)
+            return null
+        }
         if (!snap.exists()) return null
         val status = snap.getString("status") ?: return null
         if (status != "PENDING") return null

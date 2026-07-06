@@ -213,7 +213,13 @@ class AuthManager @Inject constructor(
     suspend fun checkDeletionRequest(uid: String): Long? = runCatching {
         firebaseRepository.fetchDeletionRequest(uid)
     }.onFailure { e ->
-        android.util.Log.w("AuthManager", "checkDeletionRequest Firestore read failed: ${e.message}", e)
+        // P0 (2026-07-06): a previous firestore.rules bug silently denied
+        // reads on deletionRequests/{uid} (request.resource is null on
+        // reads, so the schema check in a combined `read, write` rule
+        // failed). That made this whole flow return null and the grace
+        // alert never fired. Log loud so any future regression here is
+        // visible in logcat instead of silently dropping the alert.
+        android.util.Log.e("AuthManager", "checkDeletionRequest Firestore read failed: ${e.message}", e)
     }.getOrNull()
 
     /**

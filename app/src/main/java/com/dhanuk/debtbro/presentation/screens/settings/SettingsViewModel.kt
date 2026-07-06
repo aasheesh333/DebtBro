@@ -363,17 +363,18 @@ class SettingsViewModel @Inject constructor(
     fun dismissDeletionGraceAlert() { _showDeletionGraceAlert.value = false }
 
     suspend fun checkGracePeriodOnSignIn(): Boolean {
-        return runCatching {
-            val uid = auth.getUserId() ?: return false
-            val serverRequestedAt = auth.checkDeletionRequest(uid) ?: return false
-            val elapsed = System.currentTimeMillis() - serverRequestedAt
-            if (elapsed < GRACE_PERIOD_MS) {
-                prefs.setPendingDeletionTimestamp(serverRequestedAt, uid)
-                true
-            } else {
-                false
-            }
-        }.getOrDefault(false)
+        // AuthManager.checkDeletionRequest already absorbs failures and
+        // logs them loudly — don't double-wrap, or a future firestore.rules
+        // regression stays invisible again.
+        val uid = auth.getUserId() ?: return false
+        val serverRequestedAt = auth.checkDeletionRequest(uid) ?: return false
+        val elapsed = System.currentTimeMillis() - serverRequestedAt
+        return if (elapsed < GRACE_PERIOD_MS) {
+            prefs.setPendingDeletionTimestamp(serverRequestedAt, uid)
+            true
+        } else {
+            false
+        }
     }
 
     fun cancelDeletion() = viewModelScope.launch {

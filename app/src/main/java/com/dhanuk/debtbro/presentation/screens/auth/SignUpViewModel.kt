@@ -148,7 +148,10 @@ class SignUpViewModel @Inject constructor(
     }
 
     private suspend fun checkGracePeriodOnSignIn(uid: String) {
-        val serverRequestedAt = runCatching { auth.checkDeletionRequest(uid) }.getOrNull()
+        // AuthManager.checkDeletionRequest already absorbs failures and
+        // logs them loudly — don't double-wrap, or a future firestore.rules
+        // regression stays invisible again.
+        val serverRequestedAt = auth.checkDeletionRequest(uid)
         val localTs = prefs.pendingDeletionTimestamp.first()
         val localUid = prefs.pendingDeletionUid.first()
         // Only fall back to the local timestamp if it belongs to THIS user.

@@ -26,7 +26,14 @@ service cloud.firestore {
     // Firebase account; if within the window, it surfaces the "Cancel
     // deletion?" alert.
     match /deletionRequests/{userId} {
-      allow read, write: if request.auth != null && request.auth.uid == userId
+      // Read: only the owner. `request.resource` is null on reads, so the
+      // schema check must live on the write rule below — mixing it into a
+      // combined `read, write` rule silently blocks all reads (permission
+      // denied), which is exactly why the grace alert never fired on
+      // re-login: checkDeletionRequest swallowed the failure and returned
+      // null, so no PENDING doc was ever observed.
+      allow read: if request.auth != null && request.auth.uid == userId;
+      allow write: if request.auth != null && request.auth.uid == userId
         && request.resource.data.keys().hasOnly(['uid','status','requestedAt','cancelledAt']);
     }
   }
