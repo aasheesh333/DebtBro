@@ -1,14 +1,25 @@
 #!/usr/bin/env sh
 set -e
 BASE_DIR="$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)"
-GRADLE_VERSION="8.7"
-DIST_DIR="$BASE_DIR/.gradle/wrapper/dists/gradle-$GRADLE_VERSION-bin"
-GRADLE_HOME="$DIST_DIR/gradle-$GRADLE_VERSION"
+
+PROPS_FILE="$BASE_DIR/gradle/wrapper/gradle-wrapper.properties"
+if [ ! -f "$PROPS_FILE" ]; then
+  echo "ERROR: $PROPS_FILE not found" >&2
+  exit 2
+fi
+
+DIST_URL=$(awk -F= '/^distributionUrl=/ {sub(/^distributionUrl=/, ""); print}' "$PROPS_FILE")
+DIST_URL=$(printf '%s' "$DIST_URL" | sed 's/\\:/:/g; s/\\//g; s/\\//')
+ZIP_NAME=$(basename "$DIST_URL" .zip)
+
+DIST_DIR="$BASE_DIR/.gradle/wrapper/dists/$ZIP_NAME"
+GRADLE_HOME="$DIST_DIR/$ZIP_NAME"
+
 if [ ! -x "$GRADLE_HOME/bin/gradle" ]; then
   mkdir -p "$DIST_DIR"
-  ZIP="$DIST_DIR/gradle-$GRADLE_VERSION-bin.zip"
+  ZIP="$DIST_DIR/$ZIP_NAME.zip"
   if [ ! -f "$ZIP" ]; then
-    curl -L "https://services.gradle.org/distributions/gradle-$GRADLE_VERSION-bin.zip" -o "$ZIP"
+    curl -L "$DIST_URL" -o "$ZIP"
   fi
   unzip -q "$ZIP" -d "$DIST_DIR"
 fi
