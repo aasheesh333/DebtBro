@@ -21,7 +21,7 @@ fun escapedProp(key: String) = localProp(key).replace("\\", "\\\\").replace("\""
 
 android {
     namespace = "com.dhanuk.debtbro"
-    compileSdk = 35
+    compileSdk = 36
 
     defaultConfig {
         applicationId = "com.dhanuk.debtbro"
@@ -39,7 +39,7 @@ android {
         //     CsvExporter.kt, gated by Build.VERSION.SDK_INT < Q
         // The MediaStore path remains the default on API 29+.
         minSdk = 26
-        targetSdk = 35
+        targetSdk = 36
         // Precedence: explicit VERSION_CODE secret/property wins (you control
         // Play Console monotonic-version increments); GITHUB_RUN_NUMBER acts
         // as an auto-fallback for CI history runs; lastly 1 for local dev.

@@ -257,9 +257,7 @@ object HtmlExporter {
                 val width = 1080
                 val height = 1350
 
-                if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.LOLLIPOP) {
-                    WebView.enableSlowWholeDocumentDraw()
-                }
+                WebView.enableSlowWholeDocumentDraw()
 
                 // Single source of truth for "the WebView has been
                 // destroyed" — every post-cancellation callback (JS

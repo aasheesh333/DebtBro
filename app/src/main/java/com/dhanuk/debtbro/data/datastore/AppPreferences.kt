@@ -93,6 +93,8 @@ class AppPreferences(@ApplicationContext private val context: Context) {
         //   impressions, per AdMob's published app-open guidance.
         val FIRST_LAUNCH_DONE = booleanPreferencesKey("first_launch_done")
         val LAST_APP_OPEN_AT = longPreferencesKey("last_app_open_at")
+
+        val DEBT_LIST_SORT_ORDER = stringPreferencesKey("debt_list_sort_order")
     }
 
 
@@ -121,7 +123,7 @@ class AppPreferences(@ApplicationContext private val context: Context) {
     val lastSyncedAt: Flow<Long> = context.dataStore.data.map { it[Keys.LAST_SYNCED_AT] ?: 0L }
     val rewardTimestamp: Flow<Long> = context.dataStore.data.map { it[Keys.REWARD_TIMESTAMP] ?: 0L }
     val lastInterstitialAt: Flow<Long> = context.dataStore.data.map { it[Keys.LAST_INTERSTITIAL_AT] ?: 0L }
-    val themeMode: Flow<String> = context.dataStore.data.map { it[Keys.THEME_MODE] ?: "LIGHT" }
+    val themeMode: Flow<String> = context.dataStore.data.map { it[Keys.THEME_MODE] ?: "DARK" }
     val selectedLanguage: Flow<String> = context.dataStore.data.map { it[Keys.SELECTED_LANGUAGE] ?: "en" }
     val showDescription: Flow<Boolean> = context.dataStore.data.map { it[Keys.SHOW_DESCRIPTION] ?: true }
     val showDueDate: Flow<Boolean> = context.dataStore.data.map { it[Keys.SHOW_DUE_DATE] ?: true }
@@ -284,6 +286,9 @@ class AppPreferences(@ApplicationContext private val context: Context) {
     suspend fun setFirstLaunchDone() = context.dataStore.edit { it[Keys.FIRST_LAUNCH_DONE] = true }
     /** Persisted every time an AppOpenAd is shown; gates the 4h cooldown. */
     suspend fun setLastAppOpenAt(ts: Long) = context.dataStore.edit { it[Keys.LAST_APP_OPEN_AT] = ts }
+
+    val debtListSortOrder: Flow<String> = context.dataStore.data.map { it[Keys.DEBT_LIST_SORT_ORDER] ?: "CREATED_DESC" }
+    suspend fun setDebtListSortOrder(order: String) = context.dataStore.edit { it[Keys.DEBT_LIST_SORT_ORDER] = order }
 
     suspend fun clearAll() = context.dataStore.edit { it.clear() }
 

@@ -39,4 +39,7 @@ interface SplitDao {
 
     @Query("DELETE FROM splits")
     suspend fun deleteAll()
+
+    @Query("DELETE FROM splits WHERE id = :id")
+    suspend fun deleteSplit(id: Int)
 }

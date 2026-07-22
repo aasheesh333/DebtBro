@@ -424,6 +424,17 @@ object LocalizedString {
             "password_reset_email_sent" to "Password reset email sent",
             "send_reset_email" to "Send reset email",
             "debts_already_created_for_split" to "Debts already created for this split",
+            "sort_debts" to "Sort debts",
+            "sort_newest" to "Newest first",
+            "sort_amount_high" to "Amount (high → low)",
+            "sort_amount_low" to "Amount (low → high)",
+            "sort_name" to "Name (A → Z)",
+            "sort_due_date" to "Due date (soonest)",
+            "sort_status" to "Status",
+            "edit_split" to "Edit Split",
+            "delete_split" to "Delete Split",
+            "delete_split_confirm" to "Delete the split \"{title}\"? This cannot be undone.",
+            "participants_comma_separated" to "Participants (comma separated)",
         )
     private fun hiStrings(): Map<String, String> = mapOf(
             "name_required" to "कृपया अपना नाम दर्ज करें",
