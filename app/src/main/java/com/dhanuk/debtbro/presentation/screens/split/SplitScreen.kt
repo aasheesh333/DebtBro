@@ -53,90 +53,8 @@ fun SplitScreen(onAuthRequired: () -> Unit, viewModel: SplitViewModel = hiltView
     LaunchedEffect(Unit) {
         viewModel.snackbar.collect { msg ->
             snackbarHostState.showSnackbar(msg)
-}
-
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-fun EditSplitDialog(
-    split: com.dhanuk.debtbro.data.db.entity.SplitEntity,
-    onDismiss: () -> Unit,
-    onSave: (com.dhanuk.debtbro.data.db.entity.SplitEntity) -> Unit
-) {
-    val initialParticipants: List<String> = runCatching {
-        com.google.gson.Gson().fromJson(split.participants, com.google.gson.reflect.TypeToken.getParameterized(List::class.java, String::class.java).type)
-    }.getOrDefault(listOf("Me"))
-
-    var title by remember { mutableStateOf(split.title) }
-    var totalAmount by remember { mutableStateOf(split.totalAmount.toString()) }
-    var participantsText by remember { mutableStateOf(initialParticipants.joinToString(", ")) }
-
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text(LocalizedString.get("edit_split"), fontWeight = FontWeight.Bold) },
-        text = {
-            Column(verticalArrangement = Arrangement.spacedBy(UITokens.SpaceSmall)) {
-                OutlinedTextField(
-                    value = title,
-                    onValueChange = { title = it },
-                    label = { Text(LocalizedString.get("whats_this_for")) },
-                    modifier = Modifier.fillMaxWidth(),
-                    singleLine = true,
-                    colors = OutlinedTextFieldDefaults.colors(
-                        focusedBorderColor = MaterialTheme.colorScheme.primary,
-                        unfocusedBorderColor = MaterialTheme.colorScheme.outline
-                    )
-                )
-                OutlinedTextField(
-                    value = totalAmount,
-                    onValueChange = { if (it.all { c -> c.isDigit() || c == '.' }) totalAmount = it },
-                    label = { Text(LocalizedString.get("total_amount")) },
-                    modifier = Modifier.fillMaxWidth(),
-                    prefix = { Text(split.currency, color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold) },
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
-                    singleLine = true,
-                    colors = OutlinedTextFieldDefaults.colors(
-                        focusedBorderColor = MaterialTheme.colorScheme.primary,
-                        unfocusedBorderColor = MaterialTheme.colorScheme.outline
-                    )
-                )
-                OutlinedTextField(
-                    value = participantsText,
-                    onValueChange = { participantsText = it },
-                    label = { Text(LocalizedString.get("participants_comma_separated")) },
-                    modifier = Modifier.fillMaxWidth(),
-                    colors = OutlinedTextFieldDefaults.colors(
-                        focusedBorderColor = MaterialTheme.colorScheme.primary,
-                        unfocusedBorderColor = MaterialTheme.colorScheme.outline
-                    )
-                )
-            }
-        },
-        confirmButton = {
-            TextButton(
-                onClick = {
-                    val total = totalAmount.toDoubleOrNull() ?: return@TextButton
-                    val names = participantsText.split(",").map { it.trim() }.filter { it.isNotBlank() }.distinct()
-                    if (names.isEmpty()) return@TextButton
-                    val perPerson = total / names.size
-                    val updated = split.copy(
-                        title = title.ifBlank { split.title },
-                        totalAmount = total,
-                        participants = com.google.gson.Gson().toJson(names),
-                        perPersonAmount = perPerson,
-                        updatedAt = System.currentTimeMillis()
-                    )
-                    onSave(updated)
-                }
-            ) {
-                Text(LocalizedString.get("save_payment"), color = MaterialTheme.colorScheme.primary)
-            }
-        },
-        dismissButton = {
-            TextButton(onClick = onDismiss) { Text(LocalizedString.get("cancel"), color = MaterialTheme.colorScheme.onSurfaceVariant) }
-        },
-        containerColor = MaterialTheme.colorScheme.surface
-    )
-}
+        }
+    }
 
     // Interstitial after createDebtsFromSplit — driven by SplitViewModel's
     // showInterstitial SharedFlow. Same pattern as AddDebtBottomSheet and
@@ -236,7 +154,7 @@ fun EditSplitDialog(
                                         Icon(
                                             Icons.Default.Close,
                                             LocalizedString.get("cancel"),
-                            modifier = Modifier.size(UITokens.IconSmall)
+                                            modifier = Modifier.size(UITokens.IconSmall)
                                         )
                                     }
                                 },
@@ -519,9 +437,9 @@ fun SplitItemCard(
                 Box(
                     Modifier
                         .fillMaxWidth()
-                    .clip(UITokens.ShapeSmall)
+                        .clip(UITokens.ShapeSmall)
                         .background(MaterialTheme.colorScheme.surfaceVariant)
-                    .padding(UITokens.SpaceXS)
+                        .padding(UITokens.SpaceXS)
                 ) {
                     Text("🤖 ${split.aiSummary}", color = extra.subtitleGray, fontSize = UITokens.FontCaption)
                 }
@@ -568,4 +486,89 @@ fun SplitItemCard(
     }
 }
 
+@Composable
+fun EditSplitDialog(
+    split: com.dhanuk.debtbro.data.db.entity.SplitEntity,
+    onDismiss: () -> Unit,
+    onSave: (com.dhanuk.debtbro.data.db.entity.SplitEntity) -> Unit
+) {
+    val listType = remember(split.participants) {
+        object : com.google.gson.reflect.TypeToken<List<String>>() {}.type
+    }
+    val initialParticipants: List<String> = remember(split.participants) {
+        runCatching {
+            com.google.gson.Gson().fromJson<List<String>>(split.participants, listType)
+        }.getOrNull() ?: listOf("Me")
+    }
 
+    var title by remember { mutableStateOf(split.title) }
+    var totalAmount by remember { mutableStateOf(split.totalAmount.toString()) }
+    var participantsText by remember { mutableStateOf(initialParticipants.joinToString(", ")) }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(LocalizedString.get("edit_split"), fontWeight = FontWeight.Bold) },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(UITokens.SpaceSmall)) {
+                OutlinedTextField(
+                    value = title,
+                    onValueChange = { title = it },
+                    label = { Text(LocalizedString.get("whats_this_for")) },
+                    modifier = Modifier.fillMaxWidth(),
+                    singleLine = true,
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedBorderColor = MaterialTheme.colorScheme.primary,
+                        unfocusedBorderColor = MaterialTheme.colorScheme.outline
+                    )
+                )
+                OutlinedTextField(
+                    value = totalAmount,
+                    onValueChange = { if (it.all { c -> c.isDigit() || c == '.' }) totalAmount = it },
+                    label = { Text(LocalizedString.get("total_amount")) },
+                    modifier = Modifier.fillMaxWidth(),
+                    prefix = { Text(split.currency, color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold) },
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+                    singleLine = true,
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedBorderColor = MaterialTheme.colorScheme.primary,
+                        unfocusedBorderColor = MaterialTheme.colorScheme.outline
+                    )
+                )
+                OutlinedTextField(
+                    value = participantsText,
+                    onValueChange = { participantsText = it },
+                    label = { Text(LocalizedString.get("participants_comma_separated")) },
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedBorderColor = MaterialTheme.colorScheme.primary,
+                        unfocusedBorderColor = MaterialTheme.colorScheme.outline
+                    )
+                )
+            }
+        },
+        confirmButton = {
+            TextButton(
+                onClick = {
+                    val total = totalAmount.toDoubleOrNull() ?: return@TextButton
+                    val names = participantsText.split(",").map { it.trim() }.filter { it.isNotBlank() }.distinct()
+                    if (names.isEmpty()) return@TextButton
+                    val perPerson = total / names.size
+                    val updated = split.copy(
+                        title = title.ifBlank { split.title },
+                        totalAmount = total,
+                        participants = com.google.gson.Gson().toJson(names),
+                        perPersonAmount = perPerson,
+                        updatedAt = System.currentTimeMillis()
+                    )
+                    onSave(updated)
+                }
+            ) {
+                Text(LocalizedString.get("save_payment"), color = MaterialTheme.colorScheme.primary)
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) { Text(LocalizedString.get("cancel"), color = MaterialTheme.colorScheme.onSurfaceVariant) }
+        },
+        containerColor = MaterialTheme.colorScheme.surface
+    )
+}
