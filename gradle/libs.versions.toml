@@ -1,19 +1,19 @@
 [versions]
 agp = "8.12.0"
-kotlin = "2.4.10"
-ksp = "2.3.10"
+kotlin = "2.1.21"
+ksp = "2.1.21-2.0.1"
 hilt = "2.56.2"
 hiltExt = "1.2.0"
-composeBom = "2026.06.00"
-activityCompose = "1.13.0"
-navigationCompose = "2.9.8"
-room = "2.8.4"
+composeBom = "2025.03.00"
+activityCompose = "1.9.3"
+navigationCompose = "2.8.5"
+room = "2.7.1"
 firebaseBom = "33.12.0"
 credentials = "1.6.0"
 googleid = "1.1.1"
 retrofit = "2.11.0"
 okhttp = "4.12.0"
-workmanager = "2.11.2"
+workmanager = "2.10.0"
 datastore = "1.2.1"
 admob = "24.0.0"
 onesignal = "5.1.27"
@@ -21,7 +21,6 @@ vico = "2.0.0-alpha.21"
 konfetti = "2.0.4"
 coil = "2.7.0"
 coroutines = "1.10.2"
-kotlinMetadataJvm = "2.4.0"
 lifecycle = "2.8.7"
 splashscreen = "1.0.1"
 coreKtx = "1.18.0"
@@ -79,7 +78,6 @@ konfetti = { group = "nl.dionsegijn", name = "konfetti-compose", version.ref = "
 coil = { group = "io.coil-kt", name = "coil-compose", version.ref = "coil" }
 kotlinx-coroutines-android = { group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-android", version.ref = "coroutines" }
 kotlinx-coroutines-play-services = { group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-play-services", version.ref = "coroutines" }
-kotlin-metadata-jvm = { group = "org.jetbrains.kotlin", name = "kotlin-metadata-jvm", version.ref = "kotlinMetadataJvm" }
 androidx-security-crypto = { group = "androidx.security", name = "security-crypto", version.ref = "securityCrypto" }
 androidx-profileinstaller = { group = "androidx.profileinstaller", name = "profileinstaller", version.ref = "profileinstaller" }
 
