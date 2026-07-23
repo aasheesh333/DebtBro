@@ -150,6 +150,9 @@ dependencies {
     ksp(libs.androidx.room.compiler)
     implementation(libs.hilt.android)
     ksp(libs.hilt.compiler)
+    // Hilt 2.56 bundles an older kotlin-metadata-jvm; override it on the
+    // processor classpath so it can read Kotlin 2.4 metadata.
+    ksp(libs.kotlin.metadata.jvm)
     implementation(libs.hilt.navigation.compose)
     implementation(libs.hilt.work)
     ksp(libs.hilt.work.compiler)

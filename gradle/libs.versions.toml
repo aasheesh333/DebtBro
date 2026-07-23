@@ -21,6 +21,7 @@ vico = "2.0.0-alpha.21"
 konfetti = "2.0.4"
 coil = "2.7.0"
 coroutines = "1.10.2"
+kotlinMetadataJvm = "2.4.0"
 lifecycle = "2.8.7"
 splashscreen = "1.0.1"
 coreKtx = "1.18.0"
@@ -78,6 +79,7 @@ konfetti = { group = "nl.dionsegijn", name = "konfetti-compose", version.ref = "
 coil = { group = "io.coil-kt", name = "coil-compose", version.ref = "coil" }
 kotlinx-coroutines-android = { group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-android", version.ref = "coroutines" }
 kotlinx-coroutines-play-services = { group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-play-services", version.ref = "coroutines" }
+kotlin-metadata-jvm = { group = "org.jetbrains.kotlin", name = "kotlin-metadata-jvm", version.ref = "kotlinMetadataJvm" }
 androidx-security-crypto = { group = "androidx.security", name = "security-crypto", version.ref = "securityCrypto" }
 androidx-profileinstaller = { group = "androidx.profileinstaller", name = "profileinstaller", version.ref = "profileinstaller" }
 
