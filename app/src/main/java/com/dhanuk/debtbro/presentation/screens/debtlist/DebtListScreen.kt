@@ -43,8 +43,10 @@ fun DebtListScreen(
     val selectedTab by viewModel.selectedTab.collectAsStateWithLifecycle()
     val searchQuery by viewModel.searchQuery.collectAsStateWithLifecycle()
     val filterStatus by viewModel.filterStatus.collectAsStateWithLifecycle()
+    val sortOrder by viewModel.sortOrder.collectAsStateWithLifecycle()
     val extra = LocalExtraColors.current
     val hapticFeedback = LocalHapticFeedback.current
+    var showSortMenu by remember { mutableStateOf(false) }
 
     Box(modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) {
         Column(modifier = Modifier.fillMaxSize()) {
@@ -54,11 +56,38 @@ fun DebtListScreen(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(LocalizedString.get("all_debts"), color = MaterialTheme.colorScheme.onSurface, fontSize = UITokens.FontDisplay, fontWeight = FontWeight.Bold)
-                IconButton(
-                    onClick = onAddDebtClick,
-                    modifier = Modifier.clip(CircleShape).background(MaterialTheme.colorScheme.primary)
-                ) {
-                    Icon(Icons.Default.Add, contentDescription = LocalizedString.get("add_debt"), tint = MaterialTheme.colorScheme.onPrimary)
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Box {
+                        IconButton(onClick = { showSortMenu = true }) {
+                            Icon(Icons.Default.Sort, contentDescription = LocalizedString.get("sort_debts"), tint = MaterialTheme.colorScheme.onSurface)
+                        }
+                        DropdownMenu(
+                            expanded = showSortMenu,
+                            onDismissRequest = { showSortMenu = false },
+                            modifier = Modifier.background(MaterialTheme.colorScheme.surfaceVariant)
+                        ) {
+                            listOf(
+                                "CREATED_DESC" to LocalizedString.get("sort_newest"),
+                                "AMOUNT_DESC" to LocalizedString.get("sort_amount_high"),
+                                "AMOUNT_ASC" to LocalizedString.get("sort_amount_low"),
+                                "NAME_ASC" to LocalizedString.get("sort_name"),
+                                "DUE_DATE_ASC" to LocalizedString.get("sort_due_date"),
+                                "STATUS" to LocalizedString.get("sort_status")
+                            ).forEach { (key, label) ->
+                                DropdownMenuItem(
+                                    text = { Text(label, color = if (sortOrder == key) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface, fontWeight = if (sortOrder == key) FontWeight.Bold else FontWeight.Normal) },
+                                    onClick = { viewModel.setSortOrder(key); showSortMenu = false },
+                                    trailingIcon = { if (sortOrder == key) Icon(Icons.Default.Check, null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(18.dp)) }
+                                )
+                            }
+                        }
+                    }
+                    IconButton(
+                        onClick = onAddDebtClick,
+                        modifier = Modifier.clip(CircleShape).background(MaterialTheme.colorScheme.primary)
+                    ) {
+                        Icon(Icons.Default.Add, contentDescription = LocalizedString.get("add_debt"), tint = MaterialTheme.colorScheme.onPrimary)
+                    }
                 }
             }
 

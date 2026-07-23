@@ -31,6 +31,7 @@ import androidx.compose.ui.platform.LocalContext
 import android.widget.Toast
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.dhanuk.debtbro.presentation.components.ContactPickerBottomSheet
 import com.dhanuk.debtbro.presentation.theme.DangerRed
 import com.dhanuk.debtbro.presentation.theme.LocalExtraColors
 import com.dhanuk.debtbro.presentation.theme.UITokens
@@ -66,6 +67,7 @@ fun AddDebtBottomSheet(
     var showEmojiPicker by remember { mutableStateOf(false) }
     var showDatePicker by remember { mutableStateOf(false) }
     var customEmoji by remember { mutableStateOf("") }
+    var showContactPicker by remember { mutableStateOf(false) }
 
     val THEY_OWE_EMOJIS = listOf(
         "😊","😎","🤝","🍕","🚕","☕","🏠","💼","🎁","🎮",
@@ -143,12 +145,17 @@ fun AddDebtBottomSheet(
                     imeAction = ImeAction.Next
                 ),
                 trailingIcon = {
-                    Text("${personName.length}/30", color = extra.subtitleGray, fontSize = 11.sp)
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        IconButton(onClick = { showContactPicker = true }, modifier = Modifier.size(24.dp)) {
+                            Icon(Icons.Default.Contacts, contentDescription = LocalizedString.get("pick_contact"), tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(20.dp))
+                        }
+                        Text("${personName.length}/30", color = extra.subtitleGray, fontSize = 11.sp)
+                    }
                 },
                 isError = personName.isBlank() && triedToSave,
                 supportingText = {
                     if (personName.isBlank() && triedToSave) {
-                        Text("Name is required", color = MaterialTheme.colorScheme.error)
+                        Text(LocalizedString.get("name_required"), color = MaterialTheme.colorScheme.error)
                     }
                 }
             )
@@ -507,6 +514,15 @@ fun AddDebtBottomSheet(
                 }
             },
             containerColor = MaterialTheme.colorScheme.surface
+        )
+    }
+
+    if (showContactPicker) {
+        ContactPickerBottomSheet(
+            onDismiss = { showContactPicker = false },
+            onContactSelected = { name ->
+                if (name.length <= 30) personName = name.take(30)
+            }
         )
     }
 }

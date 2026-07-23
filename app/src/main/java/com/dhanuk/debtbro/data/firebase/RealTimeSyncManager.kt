@@ -48,15 +48,15 @@ class RealTimeSyncManager @Inject constructor(
 
         scope.launch {
             firebaseRepository.observeDebtsRealTime(userId)
-                .retryWhen { _, cause ->
+                .retryWhen { cause, _ ->
                     if (debtRetryAttempt < 3) {
                         debtRetryAttempt++
-                        val msg = if (cause is Throwable) cause.message else cause.toString()
+                        val msg = cause.message ?: cause.toString()
                         Log.w("RealTimeSync", "Retrying debt listener (attempt $debtRetryAttempt): $msg")
                         kotlinx.coroutines.delay(2_000L * debtRetryAttempt)
                         true
                     } else {
-                        val msg = if (cause is Throwable) cause.message else cause.toString()
+                        val msg = cause.message ?: cause.toString()
                         _lastError.value = "Debt listener stopped: $msg"
                         Log.e("RealTimeSync", "Debt listener permanently failed: $msg")
                         false
@@ -71,15 +71,15 @@ class RealTimeSyncManager @Inject constructor(
 
         scope.launch {
             firebaseRepository.observeSplitsRealTime(userId)
-                .retryWhen { _, cause ->
+                .retryWhen { cause, _ ->
                     if (splitRetryAttempt < 3) {
                         splitRetryAttempt++
-                        val msg = if (cause is Throwable) cause.message else cause.toString()
+                        val msg = cause.message ?: cause.toString()
                         Log.w("RealTimeSync", "Retrying split listener (attempt $splitRetryAttempt): $msg")
                         kotlinx.coroutines.delay(2_000L * splitRetryAttempt)
                         true
                     } else {
-                        val msg = if (cause is Throwable) cause.message else cause.toString()
+                        val msg = cause.message ?: cause.toString()
                         _lastError.value = "Split listener stopped: $msg"
                         Log.e("RealTimeSync", "Split listener permanently failed: $msg")
                         false

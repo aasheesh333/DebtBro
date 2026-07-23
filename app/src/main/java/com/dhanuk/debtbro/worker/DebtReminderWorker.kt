@@ -5,7 +5,6 @@ import android.app.NotificationManager
 import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
-import android.os.Build
 import androidx.core.app.NotificationCompat
 import androidx.hilt.work.HiltWorker
 import androidx.work.CoroutineWorker
@@ -30,7 +29,7 @@ class DebtReminderWorker @AssistedInject constructor(
         if (!prefs.notifyDailyReminder.first()) return Result.success()
         ensureChannel()
         val notificationManager = applicationContext.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N && !notificationManager.areNotificationsEnabled()) {
+        if (!notificationManager.areNotificationsEnabled()) {
             return Result.success()
         }
         val now = System.currentTimeMillis()
@@ -60,10 +59,8 @@ class DebtReminderWorker @AssistedInject constructor(
         return Result.success()
     }
     private fun ensureChannel() {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            val manager = applicationContext.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-            manager.createNotificationChannel(NotificationChannel(CHANNEL, "Debt reminders", NotificationManager.IMPORTANCE_DEFAULT))
-        }
+        val manager = applicationContext.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+        manager.createNotificationChannel(NotificationChannel(CHANNEL, "Debt reminders", NotificationManager.IMPORTANCE_DEFAULT))
     }
     companion object { private const val CHANNEL = "debt_reminders" }
 }

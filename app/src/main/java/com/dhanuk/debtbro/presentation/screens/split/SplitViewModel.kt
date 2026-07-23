@@ -8,6 +8,7 @@ import com.dhanuk.debtbro.data.datastore.AppPreferences
 import com.dhanuk.debtbro.data.db.entity.DebtEntity
 import com.dhanuk.debtbro.data.db.entity.SplitEntity
 import com.dhanuk.debtbro.data.firebase.AuthManager
+import com.dhanuk.debtbro.data.firebase.FirebaseRepository
 import com.dhanuk.debtbro.data.firebase.SyncManager
 import com.dhanuk.debtbro.data.repository.DebtRepository
 import com.dhanuk.debtbro.data.repository.AiRepository
@@ -42,6 +43,7 @@ class SplitViewModel @Inject constructor(
     private val ai: AiRepository,
     private val authManager: AuthManager,
     private val syncManager: SyncManager,
+    private val firebaseRepo: FirebaseRepository,
     private val prefs: AppPreferences,
     private val adManager: AdManager
 ) : ViewModel() {
@@ -284,5 +286,27 @@ class SplitViewModel @Inject constructor(
 
     private suspend fun pushSplitImmediately(userId: String, split: SplitEntity) {
         runCatching { syncManager.pushNewSplit(userId, split) }
+    }
+
+    fun deleteSplit(split: SplitEntity) = viewModelScope.launch {
+        runCatching {
+            splits.deleteSplit(split.id)
+            authManager.getCurrentUser()?.uid?.let { uid ->
+                split.firebaseId?.let { fid ->
+                    runCatching { firebaseRepo.deleteSplitFromFirestore(uid, fid) }
+                }
+            }
+        }.onFailure { _snackbar.tryEmit("Couldn't delete split: ${it.message ?: "unknown error"}") }
+    }
+
+    fun updateSplit(split: SplitEntity) = viewModelScope.launch {
+        runCatching {
+            val updated = split.copy(updatedAt = System.currentTimeMillis(), isSynced = false)
+            splits.updateSplit(updated)
+            authManager.getCurrentUser()?.uid?.let { uid ->
+                runCatching { pushSplitImmediately(uid, updated) }
+            }
+            syncIfSignedIn()
+        }.onFailure { _snackbar.tryEmit("Couldn't update split: ${it.message ?: "unknown error"}") }
     }
 }

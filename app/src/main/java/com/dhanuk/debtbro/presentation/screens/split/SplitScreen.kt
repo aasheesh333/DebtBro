@@ -28,6 +28,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.dhanuk.debtbro.presentation.components.ContactPickerBottomSheet
 import com.dhanuk.debtbro.presentation.theme.LocalExtraColors
 import com.dhanuk.debtbro.presentation.theme.UITokens
 import com.dhanuk.debtbro.util.formatCurrency
@@ -46,13 +47,14 @@ fun SplitScreen(onAuthRequired: () -> Unit, viewModel: SplitViewModel = hiltView
     val context = LocalContext.current
     val activity = context as? android.app.Activity
     var showContactPicker by remember { mutableStateOf(false) }
+    var deleteTarget by remember { mutableStateOf<com.dhanuk.debtbro.data.db.entity.SplitEntity?>(null) }
+    var editTarget by remember { mutableStateOf<com.dhanuk.debtbro.data.db.entity.SplitEntity?>(null) }
     val snackbarHostState = remember { SnackbarHostState() }
     LaunchedEffect(Unit) {
         viewModel.snackbar.collect { msg ->
             snackbarHostState.showSnackbar(msg)
         }
     }
-    LaunchedEffect(Unit) { viewModel.preloadRewardedAd(context) }
 
     // Interstitial after createDebtsFromSplit — driven by SplitViewModel's
     // showInterstitial SharedFlow. Same pattern as AddDebtBottomSheet and
@@ -152,7 +154,7 @@ fun SplitScreen(onAuthRequired: () -> Unit, viewModel: SplitViewModel = hiltView
                                         Icon(
                                             Icons.Default.Close,
                                             LocalizedString.get("cancel"),
-                            modifier = Modifier.size(UITokens.IconSmall)
+                                            modifier = Modifier.size(UITokens.IconSmall)
                                         )
                                     }
                                 },
@@ -235,6 +237,8 @@ fun SplitScreen(onAuthRequired: () -> Unit, viewModel: SplitViewModel = hiltView
                 split,
                 onGetAi = { viewModel.getAiSummary(it, activity) },
                 onCreateDebts = { viewModel.createDebtsFromSplit(it) },
+                onEdit = { editTarget = it },
+                onDelete = { deleteTarget = it },
                 debtsCreated = split.id in splitsWithDebts
             )
         }
@@ -328,6 +332,35 @@ fun SplitScreen(onAuthRequired: () -> Unit, viewModel: SplitViewModel = hiltView
             containerColor = MaterialTheme.colorScheme.surface
         )
     }
+
+    deleteTarget?.let { split ->
+        AlertDialog(
+            onDismissRequest = { deleteTarget = null },
+            title = { Text(LocalizedString.get("delete_split")) },
+            text = { Text(LocalizedString.get("delete_split_confirm").replace("{title}", split.title)) },
+            confirmButton = {
+                TextButton(onClick = {
+                    viewModel.deleteSplit(split)
+                    deleteTarget = null
+                }) { Text(LocalizedString.get("delete"), color = MaterialTheme.colorScheme.error) }
+            },
+            dismissButton = {
+                TextButton(onClick = { deleteTarget = null }) { Text(LocalizedString.get("cancel"), color = extra.subtitleGray) }
+            },
+            containerColor = MaterialTheme.colorScheme.surface
+        )
+    }
+
+    editTarget?.let { split ->
+        EditSplitDialog(
+            split = split,
+            onDismiss = { editTarget = null },
+            onSave = { updated ->
+                viewModel.updateSplit(updated)
+                editTarget = null
+            }
+        )
+    }
     }
 }
 
@@ -375,7 +408,14 @@ fun AddParticipantRow(
 }
 
 @Composable
-fun SplitItemCard(split: com.dhanuk.debtbro.data.db.entity.SplitEntity, onGetAi: (com.dhanuk.debtbro.data.db.entity.SplitEntity) -> Unit, onCreateDebts: (com.dhanuk.debtbro.data.db.entity.SplitEntity) -> Unit, debtsCreated: Boolean = false) {
+fun SplitItemCard(
+    split: com.dhanuk.debtbro.data.db.entity.SplitEntity,
+    onGetAi: (com.dhanuk.debtbro.data.db.entity.SplitEntity) -> Unit,
+    onCreateDebts: (com.dhanuk.debtbro.data.db.entity.SplitEntity) -> Unit,
+    onEdit: (com.dhanuk.debtbro.data.db.entity.SplitEntity) -> Unit,
+    onDelete: (com.dhanuk.debtbro.data.db.entity.SplitEntity) -> Unit,
+    debtsCreated: Boolean = false
+) {
     val extra = LocalExtraColors.current
     Card(
         modifier = Modifier.fillMaxWidth(),
@@ -397,9 +437,9 @@ fun SplitItemCard(split: com.dhanuk.debtbro.data.db.entity.SplitEntity, onGetAi:
                 Box(
                     Modifier
                         .fillMaxWidth()
-                    .clip(UITokens.ShapeSmall)
+                        .clip(UITokens.ShapeSmall)
                         .background(MaterialTheme.colorScheme.surfaceVariant)
-                    .padding(UITokens.SpaceXS)
+                        .padding(UITokens.SpaceXS)
                 ) {
                     Text("🤖 ${split.aiSummary}", color = extra.subtitleGray, fontSize = UITokens.FontCaption)
                 }
@@ -427,106 +467,108 @@ fun SplitItemCard(split: com.dhanuk.debtbro.data.db.entity.SplitEntity, onGetAi:
                     Spacer(Modifier.width(UITokens.SpaceTiny))
                     Text(LocalizedString.get("create_debts"), fontSize = UITokens.FontCaption)
                 }
+
+                TextButton(
+                    onClick = { onEdit(split) },
+                    colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.primary)
+                ) {
+                    Icon(Icons.Default.Edit, LocalizedString.get("edit_split"), modifier = Modifier.size(UITokens.IconSmall))
+                }
+
+                TextButton(
+                    onClick = { onDelete(split) },
+                    colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.error)
+                ) {
+                    Icon(Icons.Default.Delete, LocalizedString.get("delete_split"), modifier = Modifier.size(UITokens.IconSmall))
+                }
             }
         }
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun ContactPickerBottomSheet(
+fun EditSplitDialog(
+    split: com.dhanuk.debtbro.data.db.entity.SplitEntity,
     onDismiss: () -> Unit,
-    onContactSelected: (String) -> Unit
+    onSave: (com.dhanuk.debtbro.data.db.entity.SplitEntity) -> Unit
 ) {
-    val context = LocalContext.current
-    val extra = LocalExtraColors.current
-
-    // P0-2 (2026-07-03): runtime READ_CONTACTS gate. Some OEM ROMs (Xiaomi /
-    // Vivo / Oppo) throw SecurityException when reading the URI returned by
-    // ActivityResultContracts.PickContact if READ_CONTACTS has not been
-    // declared AND granted — even though the AOSP contract intends to allow
-    // one-shot reads with a temporary URI permission. We declare
-    // READ_CONTACTS in the manifest AND request it at runtime before
-    // launching the picker, so the cursor query below doesn't crash.
-    var permissionDenied by remember { mutableStateOf(false) }
-    val contactPickerLauncher = rememberLauncherForActivityResult(
-        ActivityResultContracts.PickContact()
-    ) { uri ->
-        uri?.let {
-            // Wrap the cursor read in a try/catch — even with the runtime
-            // grant, ROM-level contacts providers can still throw if the
-            // user revoked permission mid-flight or the picker returned a
-            // cross-user URI. Better to silently abort than to crash the
-            // SplitScreen.
-            try {
-                val name = runCatching {
-                    context.contentResolver.query(
-                        it, arrayOf(
-                            android.provider.ContactsContract.Contacts.DISPLAY_NAME
-                        ), null, null, null
-                    )?.use { c ->
-                        if (c.moveToFirst()) {
-                            val nameIndex = c.getColumnIndex(android.provider.ContactsContract.Contacts.DISPLAY_NAME)
-                            if (nameIndex >= 0) c.getString(nameIndex) else null
-                        } else null
-                    }
-                }.getOrNull()
-                if (!name.isNullOrBlank()) onContactSelected(name)
-            } catch (_: SecurityException) {
-            }
-        }
-        onDismiss()
+    val listType = remember(split.participants) {
+        object : com.google.gson.reflect.TypeToken<List<String>>() {}.type
     }
-    val permissionLauncher = rememberLauncherForActivityResult(
-        ActivityResultContracts.RequestPermission()
-    ) { granted ->
-        if (granted) {
-            contactPickerLauncher.launch(null)
-        } else {
-            permissionDenied = true
-        }
+    val initialParticipants: List<String> = remember(split.participants) {
+        runCatching {
+            com.google.gson.Gson().fromJson<List<String>>(split.participants, listType)
+        }.getOrNull() ?: listOf("Me")
     }
 
-    ModalBottomSheet(
+    var title by remember { mutableStateOf(split.title) }
+    var totalAmount by remember { mutableStateOf(split.totalAmount.toString()) }
+    var participantsText by remember { mutableStateOf(initialParticipants.joinToString(", ")) }
+
+    AlertDialog(
         onDismissRequest = onDismiss,
-        containerColor = MaterialTheme.colorScheme.surface
-    ) {
-        Column(
-            modifier = Modifier.fillMaxWidth().padding(UITokens.SheetContentPadding).padding(bottom = UITokens.SheetBottomPadding),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(UITokens.SpaceMedium)
-        ) {
-            Icon(Icons.Default.ContactPage, LocalizedString.get("select_contact"), modifier = Modifier.size(UITokens.IconXXL), tint = MaterialTheme.colorScheme.primary)
-            Text(LocalizedString.get("select_contact"), color = MaterialTheme.colorScheme.onSurface, fontSize = UITokens.FontTitle, fontWeight = FontWeight.Bold)
-            Text(LocalizedString.get("pick_from_contacts_desc"), color = extra.subtitleGray, textAlign = TextAlign.Center)
-            if (permissionDenied) {
-                androidx.compose.material3.Text(
-                    LocalizedString.get("contacts_access_denied_toast"),
-                    color = MaterialTheme.colorScheme.error,
-                    textAlign = TextAlign.Center,
-                    fontSize = UITokens.FontBody
+        title = { Text(LocalizedString.get("edit_split"), fontWeight = FontWeight.Bold) },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(UITokens.SpaceSmall)) {
+                OutlinedTextField(
+                    value = title,
+                    onValueChange = { title = it },
+                    label = { Text(LocalizedString.get("whats_this_for")) },
+                    modifier = Modifier.fillMaxWidth(),
+                    singleLine = true,
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedBorderColor = MaterialTheme.colorScheme.primary,
+                        unfocusedBorderColor = MaterialTheme.colorScheme.outline
+                    )
+                )
+                OutlinedTextField(
+                    value = totalAmount,
+                    onValueChange = { if (it.all { c -> c.isDigit() || c == '.' }) totalAmount = it },
+                    label = { Text(LocalizedString.get("total_amount")) },
+                    modifier = Modifier.fillMaxWidth(),
+                    prefix = { Text(split.currency, color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold) },
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+                    singleLine = true,
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedBorderColor = MaterialTheme.colorScheme.primary,
+                        unfocusedBorderColor = MaterialTheme.colorScheme.outline
+                    )
+                )
+                OutlinedTextField(
+                    value = participantsText,
+                    onValueChange = { participantsText = it },
+                    label = { Text(LocalizedString.get("participants_comma_separated")) },
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedBorderColor = MaterialTheme.colorScheme.primary,
+                        unfocusedBorderColor = MaterialTheme.colorScheme.outline
+                    )
                 )
             }
-            Button(
+        },
+        confirmButton = {
+            TextButton(
                 onClick = {
-                    val granted = androidx.core.content.ContextCompat.checkSelfPermission(
-                        context, android.Manifest.permission.READ_CONTACTS
-                    ) == android.content.pm.PackageManager.PERMISSION_GRANTED
-                    if (granted) {
-                        contactPickerLauncher.launch(null)
-                    } else {
-                        permissionDenied = false
-                        permissionLauncher.launch(android.Manifest.permission.READ_CONTACTS)
-                    }
-                },
-                modifier = Modifier.fillMaxWidth().height(54.dp),
-                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
-                shape = UITokens.ShapeMedium
+                    val total = totalAmount.toDoubleOrNull() ?: return@TextButton
+                    val names = participantsText.split(",").map { it.trim() }.filter { it.isNotBlank() }.distinct()
+                    if (names.isEmpty()) return@TextButton
+                    val perPerson = total / names.size
+                    val updated = split.copy(
+                        title = title.ifBlank { split.title },
+                        totalAmount = total,
+                        participants = com.google.gson.Gson().toJson(names),
+                        perPersonAmount = perPerson,
+                        updatedAt = System.currentTimeMillis()
+                    )
+                    onSave(updated)
+                }
             ) {
-                Icon(Icons.Default.Contacts, LocalizedString.get("pick_contact"), tint = MaterialTheme.colorScheme.onPrimary)
-                Spacer(Modifier.width(8.dp))
-                Text(LocalizedString.get("pick_contact"), color = MaterialTheme.colorScheme.onPrimary, fontWeight = FontWeight.Bold)
+                Text(LocalizedString.get("save_payment"), color = MaterialTheme.colorScheme.primary)
             }
-        }
-    }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) { Text(LocalizedString.get("cancel"), color = MaterialTheme.colorScheme.onSurfaceVariant) }
+        },
+        containerColor = MaterialTheme.colorScheme.surface
+    )
 }

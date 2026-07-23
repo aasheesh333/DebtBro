@@ -19,18 +19,36 @@ import javax.inject.Inject
 class DebtListViewModel @Inject constructor(
     private val repository: DebtRepository,
     private val paymentRepository: PaymentRepository,
-    prefs: AppPreferences
+    private val prefs: AppPreferences
 ) : ViewModel() {
     val allDebts: StateFlow<List<DebtEntity>> = repository.getAllDebts().stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
     val searchQuery = MutableStateFlow("")
     val selectedTab = MutableStateFlow(0)
     val filterStatus = MutableStateFlow("ALL")
+    val sortOrder: StateFlow<String> = prefs.debtListSortOrder
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), "CREATED_DESC")
     val isSignedIn = prefs.isGoogleSignedIn.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), false)
-    val filteredDebts: StateFlow<List<DebtEntity>> = combine(allDebts, searchQuery, selectedTab, filterStatus) { debts, query, tab, filter ->
+
+    val filteredDebts: StateFlow<List<DebtEntity>> = combine(
+        allDebts, searchQuery, selectedTab, filterStatus, sortOrder
+    ) { debts, query, tab, filter, order ->
         debts.filter { it.type == if (tab == 0) "THEY_OWE_ME" else "I_OWE_THEM" }
             .filter { filter == "ALL" || it.status == filter }
             .filter { query.isBlank() || it.personName.contains(query, true) || it.description.contains(query, true) }
+            .let { list ->
+                when (order) {
+                    "AMOUNT_DESC" -> list.sortedByDescending { it.amount - it.amountPaid }
+                    "AMOUNT_ASC" -> list.sortedBy { it.amount - it.amountPaid }
+                    "NAME_ASC" -> list.sortedBy { it.personName.lowercase() }
+                    "DUE_DATE_ASC" -> list.sortedBy { it.dueDate ?: Long.MAX_VALUE }
+                    "STATUS" -> list.sortedBy { if (it.status == "SETTLED") 1 else 0 }
+                    else -> list.sortedByDescending { it.createdAt }
+                }
+            }
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+
+    fun setSortOrder(order: String) = viewModelScope.launch { prefs.setDebtListSortOrder(order) }
+
     fun deleteDebt(debt: DebtEntity) = viewModelScope.launch { repository.deleteDebt(debt) }
     fun markSettled(debt: DebtEntity) = viewModelScope.launch {
         val remaining = debt.amount - debt.amountPaid

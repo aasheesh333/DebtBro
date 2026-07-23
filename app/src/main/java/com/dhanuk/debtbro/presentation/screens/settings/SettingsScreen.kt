@@ -157,7 +157,7 @@ fun SettingsScreen(
 
                         Text(LocalizedString.get("default_currency"), color = extra.subtitleGray, fontSize = UITokens.FontSmall)
                         Row(horizontalArrangement = Arrangement.spacedBy(UITokens.SpaceXS)) {
-                            listOf("\u20B9", "$", "\u20AC", "\u00A3", "\u00A5").forEach { c ->
+                            listOf("\u20B9", "$", "\u20AC", "\u00A3", "\u00A5", "\u20A9").forEach { c ->
                                 FilterChip(
                                     selected = state.currency == c,
                                     onClick = { viewModel.setCurrency(c) },
