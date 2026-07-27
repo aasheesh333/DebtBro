@@ -23,3 +23,6 @@ captures/
 .superpowers/trace/
 .superpowers/cleanup/
 .superpowers/fix/*
+
+# Local release AAB/APK extracted from CI runs (machine-specific)
+.release-artifacts/

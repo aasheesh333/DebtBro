@@ -38,11 +38,11 @@ jobs:
           distribution: 'temurin'
           cache: gradle
 
-      - name: Setup Android SDK (API 35, build-tools 35.0.0)
+      - name: Setup Android SDK (API 36, build-tools 36.0.0)
         uses: android-actions/setup-android@v3
         with:
-          api-level: 35
-          build-tools-version: 35.0.0
+          api-level: 36
+          build-tools-version: 36.0.0
 
       # Google's plugins (Firebase, Crashlytics, Performance) require
       # google-services.json at *config* time. We write a stub that satisfies

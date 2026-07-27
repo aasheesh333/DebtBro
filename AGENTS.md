@@ -1,8 +1,8 @@
 # PROJECT KNOWLEDGE BASE — DebtPayoff Pro
 
-**Generated:** 2026-05-19
-**Commit:** `efb066f`
-**Branch:** `fix-google-signin-and-export-crash-15964286147323028907`
+**Generated:** 2026-07-27
+**Branch (latest release):** `main` @ `7e9430c` → **v1.0.194 / v2.0.0 "Android 16 + Smarter Debt Tracking"**
+**Play Store release notes:** `docs/PLAY_STORE_RELEASE_NOTES.md`
 
 ## OWNER PREFERENCES (PERMANENT)
 
@@ -27,9 +27,9 @@ app/src/main/java/com/dhanuk/debtbro/
 │   └── repository/         # DebtRepository, PaymentRepository, SplitRepository, AiRepository
 ├── di/                     # Hilt modules: DatabaseModule, DataStoreModule, NetworkModule, RepositoryModule
 ├── presentation/
-│   ├── components/         # Reusable composables: DebtCard, ConfettiOverlay, GoogleSignInCard, etc.
+│   ├── components/         # Reusable composables: DebtCard, ConfettiOverlay, GoogleSignInCard, ContactPickerBottomSheet, etc.
 │   ├── navigation/         # NavGraph (bottom tabs: Home/Debts/Split/Stats) + Screen sealed class
-│   ├── screens/            # 8 screens: onboarding, dashboard, debtlist, debtdetail, adddebt, analytics, settings, split
+│   ├── screens/            # 9 screens: onboarding, dashboard, debtlist, debtdetail, adddebt, analytics, settings, split, signup, signin (auth split out in v2.0)
 │   └── theme/              # Dark-first theme: PrimaryGreen(#00E5A0), DangerRed, Amber
 ├── util/
 │   ├── CanvasExporter.kt   # Custom Canvas-based image export
@@ -37,11 +37,13 @@ app/src/main/java/com/dhanuk/debtbro/
 │   ├── HtmlExporter.kt     # WebView-rendered HTML template export (4 themes)
 │   ├── CurrencyFormatter.kt
 │   ├── DateUtils.kt
-│   ├── LocalizedString.kt  # 18-language i18n (inline strings, ~800 lines)
+│   ├── LocalizedString.kt  # 25-language i18n (inline strings)
 │   └── ShareUtils.kt
 └── worker/
-    ├── DebtReminderWorker.kt   # Daily notification
-    └── WeeklySummaryWorker.kt  # Weekly summary
+    ├── DebtReminderWorker.kt         # Daily notification
+    ├── DebtDueDateReminderWorker.kt  # Per-debt due-date push (added v2.0)
+    ├── EngagementWorker.kt           # Re-engagement push (added v2.0)
+    └── WeeklySummaryWorker.kt        # Weekly summary
 ```
 
 ## WHERE TO LOOK
@@ -95,7 +97,7 @@ app/src/main/java/com/dhanuk/debtbro/
 
 ## NOTES
 
-- Requires JDK 17, Android SDK 35.
+- Requires JDK 17, Android SDK 36 (compileSdk/target 36 since v2.0.0).
 - CI builds signed APK on every push to any branch (`build.yml`). Creates GitHub Release only on `main`.
 - Secrets in CI: `KEYSTORE_BASE64`, `GOOGLE_SERVICES_JSON`, `GEMINI_API_KEY_2_5_FLASH_LITE`, AdMob/OneSignal keys, keystore passwords.
 - `keystore.jks` decoded from CI secret. Never commit `.jks` or `google-services.json`.
