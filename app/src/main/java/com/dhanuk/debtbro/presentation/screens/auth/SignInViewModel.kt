@@ -8,6 +8,7 @@ import com.dhanuk.debtbro.data.firebase.AuthManager
 import com.dhanuk.debtbro.data.firebase.RealTimeSyncManager
 import com.dhanuk.debtbro.data.firebase.SyncManager
 import com.dhanuk.debtbro.util.LocalizedString
+import com.dhanuk.debtbro.util.isGmsAvailable
 import com.dhanuk.debtbro.worker.AccountDeletionWorker
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Job
@@ -70,6 +71,7 @@ class SignInViewModel @Inject constructor(
 
     fun signInWithGoogle(activity: Activity) {
         if (_state.value.isBusy) return
+        if (!isGmsAvailable(activity)) return
         _state.value = _state.value.copy(isBusy = true, errorRes = null)
         viewModelScope.launch {
             auth.signInWithGoogle(activity).fold(

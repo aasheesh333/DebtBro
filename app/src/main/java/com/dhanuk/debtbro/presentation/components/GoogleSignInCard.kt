@@ -24,6 +24,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -36,6 +37,7 @@ import coil.compose.AsyncImage
 import com.dhanuk.debtbro.presentation.theme.LocalExtraColors
 import com.dhanuk.debtbro.presentation.theme.UITokens
 import com.dhanuk.debtbro.util.LocalizedString
+import com.dhanuk.debtbro.util.isGmsAvailable
 import com.dhanuk.debtbro.util.toTimeAgo
 
 @Composable
@@ -58,6 +60,8 @@ fun GoogleSignInCard(
     onCancelDeletion: () -> Unit = {}
 ) {
     val extra = LocalExtraColors.current
+    val context = androidx.compose.ui.platform.LocalContext.current
+    val gmsAvailable = remember(context) { isGmsAvailable(context) }
     Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)) {
         Column(Modifier.padding(UITokens.CardInnerPadding), verticalArrangement = Arrangement.spacedBy(10.dp)) {
             Text(
@@ -172,8 +176,20 @@ fun GoogleSignInCard(
                 if (isSignedIn) {
                     Button(onClick = onSync, enabled = !isSyncing) { Text(LocalizedString.get("sync_now")) }
                     OutlinedButton(onClick = onSignOut, enabled = !isSyncing) { Text(LocalizedString.get("sign_out")) }
-                } else {
+                } else if (gmsAvailable) {
                     Button(onClick = onSignIn) { Text(LocalizedString.get("sign_in_google")) }
+                } else {
+                    // GMS not available on this device — don't surface a Google
+                    // Sign-In button that would trigger a "Download Google Play
+                    // services" prompt (OPPO store rejection: Mandatory Download
+                    // from Google Play). User can still create/import debt data
+                    // locally; email/password sign-in is offered on the auth screens.
+                    Text(
+                        LocalizedString.get("sign_in_to_sync_desc"),
+                        color = extra.subtitleGray,
+                        fontSize = 12.sp,
+                        modifier = Modifier.padding(2.dp)
+                    )
                 }
             }
 

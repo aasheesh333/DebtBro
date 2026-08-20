@@ -19,6 +19,7 @@ import com.dhanuk.debtbro.data.firebase.SyncManager
 import com.dhanuk.debtbro.data.repository.DebtRepository
 import com.dhanuk.debtbro.util.CsvExporter
 import com.dhanuk.debtbro.util.LocalizedString
+import com.dhanuk.debtbro.util.isGmsAvailable
 import com.dhanuk.debtbro.worker.AccountDeletionWorker
 import dagger.hilt.android.lifecycle.HiltViewModel
 import java.util.concurrent.TimeUnit
@@ -321,6 +322,10 @@ class SettingsViewModel @Inject constructor(
     val showDeletionGraceAlert: StateFlow<Boolean> = _showDeletionGraceAlert.asStateFlow()
 
     fun signInWithGoogle(activity: Activity) = viewModelScope.launch {
+        if (!isGmsAvailable(activity)) {
+            syncMessage.value = LocalizedString.get("google_signin_unavailable")
+            return@launch
+        }
         auth.signInWithGoogle(activity).onSuccess { user ->
             prefs.setGoogleSignedIn(true, user.displayName ?: "DebtPayoff Pro user", user.email ?: "", user.photoUrl?.toString().orEmpty())
             user.uid?.let { uid ->

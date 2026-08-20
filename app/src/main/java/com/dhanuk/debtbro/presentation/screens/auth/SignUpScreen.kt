@@ -28,6 +28,7 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -44,6 +45,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.dhanuk.debtbro.presentation.theme.LocalExtraColors
 import com.dhanuk.debtbro.presentation.theme.UITokens
 import com.dhanuk.debtbro.util.LocalizedString
+import com.dhanuk.debtbro.util.isGmsAvailable
 
 @Composable
 fun SignUpScreen(
@@ -59,6 +61,8 @@ fun SignUpScreen(
     val showVerifyAlert by viewModel.showVerifyAlert.collectAsStateWithLifecycle()
     val showGraceReLoginAlert by viewModel.showGraceReLoginAlert.collectAsStateWithLifecycle()
     val extra = LocalExtraColors.current
+
+    val gmsAvailable = remember(context) { isGmsAvailable(context) }
 
     LaunchedEffect(signedIn) {
         if (signedIn && !showVerifyAlert && !showGraceReLoginAlert) onAuthComplete()
@@ -78,23 +82,25 @@ fun SignUpScreen(
                 modifier = Modifier.fillMaxWidth().padding(horizontal = 24.dp, vertical = 24.dp),
                 verticalArrangement = Arrangement.spacedBy(14.dp)
             ) {
-                OutlinedButton(
-                    onClick = { if (activity != null) viewModel.signUpWithGoogle(activity) },
-                    enabled = !state.isBusy && activity != null,
-                    modifier = Modifier.fillMaxWidth().height(52.dp),
-                    shape = UITokens.ShapeLarge
-                ) {
-                    GoogleGlyph()
-                    Spacer(Modifier.size(10.dp))
-                    Text(
-                        LocalizedString.get("sign_up_with_google"),
-                        fontWeight = FontWeight.SemiBold,
-                        fontSize = 15.sp,
-                        color = MaterialTheme.colorScheme.onSurface
-                    )
+                if (gmsAvailable) {
+                    OutlinedButton(
+                        onClick = { if (activity != null) viewModel.signUpWithGoogle(activity) },
+                        enabled = !state.isBusy && activity != null,
+                        modifier = Modifier.fillMaxWidth().height(52.dp),
+                        shape = UITokens.ShapeLarge
+                    ) {
+                        GoogleGlyph()
+                        Spacer(Modifier.size(10.dp))
+                        Text(
+                            LocalizedString.get("sign_up_with_google"),
+                            fontWeight = FontWeight.SemiBold,
+                            fontSize = 15.sp,
+                            color = MaterialTheme.colorScheme.onSurface
+                        )
+                    }
                 }
 
-                if (activity == null) {
+                if (activity == null || !gmsAvailable) {
                     Text(
                         LocalizedString.get("google_signin_unavailable"),
                         color = extra.subtitleGray,
@@ -189,6 +195,7 @@ fun SignUpScreen(
                         "email_required" -> LocalizedString.get("email_required")
                         "password_6_chars_min" -> LocalizedString.get("password_6_chars_min")
                         "passwords_dont_match" -> LocalizedString.get("passwords_dont_match")
+                        "google_signin_unavailable" -> LocalizedString.get("google_signin_unavailable")
                         else -> err
                     }
                     Text(
