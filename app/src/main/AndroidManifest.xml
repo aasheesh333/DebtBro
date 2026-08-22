@@ -84,6 +84,15 @@
             android:authorities="${applicationId}.androidx-startup"
             android:exported="false"
             tools:node="remove" />
+        <!-- Firebase auto-init runs before Application.onCreate on every launch
+             and contacts Google Play Services on non-GMS devices (OPPO review
+             units), surfacing the "Download Google Play services" prompt that
+             OPPO rejects as mandatory GP download. Disable it here; we init
+             Firebase manually only when GMS is available. -->
+        <provider
+            android:name="com.google.firebase.provider.FirebaseInitProvider"
+            android:authorities="${applicationId}.firebaseinitprovider"
+            tools:node="remove" />
         <provider
             android:name="androidx.core.content.FileProvider"
             android:authorities="${applicationId}.fileprovider"

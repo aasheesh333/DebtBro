@@ -72,21 +72,8 @@ class AdManager @Inject constructor(private val prefs: AppPreferences) {
     private val analytics: FirebaseAnalytics by lazy { Firebase.analytics }
 
     init {
-        // Apply test-device configuration in debug builds only — never
-        // in release, where this would force production traffic to be
-        // treated as test (no revenue).
-        if (BuildConfig.DEBUG) {
-            val rawIds = BuildConfig.TEST_DEVICE_IDS
-            val ids = rawIds.split(",").map { it.trim() }.filter { it.isNotBlank() }
-            if (ids.isNotEmpty()) {
-                MobileAds.setRequestConfiguration(
-                    RequestConfiguration.Builder()
-                        .setTestDeviceIds(ids)
-                        .build()
-                )
-                Log.d("AdManager", "Applied ${ids.size} test device IDs to MobileAds")
-            }
-        }
+        // (Ad content-rating hardening is applied in DebtBroApp.initializeAds
+        // together with the GMS gate — see RequestConfiguration notes there.)
     }
 
     private fun resolvedInterstitialId(): String {

@@ -21,9 +21,11 @@ import com.dhanuk.debtbro.data.datastore.AppPreferences
 import com.dhanuk.debtbro.data.repository.CurrencyRepository
 import com.dhanuk.debtbro.data.repository.DebtRepository
 import com.dhanuk.debtbro.util.autoCurrencyForLocale
+import com.dhanuk.debtbro.util.isGmsAvailable
 import com.dhanuk.debtbro.worker.ReminderScheduler
 import com.google.android.gms.ads.MobileAds
 import com.google.android.ump.UserMessagingPlatform
+import com.google.firebase.FirebaseApp
 import com.google.firebase.analytics.FirebaseAnalytics
 import com.google.firebase.analytics.ktx.analytics
 import com.google.firebase.analytics.ktx.logEvent
@@ -68,49 +70,73 @@ class DebtBroApp : Application(), Configuration.Provider {
     override fun onCreate() {
         super.onCreate()
 
-        // ── Crashlytics opt-in (collected only in non-debug if enabled) ─────────
-        val collectCrashlytics = BuildConfig.ENABLE_CRASHLYTICS
-        FirebaseCrashlytics.getInstance().setCrashlyticsCollectionEnabled(collectCrashlytics)
+        // ── GMS gate ─────────────────────────────────────────────────────────────
+        // Devices without Google Play Services (OPPO/ColorOS review devices,
+        // HMS-only handsets) must never hit GMS-dependent SDKs: Firebase
+        // Crashlytics/Performance, OneSignal, UMP consent, and AdMob can each
+        // surface a system "Download Google Play services" prompt, which OPPO
+        // rejects as "Mandatory update / download from Google Play".
+        val gmsAvailable = isGmsAvailable(this)
 
-        // ── Install a default uncaught-exception handler that pipes into Crashlytics
-        //    and keeps the system default so the OS still tears the process down properly.
-        val previousHandler = Thread.getDefaultUncaughtExceptionHandler()
-        Thread.setDefaultUncaughtExceptionHandler { thread, throwable ->
+        // ── Manual Firebase init ─────────────────────────────────────────────────
+        // The manifest removes FirebaseInitProvider (auto-init) so nothing touches
+        // Google Play Services before the GMS check above. On GMS devices we must
+        // initialize Firebase explicitly; on non-GMS devices every Firebase API
+        // stays dormant (no crash reporting, no analytics — the app still works
+        // fully offline/local).
+        if (gmsAvailable) {
             try {
-                crashlytics.recordException(throwable)
-                analytics.logEvent("uncaught_exception") {
-                    param("thread_name", thread.name)
-                    param("exception_class", throwable.javaClass.name)
-                }
-            } catch (e: Throwable) {
-                Log.e("DebtBroApp", "Error reporting crash failed: ${e.message}", e)
+                FirebaseApp.initializeApp(this)
+            } catch (e: Exception) {
+                Log.w("DebtBroApp", "FirebaseApp init failed: ${e.message}", e)
             }
-            previousHandler?.uncaughtException(thread, throwable)
         }
 
-        // ── Performance monitoring ─────────────────────────────────────────────
-        try {
-            FirebasePerformance.getInstance().isPerformanceCollectionEnabled = BuildConfig.ENABLE_PERFORMANCE_MONITORING
-        } catch (_: Exception) { /* Property may be unavailable on some devices */ }
+        // ── Crashlytics opt-in (collected only in non-debug if enabled) ─────────
+        if (gmsAvailable) {
+            val collectCrashlytics = BuildConfig.ENABLE_CRASHLYTICS
+            FirebaseCrashlytics.getInstance().setCrashlyticsCollectionEnabled(collectCrashlytics)
 
-        // ── OneSignal (must initialize BEFORE Ads) ─────────────────────────────
-        if (BuildConfig.ONESIGNAL_APP_ID.isNotBlank()) {
-            OneSignal.Debug.logLevel = if (BuildConfig.DEBUG) LogLevel.VERBOSE else LogLevel.NONE
-            OneSignal.initWithContext(this, BuildConfig.ONESIGNAL_APP_ID)
-            // Defer notification permission request to first UI screen
-            // (POST_NOTIFICATIONS runtime permission should be requested with user gesture)
+            // ── Install a default uncaught-exception handler that pipes into Crashlytics
+            //    and keeps the system default so the OS still tears the process down properly.
+            val previousHandler = Thread.getDefaultUncaughtExceptionHandler()
+            Thread.setDefaultUncaughtExceptionHandler { thread, throwable ->
+                try {
+                    crashlytics.recordException(throwable)
+                    analytics.logEvent("uncaught_exception") {
+                        param("thread_name", thread.name)
+                        param("exception_class", throwable.javaClass.name)
+                    }
+                } catch (e: Throwable) {
+                    Log.e("DebtBroApp", "Error reporting crash failed: ${e.message}", e)
+                }
+                previousHandler?.uncaughtException(thread, throwable)
+            }
+
+            // ── Performance monitoring ─────────────────────────────────────────────
+            try {
+                FirebasePerformance.getInstance().isPerformanceCollectionEnabled = BuildConfig.ENABLE_PERFORMANCE_MONITORING
+            } catch (_: Exception) { /* Property may be unavailable on some devices */ }
+
+            // ── OneSignal (must initialize BEFORE Ads) ─────────────────────────────
+            if (BuildConfig.ONESIGNAL_APP_ID.isNotBlank()) {
+                OneSignal.Debug.logLevel = if (BuildConfig.DEBUG) LogLevel.VERBOSE else LogLevel.NONE
+                OneSignal.initWithContext(this, BuildConfig.ONESIGNAL_APP_ID)
+                // Defer notification permission request to first UI screen
+                // (POST_NOTIFICATIONS runtime permission should be requested with user gesture)
+            }
+
+            // ── UMP consent + Ads initialization (2026-07-04, Wave 5 Issue 21 3C) ───
+            // The actual UMP requestConsentInfoUpdate MUST run from an Activity
+            // context (UMP 2.x SDK signature requires Activity), so we drive the
+            // consent flow from MainActivity.onCreate. Here in Application.onCreate
+            // we only fire the eager path: if consent was persisted in a prior
+            // session (canRequestAds() returns true immediately), MobileAds can be
+            // initialized at app start without waiting for the Activity / consent
+            // dialog. The MainActivity path covers first-launch EEA consent.
+            val consentInfo = UserMessagingPlatform.getConsentInformation(this)
+            if (consentInfo.canRequestAds()) initializeAds()
         }
-
-        // ── UMP consent + Ads initialization (2026-07-04, Wave 5 Issue 21 3C) ───
-        // The actual UMP requestConsentInfoUpdate MUST run from an Activity
-        // context (UMP 2.x SDK signature requires Activity), so we drive the
-        // consent flow from MainActivity.onCreate. Here in Application.onCreate
-        // we only fire the eager path: if consent was persisted in a prior
-        // session (canRequestAds() returns true immediately), MobileAds can be
-        // initialized at app start without waiting for the Activity / consent
-        // dialog. The MainActivity path covers first-launch EEA consent.
-        val consentInfo = UserMessagingPlatform.getConsentInformation(this)
-        if (consentInfo.canRequestAds()) initializeAds()
 
         // ── WorkManager ────────────────────────────────────────────────────────
         val workerConstraints = Constraints.Builder()
@@ -160,10 +186,12 @@ class DebtBroApp : Application(), Configuration.Provider {
         }
 
         // ── First-launch analytics ─────────────────────────────────────────────
-        analytics.logEvent("app_launched") {
-            param("theme_dark", "SYSTEM")
-            param("version_name", BuildConfig.VERSION_NAME)
-            param("version_code", BuildConfig.VERSION_CODE.toString())
+        if (gmsAvailable) {
+            analytics.logEvent("app_launched") {
+                param("theme_dark", "SYSTEM")
+                param("version_name", BuildConfig.VERSION_NAME)
+                param("version_code", BuildConfig.VERSION_CODE.toString())
+            }
         }
 
         // ── Locale-based default currency auto-select + FX rate refresh ─────────
@@ -218,9 +246,32 @@ class DebtBroApp : Application(), Configuration.Provider {
      */
     fun initializeAds() {
         if (adsInitialized) return
+        // Non-GMS devices: AdMob depends on Google Play Services — initializing
+        // it (or its UMP consent flow) surfaces the "Download Google Play
+        // services" prompt that OPPO flags as a mandatory GP download.
+        if (!isGmsAvailable(this)) {
+            adsInitialized = true
+            Log.d("DebtBroApp", "GMS unavailable — skipping ads initialization")
+            return
+        }
         adsInitialized = true
         synchronized(this) {
             try {
+                // Ad content-rating hardening: cap inventory at "G" (general
+                // audiences) — OPPO reviewers flag gambling creatives as
+                // "Risk App; Gambling Ads". Test device IDs stay debug-only.
+                val requestConfigBuilder = com.google.android.gms.ads.RequestConfiguration.Builder()
+                    .setMaxAdContentRating(
+                        com.google.android.gms.ads.RequestConfiguration.MAX_AD_CONTENT_RATING_G
+                    )
+                if (BuildConfig.DEBUG) {
+                    val rawIds = BuildConfig.TEST_DEVICE_IDS
+                    val ids = rawIds.split(",").map { it.trim() }.filter { it.isNotBlank() }
+                    if (ids.isNotEmpty()) {
+                        requestConfigBuilder.setTestDeviceIds(ids)
+                    }
+                }
+                MobileAds.setRequestConfiguration(requestConfigBuilder.build())
                 MobileAds.initialize(this) {
                     Log.d("DebtBroApp", "MobileAds init complete")
                     adManager.loadInterstitial(this)

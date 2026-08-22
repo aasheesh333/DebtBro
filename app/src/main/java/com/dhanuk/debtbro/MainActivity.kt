@@ -120,6 +120,14 @@ val splashScreen = installSplashScreen()
      * we initialize MobileAds immediately without UI.
      */
     private fun runUmpConsentFlow() {
+        // Non-GMS devices (OPPO/ColorOS review units, HMS-only handsets): UMP
+        // and AdMob both depend on Google Play Services — running the consent
+        // flow surfaces the system "Download Google Play services" prompt that
+        // OPPO rejects as "Mandatory update / download from Google Play".
+        if (!com.dhanuk.debtbro.util.isGmsAvailable(this)) {
+            android.util.Log.d("MainActivity", "GMS unavailable — skipping UMP consent flow")
+            return
+        }
         val consentInfo = UserMessagingPlatform.getConsentInformation(this)
         val params = ConsentRequestParameters.Builder()
             .setTagForUnderAgeOfConsent(false)
