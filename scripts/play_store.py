@@ -120,8 +120,17 @@ def insert_edit(tok: str, pkg: str) -> str:
 def cmd_next_version_code(pkg: str) -> None:
     tok = token()
     edit = insert_edit(tok, pkg)
+    # Query bundles within this edit (newly uploaded) AND existing tracks
+    # (committed releases) to find the true max versionCode.
     bundles = api("GET", f"/applications/{pkg}/edits/{edit}/bundles", tok).get("bundles", [])
     codes = [int(b.get("versionCode", 0)) for b in bundles]
+    for track in ("production", "staged_rollout_draft", "internal", "alpha", "beta"):
+        try:
+            ti = api("GET", f"/applications/{pkg}/edits/{edit}/tracks/{track}", tok)
+        except Fail:
+            continue
+        for rel in ti.get("releases", []):
+            codes.extend(int(vc) for vc in rel.get("versionCodes", []))
     current = max(codes) if codes else 0
     print(f"{current}:{current + 1}")
 
