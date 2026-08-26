@@ -152,7 +152,7 @@ def cmd_upload(pkg: str, aab: str, track: str, fraction: float, notes: str) -> N
     with open(aab, "rb") as f:
         body = f.read()
     put = urllib.request.Request(
-        f"{UPLOAD_BASE}/upload/applications/{pkg}/edits/{edit}/bundles?uploadType=media",
+        f"{UPLOAD_BASE}/applications/{pkg}/edits/{edit}/bundles?uploadType=media",
         data=body,
         method="POST",
         headers={
